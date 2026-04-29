@@ -1,0 +1,8 @@
+/* Signup: brand panel sits on the LEFT, slides in from the left */
+.signup-panel {
+  order: 1;
+  animation: slide-in-from-left 0.7s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.signup-form-wrap {
+  order: 2;
+}

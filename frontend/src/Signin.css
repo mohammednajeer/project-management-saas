@@ -1,0 +1,8 @@
+/* Signin: brand panel sits on the RIGHT, slides in from the right */
+.signin-panel {
+  order: 2;
+  animation: slide-in-from-right 0.7s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.signin-form-wrap {
+  order: 1;
+}

@@ -7,8 +7,10 @@ import {
   KanbanSquare,
   Link2,
   Lock,
+  Mail,
   Play,
   Sparkles,
+  Star,
   Zap,
 } from "lucide-react";
 import "./Homepage.css";
@@ -20,6 +22,27 @@ const stats = [
   { value: "50M+", label: "Tasks Completed" },
   { value: "99.9%", label: "Uptime SLA" },
   { value: "180+", label: "Countries" },
+];
+
+const ratings = [
+  {
+    quote: "ProjectFlow cut our project delivery time by 40%. The Kanban boards and role management are exactly what we needed.",
+    author: "Sarah Chen",
+    role: "CTO at Streamline",
+    initials: "SC",
+  },
+  {
+    quote: "Finally a tool that doesn't feel bloated. Clean, fast, and our whole team adopted it in a week.",
+    author: "Marcus Williams",
+    role: "PM at Nexus Labs",
+    initials: "MW",
+  },
+  {
+    quote: "The multi-tenant workspace setup was seamless. Each client gets their own isolated space. Brilliant.",
+    author: "Priya Nair",
+    role: "Founder at Orbit AI",
+    initials: "PN",
+  },
 ];
 
 const features = [
@@ -112,6 +135,21 @@ const previewColumns = [
       { tag: "Done", title: "Project schema design", date: "Nov 10", initials: ["A"], tone: "green", done: true },
       { tag: "Done", title: "CI/CD pipeline setup", date: "Nov 12", initials: ["G"], tone: "green", done: true },
     ],
+  },
+];
+
+const footerGroups = [
+  {
+    title: "Product",
+    links: ["Features", "Pricing", "Integrations", "Security"],
+  },
+  {
+    title: "Company",
+    links: ["About", "Blog", "Careers", "Partners"],
+  },
+  {
+    title: "Resources",
+    links: ["Docs", "API", "Help Center", "Status"],
   },
 ];
 
@@ -305,6 +343,37 @@ export default function Homepage() {
         </div>
       </div>
 
+      <section className="ratings-section reveal visible" aria-labelledby="ratings-title">
+        <div className="ratings-heading">
+          <div className="stars rating-main-stars" aria-label="5 out of 5 stars">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Star size={18} fill="currentColor" key={index} />
+            ))}
+          </div>
+          <h2 className="ratings-title" id="ratings-title">Loved by thousands of teams</h2>
+        </div>
+
+        <div className="ratings-grid">
+          {ratings.map((rating) => (
+            <article className="rating-card" key={rating.author}>
+              <div className="stars rating-card-stars" aria-label="5 out of 5 stars">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Star size={13} fill="currentColor" key={index} />
+                ))}
+              </div>
+              <p className="rating-quote">{rating.quote}</p>
+              <div className="rating-person">
+                <div className="rating-avatar">{rating.initials}</div>
+                <div>
+                  <span>{rating.author}</span>
+                  <small>{rating.role}</small>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <div className="cta-section reveal visible">
         <Sparkles size={26} className="cta-spark" />
         <div className="cta-title">Your team deserves better tools.</div>
@@ -312,13 +381,47 @@ export default function Homepage() {
         <a className="cta-btn" href="/signup">Get Started - It is Free</a>
       </div>
 
-      <footer>
-        <div className="fcopy">(c) {new Date().getFullYear()} ProjectFlow Inc. All rights reserved.</div>
-        <div className="flinks">
-          <a className="flink" href="#privacy">Privacy</a>
-          <a className="flink" href="#terms">Terms</a>
-          <a className="flink" href="#status">Status</a>
-          <a className="flink" href="#help">Help</a>
+      <footer className="site-footer">
+        <div className="footer-main">
+          <div className="footer-brand">
+            <a href="/" className="logo">
+              <span className="logo-icon">
+                <KanbanSquare size={18} />
+              </span>
+              <span>ProjectFlow</span>
+            </a>
+            <p>
+              The multi-tenant project workspace for teams that need clean delivery,
+              secure collaboration, and reporting everyone can read.
+            </p>
+            <a className="footer-contact" href="mailto:hello@projectflow.io">
+              <Mail size={15} />
+              hello@projectflow.io
+            </a>
+          </div>
+
+          <div className="footer-links-grid">
+            {footerGroups.map((group) => (
+              <div className="footer-group" key={group.title}>
+                <div className="footer-group-title">{group.title}</div>
+                {group.links.map((link) => (
+                  <a className="flink" href={`#${link.toLowerCase().replaceAll(" ", "-")}`} key={link}>
+                    {link}
+                  </a>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          <div className="fcopy">(c) {new Date().getFullYear()} ProjectFlow Inc. All rights reserved.</div>
+          <div className="flinks">
+            <a className="flink" href="#privacy">Privacy</a>
+            <a className="flink" href="#terms">Terms</a>
+            <a className="flink" href="#status">Status</a>
+            <a className="flink" href="#help">Help</a>
+          </div>
         </div>
       </footer>
     </main>

@@ -2,6 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #fff;
   color: var(--foreground);
 }
 
@@ -71,7 +72,9 @@
 .nav-cta,
 .hero-actions,
 .tlogos,
-footer,
+.site-footer,
+.footer-bottom,
+.footer-contact,
 .flinks {
   display: flex;
   align-items: center;
@@ -597,6 +600,114 @@ footer,
   font-weight: 600;
 }
 
+.ratings-section {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 88px 48px 96px;
+  background: #f5f7fb;
+}
+
+.ratings-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 46px;
+  text-align: center;
+}
+
+.ratings-title {
+  max-width: 720px;
+  margin: 0;
+  color: #111827;
+  font-size: clamp(28px, 3.1vw, 40px);
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+.stars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #f59e0b;
+}
+
+.rating-main-stars {
+  justify-content: center;
+}
+
+.ratings-grid {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.rating-card {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.22s, box-shadow 0.22s, transform 0.22s;
+}
+
+.rating-card:hover {
+  border-color: rgba(79, 110, 247, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.rating-card-stars {
+  margin-bottom: 14px;
+}
+
+.rating-quote {
+  margin: 0 0 20px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.65;
+}
+
+.rating-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rating-person small {
+  display: block;
+  margin-top: 2px;
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.rating-avatar {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  background: #6657f4;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .section {
   max-width: 1200px;
   margin: 0 auto;
@@ -875,13 +986,82 @@ footer,
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
 }
 
-footer {
+.site-footer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 26px;
+  margin-top: 12px;
+  padding: 44px 48px 26px;
+  border-top: 1px solid rgba(79, 110, 247, 0.1);
+  background: rgba(240, 244, 255, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.footer-main,
+.footer-bottom {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+}
+
+.footer-main {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 1.35fr;
+  gap: 48px;
+}
+
+.footer-brand {
+  max-width: 430px;
+}
+
+.footer-brand p {
+  margin: 18px 0 20px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.footer-contact {
+  width: max-content;
+  gap: 8px;
+  border: 1px solid rgba(79, 110, 247, 0.13);
+  border-radius: 999px;
+  padding: 9px 14px;
+  color: #4f6ef7;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.footer-contact:hover {
+  background: #fff;
+  transform: translateY(-2px);
+}
+
+.footer-links-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.footer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.footer-group-title {
+  color: #1a1d2e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.footer-bottom {
   justify-content: space-between;
   gap: 20px;
-  padding: 26px 48px;
+  padding-top: 24px;
   border-top: 1px solid rgba(79, 110, 247, 0.1);
-  background: rgba(240, 244, 255, 0.62);
-  backdrop-filter: blur(10px);
 }
 
 .fcopy {
@@ -931,7 +1111,9 @@ footer {
 
   .preview-body,
   .features-grid,
-  .pricing-grid {
+  .pricing-grid,
+  .ratings-grid,
+  .footer-main {
     grid-template-columns: 1fr;
   }
 
@@ -946,6 +1128,7 @@ footer {
   .kanban {
     grid-template-columns: 1fr;
   }
+
 }
 
 @media (max-width: 640px) {
@@ -980,9 +1163,10 @@ footer {
 
   .hero-preview,
   .tenant-strip,
+  .ratings-section,
   .section,
   .cta-section,
-  footer {
+  .site-footer {
     margin-left: 18px;
     margin-right: 18px;
     padding-left: 18px;
@@ -996,9 +1180,13 @@ footer {
   }
 
   .pmh,
-  footer {
+  .footer-bottom {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .footer-links-grid {
+    grid-template-columns: 1fr;
   }
 
   .flinks {

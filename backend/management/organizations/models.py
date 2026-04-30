@@ -25,11 +25,6 @@ class Organization(models.Model):
         max_length=20
     )
 
-    address = models.TextField(
-        blank=True,
-        null=True
-    )
-
     is_active = models.BooleanField(
         default=True
     )

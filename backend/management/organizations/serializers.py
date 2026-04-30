@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Organization
 from accounts.models import User
 
+
 class RegisterOrganizationSerializer(serializers.ModelSerializer):
 
     admin_name = serializers.CharField(write_only=True)
@@ -18,21 +19,24 @@ class RegisterOrganizationSerializer(serializers.ModelSerializer):
             "password"
         ]
 
-        def create(self,validate_data):
-            admin_name = validate_data.pop("admin_name")
-            password  =validate_data.pop("password")
+    # IMPORTANT: This must be aligned with Meta, not inside it
+    def create(self, validated_data):
 
-            organization = Organization.objects.create(
-                **validate_data
-            )
+        admin_name = validated_data.pop("admin_name")
+        password = validated_data.pop("password")
 
-            User.objects.create_user(
-                email = validate_data["email"],
-                password = password,
-                name = admin_name,
-                role = "admin",
-                organization  = organization
-            )
+        # Create organization
+        organization = Organization.objects.create(
+            **validated_data
+        )
 
-            return organization
-    
+        # Create admin user
+        User.objects.create_user(
+            email=validated_data["email"],
+            password=password,
+            name=admin_name,
+            role="admin",
+            organization=organization
+        )
+
+        return organization

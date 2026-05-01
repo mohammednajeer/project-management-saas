@@ -1,8 +1,44 @@
+import { useState } from "react";
 import { ArrowRight, Check, Eye, Zap } from "lucide-react";
-import "./Auth.css";
+import { useNavigate } from "react-router-dom";
+import api from "../../../services/api";
+import "../../../styles/auth.css";
 import "./Signin.css";
 
 export default function Signin() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await api.post("/auth/login/", {
+        email,
+        password,
+      });
+
+      // if (response.data?.access) {
+      //   localStorage.setItem("token", response.data.access);
+      // }
+
+      navigate("/dashboard", { replace: true });
+    } catch (loginError) {
+      setError(
+        loginError.response?.data?.detail ||
+          loginError.response?.data?.message ||
+          "Login failed. Please check your email and password.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <main className="auth-root auth-login-page">
       <section className="auth-login-shell" aria-label="Sign in">
@@ -49,7 +85,7 @@ export default function Signin() {
         </aside>
 
         <div className="auth-login-content">
-          <form className="auth-login-form" onSubmit={(event) => event.preventDefault()}>
+          <form className="auth-login-form" onSubmit={handleSubmit}>
             <div className="auth-form-head auth-form-head-left">
               <h2>Welcome back</h2>
               <p>Sign in to your workspace</p>
@@ -66,7 +102,14 @@ export default function Signin() {
 
             <label className="auth-field">
               <span className="auth-label">Email address</span>
-              <input className="auth-input" type="email" placeholder="you@company.com" />
+              <input
+                className="auth-input"
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={isLoading}
+              />
             </label>
 
             <label className="auth-field">
@@ -75,10 +118,23 @@ export default function Signin() {
                 <button type="button" className="auth-link-btn">Forgot password?</button>
               </span>
               <span className="auth-input-wrap">
-                <input className="auth-input auth-input-with-action" type="password" placeholder="Enter your password" />
+                <input
+                  className="auth-input auth-input-with-action"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={isLoading}
+                />
                 <Eye size={18} className="auth-input-action" aria-hidden="true" />
               </span>
             </label>
+
+            {error && (
+              <p className="auth-terms" role="alert">
+                {error}
+              </p>
+            )}
 
             <label className="auth-check">
               <input type="checkbox" />
@@ -88,8 +144,8 @@ export default function Signin() {
               Remember me for 30 days
             </label>
 
-            <button type="submit" className="auth-submit">
-              Sign in to workspace
+            <button type="submit" className="auth-submit" disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Sign in to workspace"}
               <ArrowRight size={18} />
             </button>
 

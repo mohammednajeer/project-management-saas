@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ArrowRight, Check, Eye, Plus, Zap } from "lucide-react";
-import "./Auth.css";
+import "../../../styles/auth.css";
 import "./Signup.css";
 
 const steps = ["Account", "Workspace", "Invite"];

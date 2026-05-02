@@ -1,16 +1,15 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Homepage from "../pages/home/Homepage";
-import Signin from "../pages/auth/signin/Signin";
-import Signup from "../pages/auth/signup/Signup";
+import AuthPage from "../pages/auth/AuthPage"
 import Dashboard from "../pages/dashboard/Dashboard";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 
 const appRoutes = [
   { path: "/", element: <Homepage /> },
-  { path: "/signin", element: <Signin /> },
-  { path: "/signup", element: <Signup /> },
+  { path: "/signin", element: <AuthPage /> },
+  { path: "/signup", element: <AuthPage /> },
   {
     path: "/dashboard",
     element: (

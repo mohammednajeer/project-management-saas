@@ -14,11 +14,18 @@ class RegisterOrganizationSerializer(serializers.ModelSerializer):
             "name",
             "email",
             "phone",
-            "company_code",
+            # "company_code",
             "admin_name",
             "password"
         ]
+        def validate_email(self, value):
 
+            if User.objects.filter(email=value).exists():
+                raise serializers.ValidationError(
+                    "User with this email already exists."
+                )
+
+            return value
     # IMPORTANT: This must be aligned with Meta, not inside it
     def create(self, validated_data):
 

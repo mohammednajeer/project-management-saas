@@ -1,9 +1,8 @@
-import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import api from "../services/api";
 
 export default function ProtectedRoute({ children }) {
-
   const [isAuthenticated, setIsAuthenticated] = useState(null);
 
   useEffect(() => {
@@ -20,7 +19,7 @@ export default function ProtectedRoute({ children }) {
   }, []);
 
   if (isAuthenticated === null) {
-    return <div>Loading...</div>;
+    return <p>Loading...</p>;
   }
 
   if (!isAuthenticated) {

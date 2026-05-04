@@ -67,7 +67,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     organization = models.ForeignKey(
         "organizations.Organization",
         on_delete=models.CASCADE,
-        related_name="users"
+        related_name="users",
+        null=True,
+        blank=True
     )
 
     is_active = models.BooleanField(

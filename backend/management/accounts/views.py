@@ -8,6 +8,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny
+from accounts.models import User
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
@@ -89,3 +90,70 @@ class MeView(APIView):
 
 
 
+
+   
+from invitations.models import Invitation
+from django.utils import timezone
+
+
+class InviteRegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+
+        token = request.data.get("token")
+        name = request.data.get("name")
+        password = request.data.get("password")
+
+        # 🔥 Validate token
+        try:
+            invitation = Invitation.objects.get(token=token)
+        except Invitation.DoesNotExist:
+            return Response(
+                {"message": "Invalid invitation"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if invitation.is_used:
+            return Response(
+                {"message": "Invite already used"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if invitation.expires_at < timezone.now():
+            return Response(
+                {"message": "Invite expired"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 🔥 Create user
+        user = User.objects.create_user(
+            email=invitation.email,
+            password=password,
+            name=name,
+            role=invitation.role,
+            organization=invitation.organization
+        )
+
+        # 🔥 Mark invite as used
+        invitation.is_used = True
+        invitation.save()
+
+        # 🔥 Auto login
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        response = Response({
+            "message": "Account created via invite"
+        })
+
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            path="/",
+        )
+
+        return response

@@ -1,270 +1,279 @@
 import { useState } from "react";
 import {
-  BarChart3,
-  Bell,
-  CheckCircle2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Clock3,
-  Folder,
   LayoutDashboard,
-  LogOut,
-  Mail,
-  Search,
-  Settings,
-  SquareCheckBig,
+  FolderOpen,
+  CheckSquare,
   Users,
-  Zap,
+  Mail,
+  BarChart2,
+  Settings,
+  LogOut,
+  ChevronLeft,
+  Bell,
+  ChevronDown,
+  Search,
+  TrendingUp,
+  TrendingDown,
+  Sparkles,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import api from "../../services/api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from "recharts";
 import "./Dashboard.css";
 
-const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, active: true },
-  { label: "Projects", icon: Folder },
-  { label: "Tasks", icon: SquareCheckBig },
-  { label: "Team", icon: Users },
-  { label: "Invitations", icon: Mail },
-  { label: "Reports", icon: BarChart3 },
-  { label: "Settings", icon: Settings },
+const chartData = [
+  { day: "Mon", tasks: 4 },
+  { day: "Tue", tasks: 6 },
+  { day: "Wed", tasks: 6.5 },
+  { day: "Thu", tasks: 9 },
+  { day: "Fri", tasks: 7.5 },
+  { day: "Sat", tasks: 3 },
+  { day: "Sun", tasks: 11 },
 ];
 
-const stats = [
-  { label: "Total Projects", value: "12", change: "+2 this month", icon: Folder, tone: "blue" },
-  { label: "Total Tasks", value: "148", change: "+24 this week", icon: SquareCheckBig, tone: "purple" },
-  { label: "Pending Tasks", value: "31", change: "-5 from last week", icon: Clock3, tone: "yellow" },
-  { label: "Completed", value: "107", change: "+18 this week", icon: CheckCircle2, tone: "green" },
-  { label: "Team Members", value: "24", change: "3 pending invites", icon: Users, tone: "rose" },
-];
-
-const feedItems = [
-  { text: 'Alex Kim completed "API Integration"', time: "2 min ago", tone: "green" },
-  { text: 'New project "Analytics Dashboard" created', time: "15 min ago", tone: "blue" },
-  { text: "Sara Patel joined the workspace", time: "1 hour ago", tone: "purple" },
-  { text: '"Mobile App" deadline moved to Dec 30', time: "3 hours ago", tone: "yellow" },
-  { text: '5 tasks moved to "Done" in Website Redesign', time: "5 hours ago", tone: "green" },
-  { text: 'Comment added on "Backend API" task', time: "Yesterday", tone: "gray" },
+const activityFeed = [
+  { id: 1, color: "#22c55e", text: 'Alex Kim completed "API Integration"', time: "2 min ago" },
+  { id: 2, color: "#4f6df5", text: 'New project "Analytics Dashboard" created', time: "15 min ago" },
+  { id: 3, color: "#a855f7", text: "Sara Patel joined the workspace", time: "1 hour ago" },
+  { id: 4, color: "#f59e0b", text: '"Mobile App" deadline moved to Dec 30', time: "3 hours ago" },
+  { id: 5, color: "#22c55e", text: '5 tasks moved to "Done" in Website Redesign', time: "5 hours ago" },
+  { id: 6, color: "#6b7280", text: 'Comment added on "Backend API" task', time: "Yesterday" },
 ];
 
 const recentTasks = [
-  { title: "Finalize onboarding flow", owner: "Alex Kim", status: "In progress", due: "Today" },
-  { title: "Review analytics dashboard copy", owner: "Sara Patel", status: "Review", due: "Tomorrow" },
-  { title: "QA backend API permissions", owner: "John Doe", status: "Blocked", due: "Dec 30" },
+  { id: 1, task: "Design homepage hero section", project: "Website Redesign", priority: "High", priorityColor: "#f59e0b", status: "In Progress", statusBg: "#eff6ff", statusColor: "#4f6df5", assignee: "JD", assigneeBg: "#4f6df5", due: "Dec 20" },
+  { id: 2, task: "Set up CI/CD pipeline", project: "DevOps", priority: "Critical", priorityColor: "#ef4444", status: "Backlog", statusBg: "#f3f4f6", statusColor: "#374151", assignee: "AK", assigneeBg: "#8b5cf6", due: "Dec 18" },
+  { id: 3, task: "Write API documentation", project: "API v2", priority: "Medium", priorityColor: "#a855f7", status: "Review", statusBg: "#fdf4ff", statusColor: "#a855f7", assignee: "SP", assigneeBg: "#ec4899", due: "Dec 22" },
+];
+
+const navItems = [
+  { icon: LayoutDashboard, label: "Dashboard", active: true },
+  { icon: FolderOpen, label: "Projects" },
+  { icon: CheckSquare, label: "Tasks" },
+  { icon: Users, label: "Team" },
+  { icon: Mail, label: "Invitations" },
+  { icon: BarChart2, label: "Reports" },
+  { icon: Settings, label: "Settings" },
+];
+
+const statCards = [
+  { icon: FolderOpen, iconBg: "#eff6ff", iconColor: "#4f6df5", value: "12", label: "Total Projects", trend: "+2 this month", up: true },
+  { icon: CheckSquare, iconBg: "#f5f3ff", iconColor: "#8b5cf6", value: "148", label: "Total Tasks", trend: "+24 this week", up: true },
+  { icon: null, emoji: "🕐", iconBg: "#fffbeb", iconColor: "#f59e0b", value: "31", label: "Pending Tasks", trend: "-5 from last week", up: false },
+  { icon: null, checkGreen: true, iconBg: "#f0fdf4", iconColor: "#22c55e", value: "107", label: "Completed", trend: "+18 this week", up: true },
+  { icon: Users, iconBg: "#fff1f2", iconColor: "#ef4444", value: "24", label: "Team Members", trend: "3 pending invites", up: null },
 ];
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await api.post("/auth/logout/");
+      await fetch("/auth/logout/", { method: "POST" });
       window.location.href = "/signin";
-    } catch (error) {
-      console.error("Logout failed", error);
-      navigate("/signin", { replace: true });
+    } catch {
+      window.location.href = "/signin";
     }
   };
 
   return (
-    <main className={`dashboard-page ${isCollapsed ? "is-collapsed" : ""}`}>
-      <aside className="dashboard-sidebar">
-        <a href="/dashboard" className="dashboard-brand" aria-label="ProjectFlow dashboard">
-          <span className="dashboard-brand-icon">
-            <Zap size={22} />
-          </span>
-          <span className="dashboard-brand-text">ProjectFlow</span>
+    <main className={`db-page ${collapsed ? "db-collapsed" : ""}`}>
+      {/* Sidebar */}
+      <aside className="db-sidebar">
+        <a href="/dashboard" className="db-brand">
+          <span className="db-brand-icon"><Sparkles size={18} /></span>
+          {!collapsed && <span>ProjectFlow</span>}
         </a>
 
-        <nav className="dashboard-nav" aria-label="Dashboard navigation">
-          {navItems.map((item) => (
-            <a className={item.active ? "is-active" : ""} href={`#${item.label.toLowerCase()}`} key={item.label}>
-              <item.icon size={24} />
-              <span>{item.label}</span>
+        <nav className="db-nav">
+          {navItems.map(({ icon: Icon, label, active }) => (
+            <a key={label} href="#" className={`db-nav-item ${active ? "is-active" : ""}`}>
+              <Icon size={18} />
+              {!collapsed && <span>{label}</span>}
             </a>
           ))}
         </nav>
 
-        <button type="button" className="dashboard-logout" onClick={handleLogout}>
-          <LogOut size={24} />
-          <span>Logout</span>
-        </button>
-
-        <button
-          type="button"
-          className="dashboard-collapse"
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          onClick={() => setIsCollapsed((value) => !value)}
-        >
-          {isCollapsed ? <ChevronRight size={22} /> : <ChevronLeft size={22} />}
-        </button>
+        <div className="db-sidebar-footer">
+          <button className="db-logout" onClick={handleLogout}>
+            <LogOut size={18} />
+            {!collapsed && <span>Logout</span>}
+          </button>
+          <button className="db-collapse" onClick={() => setCollapsed(!collapsed)}>
+            <ChevronLeft size={16} style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+          </button>
+        </div>
       </aside>
 
-      <section className="dashboard-shell">
-        <header className="dashboard-topbar">
-          <div className="dashboard-workspace">
-            <strong>Acme Corp</strong>
-            <span>Pro</span>
+      {/* Main area */}
+      <section className="db-body">
+        {/* Topbar */}
+        <header className="db-topbar">
+          <div className="db-workspace">
+            <span className="db-workspace-name">Acme Corp</span>
+            <span className="db-pro-badge">Pro</span>
           </div>
 
-          <label className="dashboard-search">
-            <Search size={21} />
-            <input type="search" placeholder="Search projects, tasks..." />
-          </label>
+          <div className="db-search">
+            <Search size={15} className="db-search-icon" />
+            <input placeholder="Search projects, tasks..." />
+          </div>
 
-          <div className="dashboard-account">
-            <button type="button" className="dashboard-notification" aria-label="Notifications">
-              <Bell size={22} />
-              <span>2</span>
+          <div className="db-topbar-right">
+            <button className="db-notif">
+              <Bell size={18} />
+              <span className="db-notif-badge">2</span>
             </button>
-
-            <button
-              type="button"
-              className="dashboard-profile"
-              onClick={() => setIsProfileOpen((value) => !value)}
-              aria-expanded={isProfileOpen}
-            >
-              <span className="dashboard-avatar">JD</span>
-              <span className="dashboard-profile-copy">
-                <strong>John Doe</strong>
-                <small>Admin</small>
-              </span>
-              <ChevronDown size={18} />
-            </button>
-
-            {isProfileOpen && (
-              <div className="dashboard-profile-menu">
-                <div>
-                  <strong>John Doe</strong>
-                  <span>john@acmecorp.com</span>
-                </div>
-                <a href="#profile">Profile</a>
-                <a href="#settings">Settings</a>
-                <a href="#billing">Billing</a>
-                <a href="#help">Help</a>
-                <button type="button" onClick={handleLogout}>Sign out</button>
+            <div className="db-user">
+              <div className="db-avatar">JD</div>
+              <div className="db-user-info">
+                <span className="db-user-name">John Doe</span>
+                <span className="db-user-role">Admin</span>
               </div>
-            )}
+              <ChevronDown size={14} color="#9ca3af" />
+            </div>
           </div>
         </header>
 
-        <div className="dashboard-content">
-          <section className="dashboard-hero">
+        {/* Content */}
+        <div className="db-content">
+          {/* Welcome */}
+          <div className="db-welcome-row">
             <div>
-              <h1>Good morning, John <span aria-hidden="true">👋</span></h1>
-              <p>Here's what's happening across your workspace today.</p>
+              <h1 className="db-welcome-title">Good morning, John 👋</h1>
+              <p className="db-welcome-sub">Here's what's happening across your workspace today.</p>
             </div>
-            <span className="dashboard-system">All systems normal</span>
-          </section>
+            <span className="db-system-status">● All systems normal</span>
+          </div>
 
-          <section className="dashboard-stats" aria-label="Workspace metrics">
-            {stats.map((stat) => (
-              <article className={`dashboard-stat-card tone-${stat.tone}`} key={stat.label}>
-                <span className="dashboard-stat-icon">
-                  <stat.icon size={34} />
-                </span>
-                <div>
-                  <strong>{stat.value}</strong>
-                  <span>{stat.label}</span>
-                  <small>↗ {stat.change}</small>
-                </div>
-              </article>
-            ))}
-          </section>
-
-          <section className="dashboard-grid">
-            <article className="dashboard-panel dashboard-chart-panel">
-              <div className="dashboard-panel-head">
-                <div>
-                  <h2>Task Activity</h2>
-                  <p>Tasks completed this week</p>
-                </div>
-                <span>↗ +18% vs last week</span>
-              </div>
-
-              <div className="dashboard-chart" aria-label="Task activity line chart">
-                <div className="dashboard-y-axis">
-                  <span>12</span>
-                  <span>9</span>
-                  <span>6</span>
-                  <span>3</span>
-                  <span>0</span>
-                </div>
-                <div className="dashboard-chart-plot">
-                  <svg viewBox="0 0 760 260" preserveAspectRatio="none" role="img" aria-label="Weekly completed tasks trend">
-                    <defs>
-                      <linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#5368d9" stopOpacity="0.18" />
-                        <stop offset="100%" stopColor="#5368d9" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d="M0 170 C65 138 87 112 126 106 C196 96 226 161 302 146 C383 130 392 58 474 66 C555 74 586 142 652 164 C700 181 735 151 760 126 L760 260 L0 260 Z"
-                      fill="url(#chartFill)"
-                    />
-                    <path
-                      d="M0 170 C65 138 87 112 126 106 C196 96 226 161 302 146 C383 130 392 58 474 66 C555 74 586 142 652 164 C700 181 735 151 760 126"
-                      fill="none"
-                      stroke="#5368d9"
-                      strokeLinecap="round"
-                      strokeWidth="4"
-                    />
-                    {[0, 126, 302, 474, 586, 652, 760].map((x, index) => {
-                      const yValues = [170, 106, 146, 66, 142, 164, 126];
-                      return <circle cx={x} cy={yValues[index]} fill="#5368d9" key={x} r="4" />;
-                    })}
-                  </svg>
-                  <div className="dashboard-days">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-                      <span key={day}>{day}</span>
-                    ))}
+          {/* Stat cards */}
+          <div className="db-stats">
+            {statCards.map((card, i) => {
+              const Icon = card.icon;
+              return (
+                <div key={i} className="db-stat-card">
+                  <div className="db-stat-icon" style={{ background: card.iconBg, color: card.iconColor }}>
+                    {card.checkGreen ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                    ) : card.emoji ? (
+                      <span style={{ fontSize: "18px" }}>🕐</span>
+                    ) : (
+                      <Icon size={20} />
+                    )}
+                  </div>
+                  <div className="db-stat-body">
+                    <div className="db-stat-value">{card.value}</div>
+                    <div className="db-stat-label">{card.label}</div>
+                    <div className={`db-stat-trend ${card.up === false ? "down" : card.up === null ? "neutral" : "up"}`}>
+                      {card.up === true && <TrendingUp size={12} />}
+                      {card.up === false && <TrendingDown size={12} />}
+                      {card.up === null && <span style={{ fontSize: "11px" }}>↗</span>}
+                      {card.trend}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </article>
+              );
+            })}
+          </div>
 
-            <article className="dashboard-panel dashboard-feed">
-              <div className="dashboard-panel-head">
-                <h2>Activity Feed</h2>
-                <a href="#activity">View all</a>
+          {/* Chart + Activity Feed */}
+          <div className="db-mid-row">
+            <div className="db-chart-card">
+              <div className="db-chart-header">
+                <div>
+                  <h2 className="db-section-title">Task Activity</h2>
+                  <p className="db-section-sub">Tasks completed this week</p>
+                </div>
+                <span className="db-chart-trend">↗ +18% vs last week</span>
               </div>
-              <div className="dashboard-feed-list">
-                {feedItems.map((item) => (
-                  <div className="dashboard-feed-item" key={`${item.text}-${item.time}`}>
-                    <span className={`dashboard-feed-dot tone-${item.tone}`} />
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="taskGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4f6df5" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#4f6df5" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} ticks={[0, 3, 6, 9, 12]} />
+                  <Tooltip
+                    contentStyle={{ border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "13px" }}
+                    cursor={{ stroke: "#4f6df5", strokeWidth: 1, strokeDasharray: "4 4" }}
+                  />
+                  <Area type="monotone" dataKey="tasks" stroke="#4f6df5" strokeWidth={2.5} fill="url(#taskGrad)" dot={{ r: 4, fill: "#4f6df5", strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="db-feed-card">
+              <div className="db-feed-header">
+                <h2 className="db-section-title">Activity Feed</h2>
+                <a href="#" className="db-view-all">View all</a>
+              </div>
+              <div className="db-feed-list">
+                {activityFeed.map(item => (
+                  <div key={item.id} className="db-feed-item">
+                    <span className="db-feed-dot" style={{ background: item.color }} />
                     <div>
-                      <p>{item.text}</p>
-                      <small>{item.time}</small>
+                      <p className="db-feed-text">{item.text}</p>
+                      <p className="db-feed-time">{item.time}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </article>
-          </section>
+            </div>
+          </div>
 
-          <section className="dashboard-panel dashboard-tasks">
-            <div className="dashboard-panel-head">
-              <h2>Recent Tasks</h2>
-              <a href="#tasks">View all tasks →</a>
+          {/* Recent Tasks */}
+          <div className="db-tasks-card">
+            <div className="db-tasks-header">
+              <h2 className="db-section-title">Recent Tasks</h2>
+              <a href="#" className="db-view-all">View all tasks →</a>
             </div>
-            <div className="dashboard-task-list">
-              {recentTasks.map((task) => (
-                <article className="dashboard-task-row" key={task.title}>
-                  <div>
-                    <strong>{task.title}</strong>
-                    <span>{task.owner}</span>
-                  </div>
-                  <span className={`dashboard-task-status status-${task.status.toLowerCase().replace(" ", "-")}`}>
-                    {task.status}
-                  </span>
-                  <small>{task.due}</small>
-                </article>
-              ))}
-            </div>
-          </section>
+            <table className="db-tasks-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Project</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Assignee</th>
+                  <th>Due Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentTasks.map(row => (
+                  <tr key={row.id}>
+                    <td className="db-task-name">{row.task}</td>
+                    <td className="db-task-project">{row.project}</td>
+                    <td>
+                      <span className="db-priority" style={{ color: row.priorityColor, borderColor: row.priorityColor + "33", background: row.priorityColor + "11" }}>
+                        {row.priority}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="db-status" style={{ background: row.statusBg, color: row.statusColor }}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="db-assignee" style={{ background: row.assigneeBg }}>{row.assignee}</div>
+                    </td>
+                    <td className="db-due">{row.due}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>

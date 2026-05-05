@@ -1,129 +1,13 @@
-/* ===== LAYOUT ===== */
+/* ===== DASHBOARD PAGE ===== */
+/* The sidebar is now handled globally by Sidebar.css / AppLayout.css */
+
 .db-page {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 220px 1fr;
   background: #f5f7fb;
   color: #111827;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  transition: grid-template-columns 0.25s ease;
-}
-.db-page.db-collapsed {
-  grid-template-columns: 64px 1fr;
-}
-
-/* ===== SIDEBAR ===== */
-.db-sidebar {
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
-  padding: 1.25rem 0.75rem;
-  gap: 1.5rem;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.db-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  text-decoration: none;
-  color: #111827;
-  font-size: 1rem;
-  font-weight: 800;
-  padding: 0 0.4rem;
-  white-space: nowrap;
-}
-.db-brand-icon {
-  flex-shrink: 0;
-  width: 2.1rem;
-  height: 2.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.55rem;
-  background: #4f6df5;
-  color: #fff;
-}
-
-.db-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex: 1;
-}
-.db-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.55rem;
-  color: #6b7280;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
-}
-.db-nav-item:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-.db-nav-item.is-active {
-  background: #eff2ff;
-  color: #4f6df5;
-}
-
-.db-sidebar-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.db-logout {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.55rem;
-  background: none;
-  border: none;
-  color: #ef4444;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  width: 100%;
-}
-.db-logout:hover {
-  background: #fff1f2;
-}
-.db-collapse {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background: #f3f4f6;
-  border: none;
-  cursor: pointer;
-  color: #6b7280;
-  margin: 0 auto;
-}
-.db-collapse:hover {
-  background: #e5e7eb;
-}
-
-/* ===== BODY ===== */
-.db-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  overflow: hidden;
 }
 
 /* ===== TOPBAR ===== */
@@ -210,9 +94,7 @@
   cursor: pointer;
   color: #6b7280;
 }
-.db-notif:hover {
-  background: #f3f4f6;
-}
+.db-notif:hover { background: #f3f4f6; }
 .db-notif-badge {
   position: absolute;
   top: 2px;
@@ -227,7 +109,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
 }
 .db-user {
   display: flex;
@@ -237,9 +118,7 @@
   padding: 0.3rem 0.5rem;
   border-radius: 0.55rem;
 }
-.db-user:hover {
-  background: #f3f4f6;
-}
+.db-user:hover { background: #f3f4f6; }
 .db-avatar {
   width: 2rem;
   height: 2rem;
@@ -252,20 +131,9 @@
   align-items: center;
   justify-content: center;
 }
-.db-user-info {
-  display: flex;
-  flex-direction: column;
-}
-.db-user-name {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #111827;
-}
-.db-user-role {
-  font-size: 0.73rem;
-  color: #9ca3af;
-  font-weight: 500;
-}
+.db-user-info { display: flex; flex-direction: column; }
+.db-user-name { font-size: 0.85rem; font-weight: 700; color: #111827; }
+.db-user-role { font-size: 0.73rem; color: #9ca3af; font-weight: 500; }
 
 /* ===== CONTENT ===== */
 .db-content {
@@ -298,6 +166,7 @@
   color: #16a34a;
   white-space: nowrap;
   margin-top: 0.25rem;
+  display: block;
 }
 
 /* ===== STAT CARDS ===== */
@@ -351,11 +220,11 @@
   font-weight: 600;
   margin-top: 0.2rem;
 }
-.db-stat-trend.up { color: #16a34a; }
-.db-stat-trend.down { color: #ef4444; }
+.db-stat-trend.up    { color: #16a34a; }
+.db-stat-trend.down  { color: #ef4444; }
 .db-stat-trend.neutral { color: #f59e0b; }
 
-/* ===== MID ROW (Chart + Feed) ===== */
+/* ===== MID ROW ===== */
 .db-mid-row {
   display: grid;
   grid-template-columns: 1fr 280px;
@@ -410,7 +279,6 @@
 .db-feed-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 .db-feed-item {
   display: flex;
@@ -440,9 +308,7 @@
 }
 
 /* ===== RECENT TASKS ===== */
-.db-tasks-card {
-  overflow: hidden;
-}
+.db-tasks-card { overflow: hidden; }
 .db-tasks-header {
   display: flex;
   align-items: center;
@@ -470,14 +336,8 @@
 }
 .db-tasks-table tr:last-child td { border-bottom: none; }
 .db-tasks-table tr:hover td { background: #fafafa; }
-.db-task-name {
-  font-weight: 600;
-  color: #111827;
-}
-.db-task-project {
-  color: #6b7280;
-  font-size: 0.845rem;
-}
+.db-task-name { font-weight: 600; color: #111827; }
+.db-task-project { color: #6b7280; font-size: 0.845rem; }
 .db-priority {
   display: inline-flex;
   align-items: center;
@@ -506,67 +366,60 @@
   align-items: center;
   justify-content: center;
 }
-.db-due {
-  color: #6b7280;
-  font-size: 0.845rem;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1100px) {
-  .db-stats {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-@media (max-width: 900px) {
-  .db-page {
-    grid-template-columns: 1fr;
-  }
-  .db-sidebar {
-    flex-direction: row;
-    height: auto;
-    position: static;
-    border-right: none;
-    border-bottom: 1px solid #e5e7eb;
-    overflow-x: auto;
-    align-items: center;
-  }
-  .db-mid-row {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 640px) {
-  .db-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .db-content {
-    padding: 1rem;
-  }
-}
+.db-due { color: #6b7280; font-size: 0.845rem; }
 
 /* ===== INVITE SECTION ===== */
+.db-bulk-invite {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  padding: 1rem 1.4rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.db-bulk-invite h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111827;
+}
+.db-bulk-invite input[type="file"] {
+  display: block;
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin-bottom: 0.6rem;
+}
+.db-bulk-invite button {
+  padding: 0.5rem 0.9rem;
+  background: #4f6df5;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.db-bulk-invite button:hover { background: #3e56c4; }
+
 .db-invite-card {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 0.85rem;
   padding: 1.4rem;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  flex: 1; /* Allows it to sit nicely next to the welcome text */
+  flex: 1;
   max-width: 500px;
 }
-
 .db-invite-card h2 {
   margin: 0 0 1rem;
   font-size: 1rem;
   font-weight: 700;
   color: #111827;
 }
-
 .db-invite-form {
   display: flex;
   gap: 0.6rem;
   align-items: center;
 }
-
 .db-invite-form input,
 .db-invite-form select {
   padding: 0.55rem 0.75rem;
@@ -578,22 +431,14 @@
   outline: none;
   transition: all 0.15s;
 }
-
 .db-invite-form input:focus,
 .db-invite-form select:focus {
   border-color: #4f6df5;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.1);
 }
-
-.db-invite-form input {
-  flex: 2;
-}
-
-.db-invite-form select {
-  flex: 1;
-  cursor: pointer;
-}
+.db-invite-form input { flex: 2; }
+.db-invite-form select { flex: 1; cursor: pointer; }
 
 .db-invite-btn {
   padding: 0.55rem 1rem;
@@ -607,20 +452,15 @@
   white-space: nowrap;
   transition: background 0.2s;
 }
+.db-invite-btn:hover { background: #3e56c4; }
 
-.db-invite-btn:hover {
-  background: #3e56c4;
-}
-
-/* Success/Link Box */
 .db-invite-link-wrapper {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: #f0fdf4; /* Light green success bg */
+  background: #f0fdf4;
   border: 1px solid #bbf7d0;
   border-radius: 0.6rem;
 }
-
 .db-invite-link-label {
   font-size: 0.75rem;
   font-weight: 700;
@@ -628,12 +468,10 @@
   margin-bottom: 0.4rem;
   display: block;
 }
-
 .db-invite-link-group {
   display: flex;
   gap: 0.5rem;
 }
-
 .db-invite-link-group input {
   flex: 1;
   background: #fff;
@@ -643,7 +481,6 @@
   border-radius: 0.4rem;
   color: #6b7280;
 }
-
 .db-copy-btn {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -654,7 +491,17 @@
   cursor: pointer;
   color: #374151;
 }
+.db-copy-btn:hover { background: #f9fafb; }
 
-.db-copy-btn:hover {
-  background: #f9fafb;
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1100px) {
+  .db-stats { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 900px) {
+  .db-mid-row { grid-template-columns: 1fr; }
+  .db-welcome-row { flex-direction: column; }
+}
+@media (max-width: 640px) {
+  .db-stats { grid-template-columns: repeat(2, 1fr); }
+  .db-content { padding: 1rem; }
 }

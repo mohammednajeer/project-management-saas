@@ -6,8 +6,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User
 from .serializers import CreateInvitationSerializer
-
+import csv
+from io import TextIOWrapper
 from django.core.mail import send_mail
+from django.core.mail import send_mail
+from django.utils import timezone
+from .models import Invitation
+
 
 class CreateInvitationView(APIView):
     permission_classes = [IsAuthenticated]
@@ -58,10 +63,6 @@ class CreateInvitationView(APIView):
 
 
 
-from django.utils import timezone
-from .models import Invitation
-
-
 class ValidateInvitationView(APIView):
 
     def get(self, request):
@@ -96,3 +97,64 @@ class ValidateInvitationView(APIView):
             "role": invitation.role
         })
  
+ 
+
+class BulkInviteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        if request.user.role != "admin":
+            return Response(
+                {"message": "Only admin can invite users"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        file = request.FILES.get("file")
+
+        if not file:
+            return Response(
+                {"message": "CSV file is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        decoded_file = TextIOWrapper(file.file, encoding="utf-8")
+        reader = csv.DictReader(decoded_file)
+
+        success_count = 0
+        errors = []
+
+        for row in reader:
+            email = row.get("email")
+            role = row.get("role", "employee")
+
+            if not email:
+                errors.append(f"Missing email in row")
+                continue
+
+            invitation = Invitation.objects.create(
+                email=email,
+                role=role,
+                organization=request.user.organization
+            )
+
+            invite_link = f"http://localhost:5173/signup?token={invitation.token}"
+
+            try:
+                send_mail(
+                    subject="You're invited to ProjectFlow",
+                    message=f"Join using this link:\n{invite_link}",
+                    from_email="your_email@gmail.com",
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+                success_count += 1
+            except Exception as e:
+                errors.append(f"{email}: {str(e)}")
+
+        return Response({
+            "message": "Bulk invite processed",
+            "success": success_count,
+            "errors": errors
+        })
+        

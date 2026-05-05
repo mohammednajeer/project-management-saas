@@ -1,0 +1,27 @@
+/* AppLayout.css */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+/* 
+  The sidebar is fixed at 64px wide (collapsed).
+  The content area must be offset by 64px so it doesn't sit under the sidebar.
+  When the sidebar expands on hover it overlays on top — no layout shift.
+*/
+.app-content {
+  margin-left: 64px;
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .app-content {
+    margin-left: 0;
+    padding-top: 56px; /* height of the mobile top bar sidebar */
+  }
+}

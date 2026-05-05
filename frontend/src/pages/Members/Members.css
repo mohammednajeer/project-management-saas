@@ -1,0 +1,387 @@
+/* ─── Page Layout ─────────────────────────────────────────────────────────── */
+.tm-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.75rem;
+  min-height: 100%;
+  background: #f5f7fb;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #111827;
+}
+
+/* ─── Page Header ─────────────────────────────────────────────────────────── */
+.tm-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tm-page-title {
+  margin: 0 0 0.3rem;
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.tm-page-sub {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.tm-active-count {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.tm-invite-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.6rem;
+  padding: 0 1.1rem;
+  border: none;
+  border-radius: 0.6rem;
+  background: #4f6df5;
+  color: #fff;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(79, 109, 245, 0.3);
+}
+
+.tm-invite-btn:hover {
+  background: #3d5ae3;
+  box-shadow: 0 4px 14px rgba(79, 109, 245, 0.4);
+}
+
+/* ─── Stat Cards ──────────────────────────────────────────────────────────── */
+.tm-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.tm-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.9rem;
+  padding: 1.2rem 1.4rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.tm-stat-icon {
+  flex-shrink: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tm-stat-value {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+.tm-stat-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* ─── Toolbar (Search + Tabs) ─────────────────────────────────────────────── */
+.tm-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.tm-search {
+  position: relative;
+  flex: 1;
+  max-width: 480px;
+}
+
+.tm-search-icon {
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.tm-search input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: #374151;
+  background: transparent;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.tm-search input::placeholder {
+  color: #9ca3af;
+}
+
+.tm-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tm-tab {
+  height: 2.1rem;
+  padding: 0 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #6b7280;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.tm-tab:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.tm-tab--active {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.tm-tab--active:hover {
+  background: #1f2937;
+  border-color: #1f2937;
+  color: #fff;
+}
+
+/* ─── Table ───────────────────────────────────────────────────────────────── */
+.tm-table-wrap {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.tm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tm-table thead tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tm-table th {
+  text-align: left;
+  padding: 0.8rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6b7280;
+  background: #f9fafb;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.tm-table th:first-child { padding-left: 1.5rem; }
+.tm-table th:last-child  { padding-right: 1.5rem; width: 2.5rem; }
+
+.tm-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.12s;
+}
+
+.tm-row:last-child {
+  border-bottom: none;
+}
+
+.tm-row:hover {
+  background: #fafafa;
+}
+
+.tm-table td {
+  padding: 1rem 1rem;
+  vertical-align: middle;
+}
+
+.tm-table td:first-child { padding-left: 1.5rem; }
+.tm-table td:last-child  { padding-right: 1.5rem; }
+
+/* ─── Member Cell ─────────────────────────────────────────────────────────── */
+.tm-member-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tm-avatar {
+  flex-shrink: 0;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.02em;
+}
+
+.tm-member-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.875rem;
+  margin-bottom: 0.15rem;
+}
+
+.tm-member-email {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+/* ─── Role Badge ──────────────────────────────────────────────────────────── */
+.tm-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.65rem;
+  border-radius: 0.4rem;
+  border: 1px solid;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ─── Status ──────────────────────────────────────────────────────────────── */
+.tm-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.tm-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── Numbers & Meta ──────────────────────────────────────────────────────── */
+.tm-num {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.tm-meta {
+  font-size: 0.845rem;
+  color: #6b7280;
+}
+
+/* ─── More Button ─────────────────────────────────────────────────────────── */
+.tm-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.4rem;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.tm-more-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ─── Empty State ─────────────────────────────────────────────────────────── */
+.tm-empty {
+  text-align: center;
+  padding: 3rem 1rem !important;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .tm-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .tm-page {
+    padding: 1rem;
+  }
+
+  .tm-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tm-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .tm-tabs {
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 0.25rem;
+  }
+
+  .tm-table-wrap {
+    overflow-x: auto;
+  }
+
+  .tm-table {
+    min-width: 700px;
+  }
+}
+
+@media (max-width: 560px) {
+  .tm-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}

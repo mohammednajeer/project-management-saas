@@ -7,14 +7,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User
 from .serializers import CreateInvitationSerializer
 
+from django.core.mail import send_mail
 
 class CreateInvitationView(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
 
-        # 🔥 check admin
         if request.user.role != "admin":
             return Response(
                 {"message": "Only admin can invite users"},
@@ -29,14 +28,31 @@ class CreateInvitationView(APIView):
         if serializer.is_valid():
             invitation = serializer.save()
 
+            # 🔥 generate link
+            invite_link = f"http://localhost:5173/signup?token={invitation.token}"
+
+            # 🔥 SEND EMAIL
+            send_mail(
+                subject="You're invited to join ProjectFlow",
+                message=f"""
+                            You have been invited to join a workspace.
+
+                            Click the link below to join:
+                            {invite_link}
+
+                            This link will expire in 2 days.
+                            """,
+                from_email="mohammednajeer785@gmail.com",
+                recipient_list=[invitation.email],
+                fail_silently=False,
+            )
+
             return Response({
-                "message": "Invitation created",
-                "token": str(invitation.token),   # 🔥 for testing
+                "message": "Invitation sent successfully",
+                "token": str(invitation.token)
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
 
 
 

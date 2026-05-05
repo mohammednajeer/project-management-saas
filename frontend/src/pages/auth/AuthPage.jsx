@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
 import { ArrowRight, Check, Eye, EyeOff, Plus, Zap } from "lucide-react";
+// ── ADDED ── ↓
+import { useLocation } from "react-router-dom";
+import InviteSignup from "../auth/components/InviteSignup";
+// ── ADDED ── ↑
 import "./AuthPage.css";
 
 /* ─────────────────────────────────────────────
@@ -12,6 +16,16 @@ const STEPS = ["Account", "Workspace", "Invite"];
 ───────────────────────────────────────────── */
 export default function AuthPage() {
   const [isSignup, setIsSignup] = useState(false);
+
+  // ── ADDED: detect ?token= in URL ─────────────────────────────────────────
+  const location    = useLocation();
+  const inviteToken = new URLSearchParams(location.search).get("token");
+
+  // ── ADDED: if a token is present, render InviteSignup and stop here ───────
+  if (inviteToken) {
+    return <InviteSignup token={inviteToken} />;
+  }
+  // ── END of added block — everything below is your original code, unchanged ─
 
   return (
     <main className="ap-root">
@@ -507,44 +521,30 @@ function BenefitItem({ text }) {
 function IllustrationSVG() {
   return (
     <svg viewBox="0 0 340 220" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      {/* Dashboard card */}
       <rect x="20" y="20" width="210" height="140" rx="12" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-      {/* Header bar */}
       <rect x="20" y="20" width="210" height="32" rx="12" fill="rgba(255,255,255,0.08)" />
       <rect x="20" y="40" width="210" height="12" fill="rgba(255,255,255,0.08)" />
       <circle cx="40" cy="36" r="7" fill="rgba(255,255,255,0.25)" />
       <rect x="54" y="32" width="60" height="8" rx="4" fill="rgba(255,255,255,0.2)" />
-
-      {/* Progress bars */}
       <rect x="36" y="66" width="160" height="6" rx="3" fill="rgba(255,255,255,0.1)" />
       <rect x="36" y="66" width="110" height="6" rx="3" fill="rgba(255,255,255,0.55)" />
-
       <rect x="36" y="82" width="160" height="6" rx="3" fill="rgba(255,255,255,0.1)" />
       <rect x="36" y="82" width="70" height="6" rx="3" fill="rgba(255,255,255,0.35)" />
-
       <rect x="36" y="98" width="160" height="6" rx="3" fill="rgba(255,255,255,0.1)" />
       <rect x="36" y="98" width="130" height="6" rx="3" fill="rgba(255,255,255,0.45)" />
-
-      {/* Task chips */}
       <rect x="36" y="118" width="52" height="20" rx="6" fill="rgba(255,255,255,0.18)" />
       <rect x="96" y="118" width="52" height="20" rx="6" fill="rgba(255,255,255,0.1)" />
       <rect x="156" y="118" width="52" height="20" rx="6" fill="rgba(255,255,255,0.14)" />
-
-      {/* Floating card top-right */}
       <rect x="200" y="10" width="130" height="72" rx="10" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
       <circle cx="220" cy="30" r="8" fill="rgba(255,255,255,0.3)" />
       <rect x="234" y="25" width="60" height="7" rx="3.5" fill="rgba(255,255,255,0.25)" />
       <rect x="234" y="36" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.15)" />
       <rect x="212" y="50" width="100" height="5" rx="2.5" fill="rgba(255,255,255,0.15)" />
       <rect x="212" y="60" width="70" height="5" rx="2.5" fill="rgba(255,255,255,0.1)" />
-
-      {/* Floating bottom-right stat card */}
       <rect x="230" y="110" width="100" height="56" rx="10" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
       <rect x="246" y="124" width="30" height="5" rx="2.5" fill="rgba(255,255,255,0.2)" />
       <rect x="246" y="134" width="50" height="10" rx="4" fill="rgba(255,255,255,0.35)" />
       <rect x="246" y="150" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.15)" />
-
-      {/* Decorative dots */}
       <circle cx="305" cy="30" r="3" fill="rgba(255,255,255,0.3)" />
       <circle cx="315" cy="20" r="2" fill="rgba(255,255,255,0.2)" />
       <circle cx="10" cy="180" r="3" fill="rgba(255,255,255,0.2)" />

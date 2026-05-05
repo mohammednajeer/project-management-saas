@@ -74,6 +74,9 @@ const statCards = [
 
 export default function Dashboard() {
   const [collapsed, setCollapsed] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("employee");
+  const [inviteLink, setInviteLink] = useState("");
 
   const handleLogout = async () => {
     try {
@@ -83,6 +86,26 @@ export default function Dashboard() {
       window.location.href = "/signin";
     }
   };
+
+  const handleInvite = async () => {
+          try {
+            const { default: api } = await import("../../services/api");
+
+            const res = await api.post("/invitations/create/", {
+              email: inviteEmail,
+              role: inviteRole,
+            });
+            const token = res.data.token;
+
+            const link = `http://localhost:5173/signup?token=${token}`;
+
+            setInviteLink(link);
+            setInviteEmail("");
+
+          } catch (err) {
+            alert("Failed to send invite");
+          }
+        };
 
   return (
     <main className={`db-page ${collapsed ? "db-collapsed" : ""}`}>
@@ -150,8 +173,49 @@ export default function Dashboard() {
             <div>
               <h1 className="db-welcome-title">Good morning, John 👋</h1>
               <p className="db-welcome-sub">Here's what's happening across your workspace today.</p>
+              <span className="db-system-status">● All systems normal</span>
             </div>
-            <span className="db-system-status">● All systems normal</span>
+
+            {/* Invite Users Section */}
+            <div className="db-invite-card">
+              <h2>Invite Team Members</h2>
+
+              <div className="db-invite-form">
+                <input
+                  type="email"
+                  placeholder="Enter email address"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                >
+                  <option value="employee">Employee</option>
+                  <option value="manager">Manager</option>
+                </select>
+
+                <button className="db-invite-btn" onClick={handleInvite}>
+                  Send Invite
+                </button>
+              </div>
+
+              {inviteLink && (
+                <div className="db-invite-link-wrapper">
+                  <span className="db-invite-link-label">Link generated successfully!</span>
+                  <div className="db-invite-link-group">
+                    <input value={inviteLink} readOnly />
+                    <button 
+                      className="db-copy-btn" 
+                      onClick={() => navigator.clipboard.writeText(inviteLink)}
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Stat cards */}

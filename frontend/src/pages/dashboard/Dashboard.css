@@ -542,3 +542,119 @@
     padding: 1rem;
   }
 }
+
+/* ===== INVITE SECTION ===== */
+.db-invite-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  padding: 1.4rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  flex: 1; /* Allows it to sit nicely next to the welcome text */
+  max-width: 500px;
+}
+
+.db-invite-card h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.db-invite-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.db-invite-form input,
+.db-invite-form select {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.55rem;
+  font-size: 0.875rem;
+  color: #374151;
+  background: #f9fafb;
+  outline: none;
+  transition: all 0.15s;
+}
+
+.db-invite-form input:focus,
+.db-invite-form select:focus {
+  border-color: #4f6df5;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.1);
+}
+
+.db-invite-form input {
+  flex: 2;
+}
+
+.db-invite-form select {
+  flex: 1;
+  cursor: pointer;
+}
+
+.db-invite-btn {
+  padding: 0.55rem 1rem;
+  background: #4f6df5;
+  color: #fff;
+  border: none;
+  border-radius: 0.55rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.db-invite-btn:hover {
+  background: #3e56c4;
+}
+
+/* Success/Link Box */
+.db-invite-link-wrapper {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f0fdf4; /* Light green success bg */
+  border: 1px solid #bbf7d0;
+  border-radius: 0.6rem;
+}
+
+.db-invite-link-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #16a34a;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.db-invite-link-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.db-invite-link-group input {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  border-radius: 0.4rem;
+  color: #6b7280;
+}
+
+.db-copy-btn {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #374151;
+}
+
+.db-copy-btn:hover {
+  background: #f9fafb;
+}

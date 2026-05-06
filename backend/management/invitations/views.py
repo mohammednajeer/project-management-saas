@@ -144,12 +144,13 @@ class BulkInviteView(APIView):
                 role=role,
                 organization=request.user.organization
             )
+            invite_link = f"http://localhost:5173/signup?token={invitation.token}"
             invite_links.append({
                 "email": email,
                 "link": invite_link
             })
 
-            invite_link = f"http://localhost:5173/signup?token={invitation.token}"
+            
             print(f"\nINVITE URL FOR {email}")
             print(invite_link)
             print("--------------------------------")
@@ -293,3 +294,100 @@ class CancelInvitationView(APIView):
         return Response({
             "message": "Invitation cancelled"
         })
+    
+
+
+
+class RemoveMemberView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, user_id):
+
+        if request.user.role != "admin":
+            return Response(
+                {"message": "Only admin allowed"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            member = User.objects.get(
+                id=user_id,
+                organization=request.user.organization
+            )
+        except User.DoesNotExist:
+            return Response(
+                {"message": "Member not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        
+        if member.id == request.user.id:
+            return Response(
+                {"message": "You cannot remove yourself"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        
+        if member.role == "admin":
+            return Response(
+                {"message": "Cannot remove another admin"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        member.delete()
+
+        return Response({
+            "message": "Member removed successfully"
+        })
+    
+class ChangeRoleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, user_id):
+
+        if request.user.role != "admin":
+            return Response(
+                {"message": "Only admin allowed"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        role = request.data.get("role")
+
+        if role not in ["manager", "employee"]:
+            return Response(
+                {"message": "Invalid role"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            member = User.objects.get(
+                id=user_id,
+                organization=request.user.organization
+            )
+        except User.DoesNotExist:
+            return Response(
+                {"message": "Member not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # ❌ prevent changing self
+        if member.id == request.user.id:
+            return Response(
+                {"message": "You cannot change your own role"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # ❌ prevent changing admin
+        if member.role == "admin":
+            return Response(
+                {"message": "Cannot change admin role"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        member.role = role
+        member.save()
+
+        return Response({
+            "message": "Role updated successfully"
+        })
+    

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Search,
   Plus,
@@ -49,29 +49,37 @@ export default function Members() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null);
 
-  // useEffect(() => {
-  //   const fetchMembers = async () => {
-  //     try {
-  //       const { default: api } = await import("../../services/api");
-  //       const res = await api.get("/invitations/team/");
-  //       setMembers(res.data);
-  //     } catch (err) {
-  //       console.log(err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+  // ✅ FIX 1: ref to track dropdown container for click-outside detection
+  const dropdownRef = useRef(null);
 
-  //   fetchMembers();
-  // }, []);
+  // ✅ FIX 2: Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenMenu(null);
+      }
+    };
+    if (openMenu !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openMenu]);
+
+  // ✅ FIX 3: Helper to show toast and auto-dismiss after 6s
+  const showToast = (toastData) => {
+    setToast(toastData);
+    setTimeout(() => setToast(null), 6000);
+  };
+
   const fetchMembers = async () => {
     try {
       const { default: api } = await import("../../services/api");
-
       const res = await api.get("/invitations/team/");
       setMembers(res.data);
-
     } catch (err) {
       console.log(err);
     } finally {
@@ -83,22 +91,16 @@ export default function Members() {
     fetchMembers();
   }, []);
 
-  // ✅ Loading UI
-
-
   // ✅ Filter
   const filtered = members.filter((m) => {
     const matchesRole =
       activeTab === "All" || m.role?.toLowerCase() === activeTab.toLowerCase();
-
     const q = search.toLowerCase();
-
     const matchesSearch =
       !q ||
       (m.name || "").toLowerCase().includes(q) ||
       (m.email || "").toLowerCase().includes(q) ||
       (m.role || "").toLowerCase().includes(q);
-
     return matchesRole && matchesSearch;
   });
 
@@ -114,27 +116,20 @@ export default function Members() {
           <div className="tm-toast-title">
             ✅ {toast.message}
           </div>
-
           {toast.inviteLink && (
             <div className="tm-toast-link">
               <small>Testing invite URL:</small>
-
-              <a
-                href={toast.inviteLink}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={toast.inviteLink} target="_blank" rel="noreferrer">
                 Open Invite Link
               </a>
             </div>
           )}
         </div>
       )}
-        {loading && (
-            <p style={{ paddingBottom: "12px" }}>
-              Loading team...
-            </p>
-          )}
+      {loading && (
+        <p style={{ paddingBottom: "12px" }}>Loading team...</p>
+      )}
+
       {/* Header */}
       <div className="tm-page-header">
         <div>
@@ -146,28 +141,24 @@ export default function Members() {
         </div>
 
         <div className="tm-header-actions">
+          <button
+            type="button"
+            className="tm-bulk-btn"
+            onClick={() => setBulkOpen(true)}
+          >
+            <Upload size={16} />
+            Bulk Invite
+          </button>
 
-            <button
-              type="button"
-              className="tm-bulk-btn"
-              onClick={() => setBulkOpen(true)}
-            >
-              <Upload size={16} />
-              Bulk Invite
-            </button>
-
-            <button
-              type="button"
-              className="tm-invite-btn"
-              onClick={() => {
-                setInviteOpen(true);
-              }}
-            >
-              <Plus size={16} />
-              Invite Member
-            </button>
-
-          </div>
+          <button
+            type="button"
+            className="tm-invite-btn"
+            onClick={() => setInviteOpen(true)}
+          >
+            <Plus size={16} />
+            Invite Member
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -175,7 +166,10 @@ export default function Members() {
         <StatCard icon={Users} iconBg="#eff2ff" iconColor="#4f6df5" value={totalCount} label="Total Members" />
         <StatCard icon={CheckCircle2} iconBg="#f0fdf4" iconColor="#22c55e" value={activeCount} label="Active" />
         <StatCard icon={Mail} iconBg="#fffbeb" iconColor="#f59e0b" value={pendingCount} label="Pending Invites" />
-        <StatCard icon={ShieldCheck} iconBg="#f5f3ff" iconColor="#7c3aed"
+        <StatCard
+          icon={ShieldCheck}
+          iconBg="#f5f3ff"
+          iconColor="#7c3aed"
           value={members.filter((m) => m.role === "admin").length}
           label="Admins"
         />
@@ -228,8 +222,7 @@ export default function Members() {
               filtered.map((m) => {
                 const roleKey =
                   m.role?.charAt(0).toUpperCase() + m.role?.slice(1);
-                const roleStyle =
-                  ROLE_STYLE[roleKey] || ROLE_STYLE.Employee;
+                const roleStyle = ROLE_STYLE[roleKey] || ROLE_STYLE.Employee;
 
                 return (
                   <tr key={m.id}>
@@ -239,14 +232,11 @@ export default function Members() {
                         <div className="tm-avatar">
                           {m.name ? m.name[0] : "?"}
                         </div>
-
                         <div>
                           <div className="tm-member-name">
                             {m.name || "Pending User"}
                           </div>
-                          <div className="tm-member-email">
-                            {m.email}
-                          </div>
+                          <div className="tm-member-email">{m.email}</div>
                         </div>
                       </div>
                     </td>
@@ -272,9 +262,7 @@ export default function Members() {
                           className="tm-status-dot"
                           style={{
                             background:
-                              STATUS_DOT[
-                                m.status === "active" ? "Active" : "Invited"
-                              ],
+                              STATUS_DOT[m.status === "active" ? "Active" : "Invited"],
                           }}
                         />
                         {m.status === "active" ? "Active" : "Invited"}
@@ -285,10 +273,124 @@ export default function Members() {
                     <td>—</td>
 
                     {/* Actions */}
+                    {/* ✅ FIX: wrap the whole actions cell with the ref so click-outside works correctly */}
                     <td>
-                      <button className="tm-more-btn">
-                        <MoreHorizontal size={16} />
-                      </button>
+                      <div
+                        className="tm-actions"
+                        ref={openMenu === m.id ? dropdownRef : null}
+                      >
+                        <button
+                          className="tm-more-btn"
+                          onClick={() =>
+                            setOpenMenu(openMenu === m.id ? null : m.id)
+                          }
+                        >
+                          <MoreHorizontal size={16} />
+                        </button>
+
+                        {openMenu === m.id && (
+                          <div className="tm-dropdown">
+                            {m.status === "invited" ? (
+                              <>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const { default: api } =
+                                        await import("../../services/api");
+                                      await api.post(`/invitations/resend/${m.id}/`);
+                                      setOpenMenu(null);
+                                      showToast({
+                                        type: "success",
+                                        message: `Invitation resent to ${m.email}`,
+                                      });
+                                    } catch (err) {
+                                      console.log(err);
+                                    }
+                                  }}
+                                >
+                                  Resend Invite
+                                </button>
+
+                                <button
+                                  className="danger"
+                                  onClick={async () => {
+                                    try {
+                                      const { default: api } =
+                                        await import("../../services/api");
+                                      await api.delete(`/invitations/cancel/${m.id}/`);
+                                      await fetchMembers();
+                                      setOpenMenu(null);
+                                      showToast({
+                                        type: "success",
+                                        message: "Invitation cancelled",
+                                      });
+                                    } catch (err) {
+                                      console.log(err);
+                                    }
+                                  }}
+                                >
+                                  Cancel Invite
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={async () => {
+                                    const newRole =
+                                      m.role === "employee" ? "manager" : "employee";
+                                    try {
+                                      const { default: api } =
+                                        await import("../../services/api");
+                                      await api.patch(
+                                        `/invitations/change-role/${m.id}/`,
+                                        { role: newRole }
+                                      );
+                                      await fetchMembers();
+                                      setOpenMenu(null);
+                                      showToast({
+                                        type: "success",
+                                        message: `${m.email} role updated`,
+                                      });
+                                    } catch (err) {
+                                      console.log(err);
+                                    }
+                                  }}
+                                >
+                                  Change to{" "}
+                                  {m.role === "employee" ? "Manager" : "Employee"}
+                                </button>
+
+                                <button
+                                  className="danger"
+                                  onClick={async () => {
+                                    const confirmed = window.confirm(
+                                      `Remove ${m.email}?`
+                                    );
+                                    if (!confirmed) return;
+                                    try {
+                                      const { default: api } =
+                                        await import("../../services/api");
+                                      await api.delete(
+                                        `/invitations/remove-member/${m.id}/`
+                                      );
+                                      await fetchMembers();
+                                      setOpenMenu(null);
+                                      showToast({
+                                        type: "success",
+                                        message: `${m.email} removed`,
+                                      });
+                                    } catch (err) {
+                                      console.log(err);
+                                    }
+                                  }}
+                                >
+                                  Remove Member
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -297,21 +399,17 @@ export default function Members() {
           </tbody>
         </table>
       </div>
+
       <InviteMemberModal
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
         onInviteSuccess={async (data) => {
           await fetchMembers();
-
-          setToast({
+          showToast({
             type: "success",
             message: `Invitation sent to ${data.email}`,
             inviteLink: data.invite_link,
           });
-
-          setTimeout(() => {
-            setToast(null);
-          }, 6000);
         }}
       />
       <BulkInviteModal

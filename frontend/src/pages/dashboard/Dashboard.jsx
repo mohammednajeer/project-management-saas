@@ -133,41 +133,7 @@ const statCards = [
 ];
 
 export default function Dashboard() {
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("employee");
-  const [inviteLink, setInviteLink] = useState("");
-  const [csvFile, setCsvFile] = useState(null);
-
-  const handleBulkInvite = async () => {
-    if (!csvFile) { alert("Please select a file"); return; }
-    const formData = new FormData();
-    formData.append("file", csvFile);
-    try {
-      const { default: api } = await import("../../services/api");
-      const res = await api.post("/invitations/bulk/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      alert(`Success: ${res.data.success}`);
-    } catch {
-      alert("Bulk invite failed");
-    }
-  };
-
-  const handleInvite = async () => {
-    try {
-      const { default: api } = await import("../../services/api");
-      const res = await api.post("/invitations/create/", {
-        email: inviteEmail,
-        role: inviteRole,
-      });
-      const token = res.data.token;
-      setInviteLink(`http://localhost:5173/signup?token=${token}`);
-      setInviteEmail("");
-    } catch {
-      alert("Failed to send invite");
-    }
-  };
-
+  
   return (
     <main className="db-page">
       {/* Topbar */}
@@ -210,53 +176,7 @@ export default function Dashboard() {
             <span className="db-system-status">● All systems normal</span>
           </div>
 
-          <div className="db-bulk-invite">
-            <h3>Bulk Invite (CSV)</h3>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={(e) => setCsvFile(e.target.files[0])}
-            />
-            <button onClick={handleBulkInvite}>Upload CSV</button>
-          </div>
-
-          <div className="db-invite-card">
-            <h2>Invite Team Members</h2>
-            <div className="db-invite-form">
-              <input
-                type="email"
-                placeholder="Enter email address"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-              <select
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value)}
-              >
-                <option value="employee">Employee</option>
-                <option value="manager">Manager</option>
-              </select>
-              <button className="db-invite-btn" onClick={handleInvite}>
-                Send Invite
-              </button>
-            </div>
-            {inviteLink && (
-              <div className="db-invite-link-wrapper">
-                <span className="db-invite-link-label">
-                  Link generated successfully!
-                </span>
-                <div className="db-invite-link-group">
-                  <input value={inviteLink} readOnly />
-                  <button
-                    className="db-copy-btn"
-                    onClick={() => navigator.clipboard.writeText(inviteLink)}
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          
         </div>
 
         {/* Stat cards */}

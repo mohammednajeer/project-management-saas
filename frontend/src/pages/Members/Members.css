@@ -12,6 +12,8 @@
 
 /* ─── Page Header ─────────────────────────────────────────────────────────── */
 .tm-page-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -37,7 +39,45 @@
   font-weight: 700;
 }
 
+.tm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tm-bulk-btn {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.6rem;
+  padding: 0 1rem;
+  border: 1px solid #d7defc;
+  border-radius: 0.6rem;
+  background: #fff;
+  color: #4f6df5;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.04);
+}
+
+.tm-bulk-btn:hover {
+  background: #eff2ff;
+  border-color: #a5b4fc;
+  color: #3d5ae3;
+  box-shadow: 0 4px 14px rgba(79, 109, 245, 0.12);
+}
+
 .tm-invite-btn {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -359,6 +399,11 @@
     align-items: flex-start;
   }
 
+  .tm-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .tm-toolbar {
     flex-direction: column;
     align-items: flex-start;
@@ -384,4 +429,43 @@
   .tm-stats {
     grid-template-columns: 1fr 1fr;
   }
+
+  .tm-header-actions,
+  .tm-bulk-btn,
+  .tm-invite-btn {
+    width: 100%;
+  }
+
+  .tm-bulk-btn,
+  .tm-invite-btn {
+    justify-content: center;
+  }
+}
+
+.tm-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 360px;
+  background: white;
+  border-left: 4px solid #22c55e;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  z-index: 999999;
+}
+
+.tm-toast-title {
+  font-weight: 700;
+  color: #111827;
+}
+
+.tm-toast-link {
+  margin-top: 10px;
+}
+
+.tm-toast-link a {
+  color: #4f6df5;
+  text-decoration: none;
+  font-size: 14px;
 }

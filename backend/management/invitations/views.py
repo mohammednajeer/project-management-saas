@@ -12,6 +12,9 @@ from django.core.mail import send_mail
 from django.core.mail import send_mail
 from django.utils import timezone
 from .models import Invitation
+from accounts.models import User
+from invitations.models import Invitation
+
 
 
 class CreateInvitationView(APIView):
@@ -123,22 +126,33 @@ class BulkInviteView(APIView):
 
         success_count = 0
         errors = []
-
+        invite_links = []
         for row in reader:
             email = row.get("email")
             role = row.get("role", "employee")
 
             if not email:
-                errors.append(f"Missing email in row")
+                errors.append(f"Row {reader.line_num}: Missing email")
                 continue
-
+            if role not in ["employee", "manager"]:
+                errors.append(
+                    f"Row {reader.line_num}: Invalid role"
+                )
+                continue
             invitation = Invitation.objects.create(
                 email=email,
                 role=role,
                 organization=request.user.organization
             )
+            invite_links.append({
+                "email": email,
+                "link": invite_link
+            })
 
             invite_link = f"http://localhost:5173/signup?token={invitation.token}"
+            print(f"\nINVITE URL FOR {email}")
+            print(invite_link)
+            print("--------------------------------")
 
             try:
                 send_mail(
@@ -155,6 +169,127 @@ class BulkInviteView(APIView):
         return Response({
             "message": "Bulk invite processed",
             "success": success_count,
-            "errors": errors
+            "errors": errors,
+            "invite_links": invite_links,
         })
         
+
+class TeamListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        org = request.user.organization
+
+        # ✅ ACTIVE USERS
+        users = User.objects.filter(organization=org)
+
+        user_data = [
+            {
+                "id": str(user.id),
+                "name": user.name,
+                "email": user.email,
+                "role": user.role,
+                "status": "active",
+                "joined_at": user.created_at,
+            }
+            for user in users
+        ]
+
+        # ✅ INVITED USERS
+        invites = Invitation.objects.filter(
+            organization=org,
+            is_used=False
+        )
+
+        invite_data = [
+            {
+                "id": str(inv.id),
+                "name": None,
+                "email": inv.email,
+                "role": inv.role,
+                "status": "invited",
+                "joined_at": None,
+            }
+            for inv in invites
+        ]
+
+        return Response(user_data + invite_data)
+    
+
+class ResendInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, invitation_id):
+
+        if request.user.role != "admin":
+            return Response(
+                {"message": "Only admin allowed"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            invitation = Invitation.objects.get(
+                id=invitation_id,
+                organization=request.user.organization,
+                is_used=False,
+            )
+        except Invitation.DoesNotExist:
+            return Response(
+                {"message": "Invitation not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        invite_link = (
+            f"http://localhost:5173/signup?"
+            f"token={invitation.token}"
+        )
+
+        send_mail(
+            subject="Reminder: Join ProjectFlow",
+            message=f"""
+            You were invited to join ProjectFlow.
+
+            Join here:
+            {invite_link}
+            """,
+            from_email="your_email@gmail.com",
+            recipient_list=[invitation.email],
+            fail_silently=False,
+        )
+
+        print("\nRESENT INVITE")
+        print(invite_link)
+
+        return Response({
+            "message": "Invitation resent successfully"
+        })
+    
+
+class CancelInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, invitation_id):
+
+        if request.user.role != "admin":
+            return Response(
+                {"message": "Only admin allowed"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            invitation = Invitation.objects.get(
+                id=invitation_id,
+                organization=request.user.organization,
+                is_used=False,
+            )
+        except Invitation.DoesNotExist:
+            return Response(
+                {"message": "Invitation not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        invitation.delete()
+
+        return Response({
+            "message": "Invitation cancelled"
+        })

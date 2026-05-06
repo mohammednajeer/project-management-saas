@@ -73,7 +73,7 @@ export default function InviteSignup({ token }) {
         }
 
         if (password.length < 5) {
-        setSubmitError("Password must be at least 8 characters");
+        setSubmitError("Password must be at least 5 characters");
         return;
         }
 

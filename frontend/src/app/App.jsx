@@ -4,7 +4,7 @@ import Homepage from "../pages/home/Homepage";
 import AuthPage from "../pages/auth/AuthPage";
 import Dashboard from "../pages/dashboard/Dashboard";
 import Members from "../pages/Members/Members";
-
+import Projects from "../pages/projects/Projects";
 import ProtectedRoute from "../components/ProtectedRoute";
 import AppLayout from "../layout/AppLayout";
 
@@ -29,6 +29,7 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="team" element={<Members />} />
+          <Route path="projects" element={<Projects />} />
         </Route>
 
       </Routes>

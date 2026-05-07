@@ -3,6 +3,12 @@ from django.db import models
 
 
 class Project(models.Model):
+    PRIORITY_CHOICES = [
+    ("low", "Low"),
+    ("medium", "Medium"),
+    ("high", "High"),
+    ("critical", "Critical"),
+    ]
 
     STATUS_CHOICES = [
         ("active", "Active"),
@@ -22,6 +28,16 @@ class Project(models.Model):
     description = models.TextField(
         blank=True,
         null=True
+    )
+    priority = models.CharField(
+        max_length=20,
+        choices=PRIORITY_CHOICES,
+        default="medium"
+    )
+
+    due_date = models.DateField(
+        null=True,
+        blank=True
     )
 
     organization = models.ForeignKey(

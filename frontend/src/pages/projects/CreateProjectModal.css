@@ -1,0 +1,76 @@
+.cp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.cp-modal {
+  width: min(100%, 520px);
+  background: white;
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.cp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.cp-header button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cp-field label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cp-field input,
+.cp-field textarea,
+.cp-field select {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.cp-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.cp-submit {
+  height: 46px;
+  border: none;
+  border-radius: 12px;
+  background: #4f6df5;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cp-error {
+  color: red;
+  font-size: 14px;
+}

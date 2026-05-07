@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Search, SlidersHorizontal, Calendar, Users } from "lucide-react";
 import api from "../../services/api";
 import "./Projects.css";
-
+import CreateProjectModal from "./CreateProjectModal";
 const STATUS_COLORS = {
   "In Progress": { bg: "#eff6ff", color: "#2563eb" },
   "Review":      { bg: "#f5f3ff", color: "#7c3aed" },
@@ -31,6 +31,7 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const [modalOpen, setModalOpen] = useState(false);
 
   const fetchProjects = async () => {
     try {
@@ -59,7 +60,10 @@ export default function Projects() {
           <h1 className="projects-title">Projects</h1>
           <p className="projects-subtitle">{projects.length} projects in your workspace</p>
         </div>
-        <button className="projects-create-btn">
+        <button
+            className="projects-create-btn"
+            onClick={() => setModalOpen(true)}
+            >
           <Plus size={16} />
           New Project
         </button>
@@ -109,7 +113,7 @@ export default function Projects() {
             const statusStyle  = STATUS_COLORS[project.status]  || STATUS_COLORS["Backlog"];
             const priorityStyle = PRIORITY_COLORS[project.priority] || PRIORITY_COLORS["Low"];
             const barColor = PROGRESS_COLORS[project.status] || "#3b82f6";
-            const members  = project.members || [];
+            const members = project.members_data || [];
 
             return (
               <div key={project.id} className="project-card">
@@ -190,6 +194,11 @@ export default function Projects() {
           })}
         </div>
       )}
+      <CreateProjectModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={fetchProjects}
+        />
     </div>
   );
 }

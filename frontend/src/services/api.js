@@ -8,7 +8,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // 🔥 auto redirect if session expired
+      
       window.location.href = "/signin";
     }
     return Promise.reject(error);

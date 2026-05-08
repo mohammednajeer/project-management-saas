@@ -8,16 +8,35 @@ import {
 
 import api from "../../services/api";
 import "./ProjectDetails.css";
+import CreateTaskModal from "./CreateTaskModal";
+
+
 
 export default function ProjectDetails() {
 
   const { projectId } = useParams();
 
-  const [project, setProject] =
-    useState(null);
+  const [project, setProject] =useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [loading, setLoading] =useState(true);
 
-  const [loading, setLoading] =
-    useState(true);
+  const fetchTasks = async () => {
+
+    try {
+
+        const tasksRes = await api.get(
+        `/tasks/project/${projectId}/`
+        );
+
+        setTasks(tasksRes.data);
+
+    } catch (err) {
+
+        console.log(err);
+    }
+    };
+
 
   useEffect(() => {
 
@@ -30,6 +49,9 @@ export default function ProjectDetails() {
         );
 
         setProject(res.data);
+        await fetchTasks();
+
+            
 
       } catch (err) {
 
@@ -182,15 +204,124 @@ export default function ProjectDetails() {
       </div>
 
       {/* Empty Tasks */}
-      <div className="pd-empty-tasks">
+     <div className="pd-tasks-section">
 
-        <h2>No tasks yet</h2>
+  <div className="pd-task-header">
 
-        <p>
-          Start creating tasks for this project
-        </p>
+    <h2>Project Tasks</h2>
 
-      </div>
+    <button
+        className="pd-create-task-btn"
+        onClick={() =>
+            setTaskModalOpen(true)
+        }
+        >
+      + Create Task
+    </button>
+
+  </div>
+
+  {tasks.length === 0 ? (
+
+    <div className="pd-empty-tasks">
+
+      <h3>No tasks yet</h3>
+
+      <p>
+        Create your first feature/module
+      </p>
+
+    </div>
+
+  ) : (
+
+        <div className="pd-task-grid">
+
+            {tasks.map((task) => {
+
+                const total =
+                task.subtask_count || 0;
+
+                const done =
+                task.completed_subtasks || 0;
+
+                const progress =
+                total
+                    ? Math.round((done / total) * 100)
+                    : 0;
+
+                return (
+
+                <div
+                    key={task.id}
+                    className="pd-task-card"
+                >
+
+                    <div className="pd-task-top">
+
+                    <span className="pd-task-status">
+                        {task.status}
+                    </span>
+
+                    <span className="pd-task-priority">
+                        {task.priority}
+                    </span>
+
+                    </div>
+
+                    <h3>{task.title}</h3>
+
+                    <p>
+                    {task.description ||
+                        "No description"}
+                    </p>
+
+                    <div className="pd-task-progress-top">
+
+                    <span>Progress</span>
+
+                    <span>{progress}%</span>
+
+                    </div>
+
+                    <div className="pd-progress-track">
+                    <div
+                        className="pd-progress-bar"
+                        style={{
+                        width: `${progress}%`
+                        }}
+                    />
+                    </div>
+
+                    <div className="pd-task-footer">
+
+                    <span>
+                        {done}/{total} subtasks
+                    </span>
+
+                    <span>
+                        {task.due_date ||
+                        "No due date"}
+                    </span>
+
+                    </div>
+
+                </div>
+                );
+            })}
+
+            </div>
+        )}
+
+        </div>
+        <CreateTaskModal
+            open={taskModalOpen}
+            onClose={() =>
+                setTaskModalOpen(false)
+            }
+            onSuccess={fetchTasks}
+            projectId={projectId}
+        />
 
     </div>
   );

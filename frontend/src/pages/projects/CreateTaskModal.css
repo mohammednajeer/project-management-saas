@@ -1,0 +1,70 @@
+.ct-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.ct-modal {
+  width: min(100%, 520px);
+  background: white;
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.ct-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.ct-header button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ct-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ct-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ct-field input,
+.ct-field textarea,
+.ct-field select {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.ct-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ct-submit {
+  height: 46px;
+  border: none;
+  border-radius: 12px;
+  background: #4f6df5;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ct-error {
+  color: red;
+  font-size: 14px;
+}

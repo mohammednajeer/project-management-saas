@@ -81,3 +81,70 @@
   justify-content: center;
   font-weight: 700;
 }
+
+.pd-tasks-section {
+  margin-top: 24px;
+}
+
+.pd-task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.pd-create-task-btn {
+  border: none;
+  background: #4f6df5;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.pd-task-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.pd-task-card {
+  background: white;
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+}
+
+.pd-task-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.pd-task-status,
+.pd-task-priority {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.pd-task-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pd-task-progress-top {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}

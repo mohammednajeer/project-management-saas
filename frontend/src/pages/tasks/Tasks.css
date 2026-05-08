@@ -1,0 +1,107 @@
+.tasks-page {
+  padding: 24px;
+}
+
+.tasks-header {
+  margin-bottom: 24px;
+}
+
+.tasks-header h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.tasks-header p {
+  color: #6b7280;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns:
+    repeat(4, 1fr);
+  gap: 20px;
+}
+
+.kanban-column {
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 16px;
+  min-height: 700px;
+}
+
+.kanban-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.kanban-column-header h3 {
+  margin: 0;
+}
+
+.kanban-column-header span {
+  background: white;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.kanban-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.task-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.task-priority {
+  display: inline-flex;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.task-card h4 {
+  margin: 0 0 8px;
+}
+
+.task-card p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.task-progress {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.task-footer {
+  margin-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.task-icons {
+  display: flex;
+  gap: 10px;
+  color: #6b7280;
+}

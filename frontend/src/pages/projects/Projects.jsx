@@ -3,6 +3,8 @@ import { Plus, Search, SlidersHorizontal, Calendar, Users } from "lucide-react";
 import api from "../../services/api";
 import "./Projects.css";
 import CreateProjectModal from "./CreateProjectModal";
+import { Link } from "react-router-dom";
+
 const STATUS_COLORS = {
   "In Progress": { bg: "#eff6ff", color: "#2563eb" },
   "Review":      { bg: "#f5f3ff", color: "#7c3aed" },
@@ -185,9 +187,12 @@ export default function Projects() {
                       {project.priority}
                     </span>
                   )}
-                  <a href={`/projects/${project.id}`} className="card-open-link">
+                  <Link
+                    to={`/dashboard/projects/${project.id}`}
+                    className="card-open-link"
+                    >
                     Open project ↗
-                  </a>
+                  </Link>
                 </div>
               </div>
             );

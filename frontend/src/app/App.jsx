@@ -7,6 +7,7 @@ import Members from "../pages/Members/Members";
 import Projects from "../pages/projects/Projects";
 import ProtectedRoute from "../components/ProtectedRoute";
 import AppLayout from "../layout/AppLayout";
+import ProjectDetails from "../pages/projects/ProjectDetails";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="team" element={<Members />} />
           <Route path="projects" element={<Projects />} />
+          <Route path="projects/:projectId" element={<ProjectDetails />}/>
         </Route>
 
       </Routes>

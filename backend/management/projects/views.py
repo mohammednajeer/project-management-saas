@@ -47,3 +47,25 @@ class ProjectListCreateView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+    
+
+class ProjectDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, project_id):
+        
+        try:
+            project = Project.objects.get(
+                id=project_id,
+                organization=request.user.organization
+            )
+
+        except Project.DoesNotExist:
+            return Response(
+                {"message": "Project not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ProjectSerializer(project)
+
+        return Response(serializer.data)

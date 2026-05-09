@@ -9,7 +9,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import AppLayout from "../layout/AppLayout";
 import ProjectDetails from "../pages/projects/ProjectDetails";
 import Tasks from "../pages/tasks/Tasks";
-
+import TaskDetails from "../pages/tasks/TaskDetails";
 
 function App() {
   return (
@@ -35,6 +35,10 @@ function App() {
           <Route path="projects" element={<Projects />} />
           <Route path="projects/:projectId" element={<ProjectDetails />}/>
           <Route path="tasks" element={<Tasks />}/>
+          <Route
+            path="tasks/:taskId"
+            element={<TaskDetails />}
+          />
         </Route>
 
       </Routes>

@@ -6,9 +6,8 @@ import {
 } from "lucide-react";
 
 import api from "../../services/api";
-
 import "./Tasks.css";
-
+import { useNavigate } from "react-router-dom";
 const COLUMNS = [
   {
     key: "todo",
@@ -29,10 +28,9 @@ const COLUMNS = [
 ];
 
 export default function Tasks() {
+  const navigate = useNavigate();
 
-  const [tasks, setTasks] =
-    useState([]);
-
+  const [tasks, setTasks] = useState([]);;
   const [loading, setLoading] =
     useState(true);
 
@@ -140,9 +138,15 @@ export default function Tasks() {
                 {columnTasks.map((task) => (
 
                   <div
-                    key={task.id}
-                    className="task-card"
-                  >
+                      key={task.id}
+                      className="task-card"
+                      onClick={() => {
+                        navigate(
+                          `/dashboard/tasks/${task.id}`
+                        );
+                      }}
+                    >
+                      
 
                     <div className="task-priority">
                       {task.priority}
@@ -208,7 +212,7 @@ export default function Tasks() {
         })}
 
       </div>
-
+      
     </div>
   );
 }

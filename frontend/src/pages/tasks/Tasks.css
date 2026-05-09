@@ -27,6 +27,8 @@
   border-radius: 18px;
   padding: 16px;
   min-height: 700px;
+  position: relative;
+z-index: 1;
 }
 
 .kanban-column-header {
@@ -58,6 +60,9 @@
   border-radius: 16px;
   padding: 16px;
   border: 1px solid #e5e7eb;
+  cursor: pointer;
+position: relative;
+z-index: 5;
 }
 
 .task-priority {
@@ -105,3 +110,4 @@
   gap: 10px;
   color: #6b7280;
 }
+

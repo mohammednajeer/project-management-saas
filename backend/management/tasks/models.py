@@ -74,6 +74,7 @@ class SubTask(models.Model):
     STATUS_CHOICES = [
         ("todo", "Todo"),
         ("in_progress", "In Progress"),
+        ("review", "Review"),
         ("done", "Done"),
     ]
 

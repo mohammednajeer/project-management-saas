@@ -7,6 +7,7 @@ class Task(models.Model):
     STATUS_CHOICES = [
         ("todo", "Todo"),
         ("in_progress", "In Progress"),
+        ("review", "Review"),
         ("done", "Done"),
     ]
 
@@ -106,10 +107,8 @@ class SubTask(models.Model):
         null=True
     )
 
-    assigned_to = models.ForeignKey(
+    assigned_to = models.ManyToManyField(
         "accounts.User",
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name="assigned_subtasks"
     )

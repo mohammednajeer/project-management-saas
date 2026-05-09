@@ -7,7 +7,8 @@ class TaskSerializer(serializers.ModelSerializer):
     subtask_count = serializers.SerializerMethodField()
 
     completed_subtasks = serializers.SerializerMethodField()
-
+    progress = serializers.SerializerMethodField()
+    
     class Meta:
         model = Task
 
@@ -22,7 +23,9 @@ class TaskSerializer(serializers.ModelSerializer):
             "due_date",
             "created_at",
             "subtask_count",
+            "progress",
             "completed_subtasks",
+            
         ]
 
         read_only_fields = [
@@ -41,37 +44,58 @@ class TaskSerializer(serializers.ModelSerializer):
             status="done"
         ).count()
     
+
+    def get_progress(self, obj):
+
+        total = obj.subtasks.count()
+
+        if total == 0:
+            return 0
+
+        completed = obj.subtasks.filter(
+            status="done"
+        ).count()
+
+        return round(
+            (completed / total) * 100
+        )
+    
+
+
+
 class SubTaskSerializer(serializers.ModelSerializer):
 
-    assigned_user = serializers.SerializerMethodField()
+    assigned_users = serializers.SerializerMethodField()
 
     class Meta:
         model = SubTask
+
         fields = [
             "id",
             "task",
             "title",
             "description",
             "assigned_to",
-            "assigned_user",
+            "assigned_users",
             "status",
             "priority",
             "due_date",
             "created_at",
         ]
+
         read_only_fields = [
             "id",
             "task",
             "created_at",
         ]
 
-    def get_assigned_user(self, obj):
+    def get_assigned_users(self, obj):
 
-        if not obj.assigned_to:
-            return None
-
-        return {
-            "id": str(obj.assigned_to.id),
-            "name": obj.assigned_to.name,
-            "email": obj.assigned_to.email,
-        }
+        return [
+            {
+                "id": str(user.id),
+                "name": user.name,
+                "email": user.email,
+            }
+            for user in obj.assigned_to.all()
+        ]

@@ -53,5 +53,5 @@ class ProjectSerializer(serializers.ModelSerializer):
                     else "?"
                 )
             }
-            for member in obj.members.all()
+            for member in obj.organization.users.all()
         ]

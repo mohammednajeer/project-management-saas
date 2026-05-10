@@ -11,9 +11,12 @@ class Project(models.Model):
     ]
 
     STATUS_CHOICES = [
+        ("planning", "Planning"),
         ("active", "Active"),
+        ("on_hold", "On Hold"),
         ("completed", "Completed"),
-    ]
+        ("archived", "Archived"),
+    ]   
 
     id = models.UUIDField(
         primary_key=True,

@@ -148,3 +148,89 @@
   justify-content: space-between;
   font-size: 13px;
 }
+
+.project-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-actions button,
+.project-actions select {
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  padding: 0 14px;
+  background: white;
+}
+
+.delete-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+
+.pd-edit-input,
+.pd-edit-textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.pd-edit-input {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.pd-edit-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+
+.pd-manage-members {
+  margin-top: 40px;
+}
+
+.pd-member-select-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.member-pill {
+  border: 1px solid #d1d5db;
+  background: white;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.member-pill.active {
+  background: #4f6df5;
+  color: white;
+  border-color: #4f6df5;
+}
+
+.pd-add-members-btn {
+  margin-top: 18px;
+  border: none;
+  background: #4f6df5;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 12px;
+}
+
+.remove-member-btn {
+  border: none;
+  background: #ef4444;
+  color: white;
+  border-radius: 999px;
+  width: 24px;
+  height: 24px;
+  margin-left: 10px;
+  cursor: pointer;
+}

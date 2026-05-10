@@ -9,64 +9,210 @@ import {
 import api from "../../services/api";
 import "./ProjectDetails.css";
 import CreateTaskModal from "./CreateTaskModal";
-
-
+import { useNavigate } from "react-router-dom";
 
 export default function ProjectDetails() {
 
   const { projectId } = useParams();
+  const navigate = useNavigate();
 
-  const [project, setProject] =useState(null);
+  const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [loading, setLoading] =useState(true);
+  const [taskModalOpen, setTaskModalOpen] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [editMode, setEditMode] =
+    useState(false);
+
+  const [name, setName] =
+    useState("");
+
+  const [description, setDescription] =
+    useState("");
+
+  const [status, setStatus] =
+    useState("");
+
+  const [priority, setPriority] =
+    useState("");
+
+  const [teamMembers, setTeamMembers] =
+    useState([]);
+
+  const [selectedMembers,
+    setSelectedMembers] =
+    useState([]);
 
   const fetchTasks = async () => {
 
     try {
 
-        const tasksRes = await api.get(
-        `/tasks/project/${projectId}/`
+      const tasksRes =
+        await api.get(
+          `/tasks/project/${projectId}/`
         );
 
-        setTasks(tasksRes.data);
+      setTasks(tasksRes.data);
 
     } catch (err) {
 
-        console.log(err);
+      console.log(err);
     }
-    };
+  };
 
+  const fetchProject = async () => {
 
-  useEffect(() => {
+    try {
 
-    const fetchProject = async () => {
-
-      try {
-
-        const res = await api.get(
+      const res =
+        await api.get(
           `/projects/${projectId}/`
         );
 
-        setProject(res.data);
-        await fetchTasks();
+      setProject(res.data);
 
-            
+      setName(res.data.name);
 
-      } catch (err) {
+      setDescription(
+        res.data.description || ""
+      );
 
-        console.log(err);
+      setStatus(
+        res.data.status
+      );
 
-      } finally {
-        setLoading(false);
-      }
-    };
+      setPriority(
+        res.data.priority
+      );
+
+      await fetchTasks();
+
+      const membersRes =
+        await api.get(
+          "/organizations/team/"
+        );
+
+      setTeamMembers(
+        membersRes.data
+      );
+
+    } catch (err) {
+
+      console.log(err);
+
+    } finally {
+
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
 
     fetchProject();
 
   }, [projectId]);
 
+  const handleSave = async () => {
+
+    try {
+
+      await api.patch(
+        `/projects/${projectId}/`,
+        {
+          name,
+          description,
+          status,
+          priority,
+        }
+      );
+
+      await fetchProject();
+
+      setEditMode(false);
+
+    } catch (err) {
+
+      console.log(err);
+    }
+  };
+
+  const handleDelete =
+    async () => {
+
+      const confirmed =
+        window.confirm(
+          "Delete this project?"
+        );
+
+      if (!confirmed)
+        return;
+
+      try {
+
+        await api.delete(
+          `/projects/${projectId}/`
+        );
+
+        navigate(
+          "/dashboard/projects"
+        );
+
+      } catch (err) {
+
+        console.log(err);
+      }
+    };
+
+  const addMembers =
+    async () => {
+
+      try {
+
+        await api.post(
+          `/projects/${projectId}/members/`,
+          {
+            members:
+              selectedMembers,
+          }
+        );
+
+        await fetchProject();
+
+        setSelectedMembers([]);
+
+      } catch (err) {
+
+        console.log(err);
+      }
+    };
+
+  const removeMember =
+    async (userId) => {
+
+      try {
+
+        await api.delete(
+          `/projects/${projectId}/members/`,
+          {
+            data: {
+              user_id: userId,
+            },
+          }
+        );
+
+        await fetchProject();
+
+      } catch (err) {
+
+        console.log(err);
+      }
+    };
+
   if (loading) {
+
     return (
       <div className="project-details-page">
         Loading project...
@@ -75,6 +221,7 @@ export default function ProjectDetails() {
   }
 
   if (!project) {
+
     return (
       <div className="project-details-page">
         Project not found
@@ -94,41 +241,141 @@ export default function ProjectDetails() {
       : 0;
 
   return (
+
     <div className="project-details-page">
 
-      {/* Header */}
       <div className="pd-header">
 
         <div>
 
-          <h1>{project.name}</h1>
+          {editMode ? (
 
-          <p>
-            {project.description ||
-              "No description"}
-          </p>
+            <input
+              className="pd-edit-input"
+              value={name}
+              onChange={(e) =>
+                setName(e.target.value)
+              }
+            />
+
+          ) : (
+
+            <h1>{project.name}</h1>
+
+          )}
+
+          {editMode ? (
+
+            <textarea
+              className="pd-edit-textarea"
+              value={description}
+              onChange={(e) =>
+                setDescription(
+                  e.target.value
+                )
+              }
+            />
+
+          ) : (
+
+            <p>
+              {project.description ||
+                "No description"}
+            </p>
+
+          )}
 
         </div>
 
-        <span className="pd-priority">
-          {project.priority}
-        </span>
+        <div className="project-actions">
+
+          {editMode ? (
+
+            <select
+              value={status}
+              onChange={(e) =>
+                setStatus(
+                  e.target.value
+                )
+              }
+            >
+
+              <option value="planning">
+                Planning
+              </option>
+
+              <option value="active">
+                Active
+              </option>
+
+              <option value="on_hold">
+                On Hold
+              </option>
+
+              <option value="completed">
+                Completed
+              </option>
+
+              <option value="archived">
+                Archived
+              </option>
+
+            </select>
+
+          ) : (
+
+            <span className="pd-priority">
+              {project.status}
+            </span>
+
+          )}
+
+          <button
+            onClick={() =>
+              setEditMode(!editMode)
+            }
+          >
+            {editMode
+              ? "Cancel"
+              : "Edit"}
+          </button>
+
+          {editMode && (
+
+            <button
+              onClick={handleSave}
+            >
+              Save
+            </button>
+
+          )}
+
+          <button
+            onClick={handleDelete}
+            className="delete-btn"
+          >
+            Delete
+          </button>
+
+        </div>
 
       </div>
 
-      {/* Stats */}
       <div className="pd-stats">
 
         <div className="pd-stat-card">
+
           <CheckCircle2 size={20} />
 
           <div>
             <h3>{done}/{total}</h3>
             <p>Tasks completed</p>
           </div>
+
         </div>
 
         <div className="pd-stat-card">
+
           <Users size={20} />
 
           <div>
@@ -138,42 +385,49 @@ export default function ProjectDetails() {
 
             <p>Members</p>
           </div>
+
         </div>
 
         <div className="pd-stat-card">
+
           <Calendar size={20} />
 
           <div>
             <h3>
-              {project.due_date || "No due date"}
+              {project.due_date ||
+                "No due date"}
             </h3>
 
             <p>Deadline</p>
           </div>
+
         </div>
 
       </div>
 
-      {/* Progress */}
       <div className="pd-progress-card">
 
         <div className="pd-progress-top">
+
           <span>Project Progress</span>
+
           <span>{progress}%</span>
+
         </div>
 
         <div className="pd-progress-track">
+
           <div
             className="pd-progress-bar"
             style={{
               width: `${progress}%`
             }}
           />
+
         </div>
 
       </div>
 
-      {/* Members */}
       <div className="pd-members-card">
 
         <h2>Team Members</h2>
@@ -182,6 +436,7 @@ export default function ProjectDetails() {
 
           {project.members_data?.map(
             (member) => (
+
               <div
                 key={member.id}
                 className="pd-member"
@@ -191,9 +446,22 @@ export default function ProjectDetails() {
                   {member.initials}
                 </div>
 
-                <span>
-                  {member.name}
-                </span>
+                <div className="pd-member-info">
+
+                  <span>
+                    {member.name}
+                  </span>
+
+                  <button
+                    className="remove-member-btn"
+                    onClick={() =>
+                      removeMember(member.id)
+                    }
+                  >
+                    ✕
+                  </button>
+
+                </div>
 
               </div>
             )
@@ -203,125 +471,197 @@ export default function ProjectDetails() {
 
       </div>
 
-      {/* Empty Tasks */}
-     <div className="pd-tasks-section">
+      <div className="pd-manage-members">
 
-  <div className="pd-task-header">
+        <h2>Manage Members</h2>
 
-    <h2>Project Tasks</h2>
+        <div className="pd-member-select-list">
 
-    <button
-        className="pd-create-task-btn"
-        onClick={() =>
-            setTaskModalOpen(true)
-        }
+          {teamMembers
+            .filter(
+              (teamMember) =>
+                !project.members_data?.some(
+                  (projectMember) =>
+                    projectMember.id ===
+                    teamMember.id
+                )
+            )
+            .map((member) => (
+
+              <button
+                type="button"
+                key={member.id}
+                className={
+                  selectedMembers.includes(
+                    member.id
+                  )
+                    ? "member-pill active"
+                    : "member-pill"
+                }
+                onClick={() => {
+
+                  if (
+                    selectedMembers.includes(
+                      member.id
+                    )
+                  ) {
+
+                    setSelectedMembers(
+                      selectedMembers.filter(
+                        (id) =>
+                          id !== member.id
+                      )
+                    );
+
+                  } else {
+
+                    setSelectedMembers([
+                      ...selectedMembers,
+                      member.id,
+                    ]);
+                  }
+                }}
+              >
+
+                {member.name}
+
+              </button>
+            ))}
+
+        </div>
+
+        <button
+          className="pd-add-members-btn"
+          onClick={addMembers}
         >
-      + Create Task
-    </button>
+          Add Members
+        </button>
 
-  </div>
+      </div>
 
-  {tasks.length === 0 ? (
+      <div className="pd-tasks-section">
 
-    <div className="pd-empty-tasks">
+        <div className="pd-task-header">
 
-      <h3>No tasks yet</h3>
+          <h2>Project Tasks</h2>
 
-      <p>
-        Create your first feature/module
-      </p>
+          <button
+            className="pd-create-task-btn"
+            onClick={() =>
+              setTaskModalOpen(true)
+            }
+          >
+            + Create Task
+          </button>
 
-    </div>
+        </div>
 
-  ) : (
+        {tasks.length === 0 ? (
 
-        <div className="pd-task-grid">
+          <div className="pd-empty-tasks">
+
+            <h3>No tasks yet</h3>
+
+            <p>
+              Create your first feature/module
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div className="pd-task-grid">
 
             {tasks.map((task) => {
 
-                const total =
+              const total =
                 task.subtask_count || 0;
 
-                const done =
+              const done =
                 task.completed_subtasks || 0;
 
-                const progress =
+              const progress =
                 total
-                    ? Math.round((done / total) * 100)
-                    : 0;
+                  ? Math.round(
+                    (done / total) * 100
+                  )
+                  : 0;
 
-                return (
+              return (
 
                 <div
-                    key={task.id}
-                    className="pd-task-card"
+                  key={task.id}
+                  className="pd-task-card"
                 >
 
-                    <div className="pd-task-top">
+                  <div className="pd-task-top">
 
                     <span className="pd-task-status">
-                        {task.status}
+                      {task.status}
                     </span>
 
                     <span className="pd-task-priority">
-                        {task.priority}
+                      {task.priority}
                     </span>
 
-                    </div>
+                  </div>
 
-                    <h3>{task.title}</h3>
+                  <h3>{task.title}</h3>
 
-                    <p>
+                  <p>
                     {task.description ||
-                        "No description"}
-                    </p>
+                      "No description"}
+                  </p>
 
-                    <div className="pd-task-progress-top">
+                  <div className="pd-task-progress-top">
 
                     <span>Progress</span>
 
                     <span>{progress}%</span>
 
-                    </div>
+                  </div>
 
-                    <div className="pd-progress-track">
+                  <div className="pd-progress-track">
+
                     <div
-                        className="pd-progress-bar"
-                        style={{
+                      className="pd-progress-bar"
+                      style={{
                         width: `${progress}%`
-                        }}
+                      }}
                     />
-                    </div>
 
-                    <div className="pd-task-footer">
+                  </div>
+
+                  <div className="pd-task-footer">
 
                     <span>
-                        {done}/{total} subtasks
+                      {done}/{total} subtasks
                     </span>
 
                     <span>
-                        {task.due_date ||
+                      {task.due_date ||
                         "No due date"}
                     </span>
 
-                    </div>
+                  </div>
 
                 </div>
-                );
+              );
             })}
 
-            </div>
+          </div>
         )}
 
-        </div>
-        <CreateTaskModal
-            open={taskModalOpen}
-            onClose={() =>
-                setTaskModalOpen(false)
-            }
-            onSuccess={fetchTasks}
-            projectId={projectId}
-        />
+      </div>
+
+      <CreateTaskModal
+        open={taskModalOpen}
+        onClose={() =>
+          setTaskModalOpen(false)
+        }
+        onSuccess={fetchTasks}
+        projectId={projectId}
+      />
 
     </div>
   );

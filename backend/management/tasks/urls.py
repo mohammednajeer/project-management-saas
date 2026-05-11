@@ -5,6 +5,7 @@ from .views import (
     SubTaskUpdateView,
     TaskUpdateView,
     TaskDetailView,
+    TaskCommentListCreateView
 )
 urlpatterns = [
     path("project/<uuid:project_id>/",ProjectTaskListCreateView.as_view()),
@@ -12,5 +13,6 @@ urlpatterns = [
     path("subtask/<uuid:subtask_id>/",SubTaskUpdateView.as_view(),),
     path("task/<uuid:task_id>/",TaskUpdateView.as_view()),
     path("task-detail/<uuid:task_id>/", TaskDetailView.as_view()),
+    path("comments/<uuid:task_id>/",TaskCommentListCreateView.as_view(),),
 
 ]

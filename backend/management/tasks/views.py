@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from .models import Task,SubTask
-from .serializers import TaskSerializer,SubTaskSerializer
+from .models import Task,SubTask,TaskComment
+from .serializers import TaskSerializer,SubTaskSerializer,TaskCommentSerializer
 
 from projects.models import Project
 
@@ -301,4 +301,61 @@ class TaskDetailView(APIView):
                 "message":
                 "Task deleted successfully"
             }
+        )
+
+class TaskCommentListCreateView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, task_id):
+
+        comments = TaskComment.objects.filter(
+            task__id=task_id,
+            task__project__organization=request.user.organization
+        ).order_by("-created_at")
+
+        serializer = TaskCommentSerializer(
+            comments,
+            many=True
+        )
+
+        return Response(serializer.data)
+
+    def post(self, request, task_id):
+
+        try:
+
+            task = Task.objects.get(
+                id=task_id,
+                project__organization=request.user.organization
+            )
+
+        except Task.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Task not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = TaskCommentSerializer(
+            data=request.data
+        )
+
+        if serializer.is_valid():
+
+            comment = serializer.save(
+                task=task,
+                user=request.user
+            )
+
+            return Response(
+                TaskCommentSerializer(comment).data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
         )

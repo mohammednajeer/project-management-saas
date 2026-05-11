@@ -57,6 +57,8 @@ export default function TaskDetails() {
     const [editingTitle,setEditingTitle] = useState("");
     const [taskAssignedTo,setTaskAssignedTo] = useState([]);
     const [taskDueDate,setTaskDueDate] = useState("");
+    const [comments, setComments] = useState([]);
+    const [commentMessage, setCommentMessage] = useState("");
 
   useEffect(() => { fetchTask(); }, [taskId]);
 
@@ -106,6 +108,12 @@ export default function TaskDetails() {
         setMembers(projectRes.data.members_data || []);
         const subtasksRes = await api.get(`/tasks/subtasks/${taskId}/`);
         setSubtasks(subtasksRes.data);
+
+        const commentsRes = await api.get(
+          `/tasks/comments/${taskId}/`
+        );
+
+        setComments(commentsRes.data);
       }
     } catch (err) {
       console.log(err);
@@ -137,6 +145,32 @@ export default function TaskDetails() {
       console.log(err);
     }
   };
+
+  const handleCreateComment = async (e) => {
+
+      e.preventDefault();
+
+      if (!commentMessage.trim()) return;
+
+      try {
+
+        await api.post(
+          `/tasks/comments/${taskId}/`,
+          {
+            message: commentMessage,
+          }
+        );
+
+        setCommentMessage("");
+
+        await fetchTask();
+
+      } catch (err) {
+
+        console.log(err);
+      }
+    };
+
 
   const updateSubtask = async (subtaskId, data) => {
     try {
@@ -740,6 +774,103 @@ export default function TaskDetails() {
         )}
 
       </div>
+      <div className="task-comments-wrapper">
+
+  <div className="task-comments-header">
+
+    <h2>Comments</h2>
+
+    <span>
+      {comments.length}
+    </span>
+
+  </div>
+
+  <form
+    className="task-comment-form"
+    onSubmit={handleCreateComment}
+  >
+
+    <textarea
+      placeholder="Write a comment..."
+      value={commentMessage}
+      onChange={(e) =>
+        setCommentMessage(
+          e.target.value
+        )
+      }
+    />
+
+    <button type="submit">
+
+      Add Comment
+
+    </button>
+
+  </form>
+
+  <div className="task-comments-list">
+
+    {comments.length === 0 ? (
+
+      <div className="comments-empty">
+
+        No comments yet.
+
+      </div>
+
+    ) : (
+
+      comments.map((comment) => (
+
+        <div
+          key={comment.id}
+          className="comment-card"
+        >
+
+          <div className="comment-top">
+
+            <div className="comment-user">
+
+              <div className="comment-avatar">
+
+                {comment.user_data?.name
+                  ?.slice(0, 2)
+                  .toUpperCase()}
+
+              </div>
+
+              <div>
+
+                <strong>
+                  {comment.user_data?.name}
+                </strong>
+
+                <p>
+                  {new Date(
+                    comment.created_at
+                  ).toLocaleString()}
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="comment-message">
+
+            {comment.message}
+
+          </div>
+
+        </div>
+      ))
+    )}
+
+  </div>
+
+</div>
     </div>
   );
 }

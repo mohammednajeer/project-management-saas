@@ -141,3 +141,38 @@ class SubTask(models.Model):
 
     def __str__(self):
         return self.title
+    
+    
+    
+class TaskComment(models.Model):
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name="comments"
+    )
+
+    user = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="task_comments"
+    )
+
+    message = models.TextField()
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+
+        return (
+            f"{self.user.name} - "
+            f"{self.task.title}"
+        )

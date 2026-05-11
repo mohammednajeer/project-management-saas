@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Task,SubTask
+from .models import Task,SubTask,TaskComment
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -114,3 +114,38 @@ class SubTaskSerializer(serializers.ModelSerializer):
             }
             for user in obj.assigned_to.all()
         ]
+    
+class TaskCommentSerializer(serializers.ModelSerializer):
+
+    user_data =serializers.SerializerMethodField()
+
+    class Meta:
+
+        model = TaskComment
+
+        fields = [
+            "id",
+            "task",
+            "user",
+            "user_data",
+            "message",
+            "created_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "task",
+            "user",
+            "created_at",
+        ]
+
+    def get_user_data(
+        self,
+        obj
+    ):
+
+        return {
+            "id": str(obj.user.id),
+            "name": obj.user.name,
+            "email": obj.user.email,
+        }

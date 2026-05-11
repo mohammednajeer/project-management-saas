@@ -59,6 +59,8 @@ export default function TaskDetails() {
     const [taskDueDate,setTaskDueDate] = useState("");
     const [comments, setComments] = useState([]);
     const [commentMessage, setCommentMessage] = useState("");
+    const [commentSubtask,setCommentSubtask] = useState("");
+
 
   useEffect(() => { fetchTask(); }, [taskId]);
 
@@ -158,6 +160,7 @@ export default function TaskDetails() {
           `/tasks/comments/${taskId}/`,
           {
             message: commentMessage,
+            subtask:commentSubtask || null,
           }
         );
 
@@ -800,6 +803,32 @@ export default function TaskDetails() {
         )
       }
     />
+    <select
+  value={commentSubtask}
+  onChange={(e) =>
+    setCommentSubtask(
+      e.target.value
+    )
+  }
+>
+
+  <option value="">
+    General Task Comment
+  </option>
+
+  {subtasks.map((subtask) => (
+
+    <option
+      key={subtask.id}
+      value={subtask.id}
+    >
+
+      {subtask.title}
+
+    </option>
+  ))}
+
+</select>
 
     <button type="submit">
 
@@ -857,6 +886,17 @@ export default function TaskDetails() {
             </div>
 
           </div>
+          {comment.subtask_data && (
+
+          <div className="comment-subtask-tag">
+
+            Subtask:
+            {" "}
+            {comment.subtask_data.title}
+
+          </div>
+
+        )}
 
           <div className="comment-message">
 

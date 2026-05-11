@@ -118,6 +118,7 @@ class SubTaskSerializer(serializers.ModelSerializer):
 class TaskCommentSerializer(serializers.ModelSerializer):
 
     user_data =serializers.SerializerMethodField()
+    subtask_data =serializers.SerializerMethodField()
 
     class Meta:
 
@@ -126,10 +127,13 @@ class TaskCommentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "task",
+            "subtask",
+            "subtask_data",
             "user",
             "user_data",
             "message",
             "created_at",
+
         ]
 
         read_only_fields = [
@@ -139,13 +143,20 @@ class TaskCommentSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    def get_user_data(
-        self,
-        obj
-    ):
+    def get_user_data(self,obj):
 
         return {
             "id": str(obj.user.id),
             "name": obj.user.name,
             "email": obj.user.email,
+        }
+    
+    def get_subtask_data(self,obj):
+
+        if not obj.subtask:
+            return None
+
+        return {
+            "id": str(obj.subtask.id),
+            "title": obj.subtask.title,
         }

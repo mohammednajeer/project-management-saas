@@ -142,7 +142,7 @@ class SubTask(models.Model):
     def __str__(self):
         return self.title
     
-    
+
     
 class TaskComment(models.Model):
 
@@ -156,6 +156,13 @@ class TaskComment(models.Model):
         Task,
         on_delete=models.CASCADE,
         related_name="comments"
+    )
+    subtask = models.ForeignKey(
+        SubTask,
+        on_delete=models.CASCADE,
+        related_name="comments",
+        null=True,
+        blank=True
     )
 
     user = models.ForeignKey(

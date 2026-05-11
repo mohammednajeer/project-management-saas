@@ -44,6 +44,11 @@ class Task(models.Model):
         on_delete=models.CASCADE,
         related_name="created_tasks"
     )
+    assigned_to = models.ManyToManyField(
+        "accounts.User",
+        blank=True,
+        related_name="assigned_tasks"
+    )
 
     status = models.CharField(
         max_length=20,

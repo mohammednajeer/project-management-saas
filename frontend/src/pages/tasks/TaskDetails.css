@@ -457,3 +457,12 @@
 .subtask-actions button:hover {
   background: #e5e7eb;
 }
+.task-assignees-section {
+  margin-top: 20px;
+}
+
+.task-assignees-section span {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+}

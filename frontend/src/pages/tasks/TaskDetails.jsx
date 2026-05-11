@@ -38,8 +38,7 @@ export default function TaskDetails() {
   const [priority, setPriority] = useState("medium");
   const [status, setStatus] = useState("todo");
   const [dueDate, setDueDate] = useState("");
-  const [editMode, setEditMode] =
-  useState(false);
+  const [editMode, setEditMode] =useState(false);
 
     const [title, setTitle] =
     useState("");
@@ -55,10 +54,9 @@ export default function TaskDetails() {
     setEditingSubtask
     ] = useState(null);
 
-    const [editingTitle,
-    setEditingTitle
-    ] = useState("");
-
+    const [editingTitle,setEditingTitle] = useState("");
+    const [taskAssignedTo,setTaskAssignedTo] = useState([]);
+    const [taskDueDate,setTaskDueDate] = useState("");
 
   useEffect(() => { fetchTask(); }, [taskId]);
 
@@ -90,6 +88,17 @@ export default function TaskDetails() {
         foundTask.priority
         );
 
+        setTaskDueDate(
+          foundTask.due_date || ""
+        );
+
+        setTaskAssignedTo(
+
+          foundTask.assigned_users?.map(
+            (user) => user.id
+          ) || []
+
+        );
         const projectRes =
             await api.get(
             `/projects/${foundTask.project}/`
@@ -115,7 +124,7 @@ export default function TaskDetails() {
         assigned_to: assignedTo || null,
         priority,
         status,
-        due_date: dueDate || null,
+        
       });
       setSubtaskTitle("");
       setDescription("");
@@ -210,6 +219,8 @@ export default function TaskDetails() {
                 title,
                 description: taskDescription,
                 priority: taskPriority,
+                assigned_to:taskAssignedTo,
+                due_date: taskDueDate || null,
             }
             );
             await fetchTask();
@@ -313,6 +324,103 @@ export default function TaskDetails() {
             </p>
 
             )}
+<div className="task-assignees-section">
+
+  <span>
+    Task Assignees
+  </span>
+
+  {editMode ? (
+
+    <div className="assign-members">
+
+      {members.map((member) => {
+
+        const selected =
+          taskAssignedTo.includes(
+            member.id
+          );
+
+        return (
+
+          <button
+            type="button"
+            key={member.id}
+            className={
+              selected
+                ? "member-pill active"
+                : "member-pill"
+            }
+            onClick={() => {
+
+              if (selected) {
+
+                setTaskAssignedTo(
+                  taskAssignedTo.filter(
+                    (id) =>
+                      id !== member.id
+                  )
+                );
+
+              } else {
+
+                setTaskAssignedTo([
+                  ...taskAssignedTo,
+                  member.id,
+                ]);
+              }
+            }}
+          >
+
+            {member.name}
+
+          </button>
+        );
+      })}
+
+    </div>
+
+  ) : (
+
+    <div className="assigned-users">
+
+      {task.assigned_users?.length ? (
+
+        task.assigned_users.map(
+          (user) => (
+
+            <div
+              key={user.id}
+              className="assigned-user-pill"
+            >
+
+              <div className="assigned-avatar">
+
+                {user.name
+                  ?.slice(0, 2)
+                  .toUpperCase()}
+
+              </div>
+
+              {user.name}
+
+            </div>
+          )
+        )
+
+      ) : (
+
+        <span className="unassigned-text">
+          No assignees
+        </span>
+
+      )}
+
+    </div>
+
+  )}
+
+</div>
         </div>
         <div className="task-top-right">
          <div className="task-actions">
@@ -401,7 +509,25 @@ export default function TaskDetails() {
           <div className="task-info-card-icon"><Calendar size={16} /></div>
           <div className="task-info-card-text">
             <span>Due Date</span>
-            <strong>{task.due_date || "No due date"}</strong>
+            {editMode ? (
+                <input
+                  type="date"
+                  value={taskDueDate}
+                  onChange={(e) =>
+                    setTaskDueDate(
+                      e.target.value
+                    )
+                  }
+                />
+
+              ) : (
+
+                <strong>
+                  {task.due_date ||
+                  "No due date"}
+                </strong>
+
+              )}
           </div>
         </div>
 

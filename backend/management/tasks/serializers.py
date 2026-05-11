@@ -8,7 +8,8 @@ class TaskSerializer(serializers.ModelSerializer):
 
     completed_subtasks = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
-    
+    assigned_users =serializers.SerializerMethodField()
+
     class Meta:
         model = Task
 
@@ -25,6 +26,8 @@ class TaskSerializer(serializers.ModelSerializer):
             "subtask_count",
             "progress",
             "completed_subtasks",
+            "assigned_to",
+            "assigned_users",
             
         ]
 
@@ -59,6 +62,18 @@ class TaskSerializer(serializers.ModelSerializer):
         return round(
             (completed / total) * 100
         )
+    def get_assigned_users(self, obj):
+
+        return [
+
+            {
+                "id": str(user.id),
+                "name": user.name,
+                "email": user.email,
+            }
+
+            for user in obj.assigned_to.all()
+        ]
     
 
 

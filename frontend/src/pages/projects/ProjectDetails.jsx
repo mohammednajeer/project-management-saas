@@ -330,15 +330,15 @@ export default function ProjectDetails() {
 
           )}
 
-          <button
-            onClick={() =>
-              setEditMode(!editMode)
-            }
-          >
-            {editMode
-              ? "Cancel"
-              : "Edit"}
-          </button>
+         <button
+          onClick={() =>
+            setEditMode(!editMode)
+          }
+        >
+          {editMode
+            ? "Cancel"
+            : "Edit"}
+        </button>
 
           {editMode && (
 
@@ -360,6 +360,28 @@ export default function ProjectDetails() {
         </div>
 
       </div>
+      {project.status ===
+        "archived" && (
+
+          <div className="project-lock-banner">
+
+            This project is archived.
+            You can still edit and reopen it.
+
+          </div>
+
+        )}
+
+        {project.status ===
+        "completed" && (
+
+          <div className="project-completed-banner">
+
+            This project is completed.
+
+          </div>
+
+        )}
 
       <div className="pd-stats">
 
@@ -468,76 +490,82 @@ export default function ProjectDetails() {
           )}
 
         </div>
+        {project.status !==
+"completed" && (
 
-      </div>
+<div className="pd-manage-members">
 
-      <div className="pd-manage-members">
+  <h2>Manage Members</h2>
 
-        <h2>Manage Members</h2>
+  <div className="pd-member-select-list">
 
-        <div className="pd-member-select-list">
-
-          {teamMembers
-            .filter(
-              (teamMember) =>
-                !project.members_data?.some(
-                  (projectMember) =>
-                    projectMember.id ===
-                    teamMember.id
-                )
-            )
-            .map((member) => (
-
-              <button
-                type="button"
-                key={member.id}
-                className={
-                  selectedMembers.includes(
-                    member.id
-                  )
-                    ? "member-pill active"
-                    : "member-pill"
-                }
-                onClick={() => {
-
-                  if (
-                    selectedMembers.includes(
-                      member.id
-                    )
-                  ) {
-
-                    setSelectedMembers(
-                      selectedMembers.filter(
-                        (id) =>
-                          id !== member.id
-                      )
-                    );
-
-                  } else {
-
-                    setSelectedMembers([
-                      ...selectedMembers,
-                      member.id,
-                    ]);
-                  }
-                }}
-              >
-
-                {member.name}
-
-              </button>
-            ))}
-
-        </div>
+    {teamMembers
+      .filter(
+        (teamMember) =>
+          !project.members_data?.some(
+            (projectMember) =>
+              projectMember.id ===
+              teamMember.id
+          )
+      )
+      .map((member) => (
 
         <button
-          className="pd-add-members-btn"
-          onClick={addMembers}
+          type="button"
+          key={member.id}
+          className={
+            selectedMembers.includes(
+              member.id
+            )
+              ? "member-pill active"
+              : "member-pill"
+          }
+          onClick={() => {
+
+            if (
+              selectedMembers.includes(
+                member.id
+              )
+            ) {
+
+              setSelectedMembers(
+                selectedMembers.filter(
+                  (id) =>
+                    id !== member.id
+                )
+              );
+
+            } else {
+
+              setSelectedMembers([
+                ...selectedMembers,
+                member.id,
+              ]);
+            }
+          }}
         >
-          Add Members
+
+          {member.name}
+
         </button>
+      ))}
+
+  </div>
+
+  <button
+    className="pd-add-members-btn"
+    onClick={addMembers}
+  >
+    Add Members
+  </button>
+
+</div>
+
+)}
 
       </div>
+
+      
 
       <div className="pd-tasks-section">
 
@@ -545,14 +573,22 @@ export default function ProjectDetails() {
 
           <h2>Project Tasks</h2>
 
-          <button
-            className="pd-create-task-btn"
-            onClick={() =>
-              setTaskModalOpen(true)
-            }
-          >
-            + Create Task
-          </button>
+          {project.status !==
+            "archived" &&
+
+            project.status !==
+            "completed" && (
+
+              <button
+                className="pd-create-task-btn"
+                onClick={() =>
+                  setTaskModalOpen(true)
+                }
+              >
+                + Create Task
+              </button>
+
+)}
 
         </div>
 

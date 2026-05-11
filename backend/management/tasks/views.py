@@ -34,6 +34,18 @@ class ProjectTaskListCreateView(APIView):
                 organization=
                     request.user.organization
             )
+            if project.status in [
+                "archived",
+                "completed"
+            ]:
+
+                return Response(
+                    {
+                        "message":
+                        "Project is locked"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         except Project.DoesNotExist:
             return Response(

@@ -1,92 +1,14 @@
-import {
-  useEffect,
-  useState,
-} from "react";
-
-import api from "../../services/api";
+import useNotifications from "../../context/useNotifications";
 
 import "./Notifications.css";
 
 export default function Notifications() {
 
-  const [notifications,
-    setNotifications
-  ] = useState([]);
-
-  const [loading,
-    setLoading
-  ] = useState(true);
-
-  useEffect(() => {
-
-    fetchNotifications();
-
-  }, []);
-
-  const fetchNotifications =
-    async () => {
-
-      try {
-
-        const res =
-          await api.get(
-            "/notifications/"
-          );
-
-        setNotifications(
-          res.data
-        );
-
-      } catch (err) {
-
-        console.log(err);
-
-      } finally {
-
-        setLoading(false);
-      }
-    };
-
-  const markAsRead =
-    async (notificationId) => {
-
-      try {
-
-        await api.patch(
-          `/notifications/${notificationId}/read/`
-        );
-
-        setNotifications((prev) =>
-          prev.map(
-            (notification) => {
-
-              if (
-                notification.id ===
-                notificationId
-              ) {
-
-                return {
-                  ...notification,
-                  is_read: true,
-                };
-              }
-
-              return notification;
-            }
-          )
-        );
-
-        window.dispatchEvent(
-          new Event(
-            "notificationsUpdated"
-          )
-        );
-
-      } catch (err) {
-
-        console.log(err);
-      }
-    };
+  const {
+    notifications,
+    loading,
+    markAsRead,
+  } = useNotifications();
 
   if (loading) {
 
@@ -135,9 +57,10 @@ export default function Notifications() {
               <div
                 key={notification.id}
                 onClick={() =>
-                  markAsRead(
-                    notification.id
-                  )
+                  !notification.is_read &&
+                    markAsRead(
+                      notification.id
+                    )
                 }
                 className={`notification-card ${
                   notification.is_read

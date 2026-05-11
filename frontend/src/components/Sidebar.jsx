@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   LayoutDashboard,
@@ -15,7 +15,7 @@ import {
 
 import { NavLink } from "react-router-dom";
 
-import api from "../services/api";
+import useNotifications from "../context/useNotifications";
 
 import "./Sidebar.css";
 
@@ -75,9 +75,8 @@ export default function Sidebar() {
   const [hovered, setHovered] =
     useState(false);
 
-  const [unreadCount,
-    setUnreadCount
-  ] = useState(0);
+  const { unreadCount } =
+    useNotifications();
 
   const handleLogout =
     async () => {
@@ -91,56 +90,14 @@ export default function Sidebar() {
           }
         );
 
-      } catch {}
-
-      window.location.href =
-        "/signin";
-    };
-
-  const fetchUnreadNotifications =
-    async () => {
-
-      try {
-
-        const res =
-          await api.get(
-            "/notifications/"
-          );
-
-        const unread =
-          res.data.filter(
-            (notification) =>
-              !notification.is_read
-          );
-
-        setUnreadCount(
-          unread.length
-        );
-
       } catch (err) {
 
         console.log(err);
       }
+
+      window.location.href =
+        "/signin";
     };
-
-  useEffect(() => {
-
-    fetchUnreadNotifications();
-
-    window.addEventListener(
-      "notificationsUpdated",
-      fetchUnreadNotifications
-    );
-
-    return () => {
-
-      window.removeEventListener(
-        "notificationsUpdated",
-        fetchUnreadNotifications
-      );
-    };
-
-  }, []);
 
   return (
 
@@ -195,6 +152,7 @@ export default function Sidebar() {
               key={label}
               to={to}
               end={end}
+              data-label={label}
               className={({
                 isActive,
               }) =>
@@ -216,7 +174,9 @@ export default function Sidebar() {
 
                   <span className="notification-badge">
 
-                    {unreadCount}
+                    {unreadCount > 99
+                      ? "99+"
+                      : unreadCount}
 
                   </span>
 

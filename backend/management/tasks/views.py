@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from .models import Task,SubTask,TaskComment
 from .serializers import TaskSerializer,SubTaskSerializer,TaskCommentSerializer
-
+from notifications.models import Notification
 from projects.models import Project
 
 
@@ -113,9 +113,23 @@ class SubTaskListCreateView(APIView):
 
         if serializer.is_valid():
 
-            subtask = serializer.save(
-                task=task
-            )
+            subtask = serializer.save(task=task)
+
+            for user in subtask.assigned_to.all():
+
+                Notification.objects.create(
+
+                    user=user,
+
+                    title="New Subtask Assigned",
+
+                    message=
+                    f"You were assigned "
+                    f"to subtask: "
+                    f"{subtask.title}",
+
+                    type="subtask_assigned"
+                )
 
             return Response(
                SubTaskSerializer(subtask).data,
@@ -349,6 +363,32 @@ class TaskCommentListCreateView(APIView):
                 task=task,
                 user=request.user
             )
+            users_to_notify = set()
+
+            for user in task.assigned_to.all():
+
+                if user != request.user:
+                    users_to_notify.add(user)
+
+            if comment.subtask:
+
+                for user in comment.subtask.assigned_to.all():
+
+                    if user != request.user:
+                        users_to_notify.add(user)
+
+            for user in users_to_notify:
+
+                Notification.objects.create(
+                    user=user,
+                    title="New Comment",
+                    message=(
+                        f"{request.user.name} "
+                        f"commented on "
+                        f"{task.title}"
+                    ),
+                    type="comment_added"
+                )
 
             return Response(
                 TaskCommentSerializer(comment).data,

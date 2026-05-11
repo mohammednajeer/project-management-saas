@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     'tasks',
     'issues',
     "invitations",
+    "notifications",
+    
 ]
 
 MIDDLEWARE = [

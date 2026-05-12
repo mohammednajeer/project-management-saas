@@ -6,6 +6,7 @@ import Dashboard from "../pages/dashboard/Dashboard";
 import Members from "../pages/Members/Members";
 import Projects from "../pages/projects/Projects";
 import ProtectedRoute from "../components/ProtectedRoute";
+import PublicRoute from "../components/PublicRoute";
 import AppLayout from "../layout/AppLayout";
 import ProjectDetails from "../pages/projects/ProjectDetails";
 import Tasks from "../pages/tasks/Tasks";
@@ -17,9 +18,30 @@ function App() {
       <Routes>
 
         {/* Public */}
-        <Route path="/" element={<Homepage />} />
-        <Route path="/signin" element={<AuthPage />} />
-        <Route path="/signup" element={<AuthPage />} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <Homepage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/signin"
+          element={
+            <PublicRoute>
+              <AuthPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <AuthPage />
+            </PublicRoute>
+          }
+        />
 
         {/* Protected */}
         <Route

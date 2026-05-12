@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User
+from accounts.auth_cookies import set_auth_cookies
 from .serializers import RegisterOrganizationSerializer
 from rest_framework.permissions import IsAuthenticated
 
@@ -24,7 +25,6 @@ class RegisterOrganizationView(APIView):
             user = organization.users.filter(role="admin").first()
 
             refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
 
             response = Response(
                 {
@@ -39,14 +39,7 @@ class RegisterOrganizationView(APIView):
                 status=status.HTTP_201_CREATED,
             )
 
-            response.set_cookie(
-                key="access_token",
-                value=access_token,
-                httponly=True,
-                secure=False,
-                samesite="Lax",
-                path="/",
-            )
+            set_auth_cookies(response, refresh)
 
             return response
 

@@ -5,10 +5,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import TokenError
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny
 from accounts.models import User
+from accounts.auth_cookies import ACCESS_COOKIE_MAX_AGE, set_auth_cookies
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
@@ -47,18 +49,56 @@ class LoginView(APIView):
             }
         )
 
-        # Store token in cookie
+        set_auth_cookies(response, refresh)
+
+        return response
+     
+
+@method_decorator(csrf_exempt, name='dispatch')
+class RefreshView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if not refresh_token:
+            return Response(
+                {"message": "Refresh token missing"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        try:
+            refresh = RefreshToken(refresh_token)
+        except TokenError:
+            response = Response(
+                {"message": "Refresh token invalid or expired"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+            response.delete_cookie("access_token")
+            response.delete_cookie("refresh_token")
+            return response
+
+        access_token = str(refresh.access_token)
+
+        response = Response(
+            {
+                "message": "Access token refreshed",
+                "access": access_token,
+            }
+        )
+
         response.set_cookie(
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=False,  # True in production
+            secure=False,
             samesite="Lax",
             path="/",
+            max_age=ACCESS_COOKIE_MAX_AGE,
         )
 
         return response
-    
+
 
 class LogoutView(APIView):
 
@@ -69,6 +109,7 @@ class LogoutView(APIView):
         )
 
         response.delete_cookie("access_token")
+        response.delete_cookie("refresh_token")
 
         return response
     
@@ -141,19 +182,10 @@ class InviteRegisterView(APIView):
 
         # 🔥 Auto login
         refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
         response = Response({
             "message": "Account created via invite"
         })
 
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=False,
-            samesite="Lax",
-            path="/",
-        )
+        set_auth_cookies(response, refresh)
 
         return response

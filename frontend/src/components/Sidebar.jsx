@@ -15,6 +15,7 @@ import {
 
 import { NavLink } from "react-router-dom";
 
+import api from "../services/api";
 import useNotifications from "../context/useNotifications";
 
 import "./Sidebar.css";
@@ -83,11 +84,8 @@ export default function Sidebar() {
 
       try {
 
-        await fetch(
-          "/api/auth/logout/",
-          {
-            method: "POST",
-          }
+        await api.post(
+          "/auth/logout/"
         );
 
       } catch (err) {

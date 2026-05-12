@@ -1,9 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ArrowRight, Check, Eye, EyeOff, Plus, Zap } from "lucide-react";
-// ── ADDED ── ↓
 import { useLocation } from "react-router-dom";
 import InviteSignup from "../auth/components/InviteSignup";
-// ── ADDED ── ↑
 import api from "../../services/api";
 import "./AuthPage.css";
 
@@ -26,10 +24,14 @@ function getPanelPath(role) {
    Root AuthPage
 ───────────────────────────────────────────── */
 export default function AuthPage() {
-  const [isSignup, setIsSignup] = useState(false);
+  const location = useLocation();
+  const [isSignup, setIsSignup] = useState(() => location.pathname === "/signup");
+
+  useEffect(() => {
+    setIsSignup(location.pathname === "/signup");
+  }, [location.pathname]);
 
   // ── ADDED: detect ?token= in URL ─────────────────────────────────────────
-  const location    = useLocation();
   const inviteToken = new URLSearchParams(location.search).get("token");
 
   // ── ADDED: if a token is present, render InviteSignup and stop here ───────

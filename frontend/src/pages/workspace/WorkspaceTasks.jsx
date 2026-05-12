@@ -4,10 +4,35 @@ import api from "../../services/api";
 
 import "./WorkspacePage.css";
 
+const statusOptions = [
+  {
+    value: "todo",
+    label: "Todo",
+  },
+  {
+    value: "in_progress",
+    label: "In Progress",
+  },
+  {
+    value: "review",
+    label: "Review",
+  },
+  {
+    value: "done",
+    label: "Done",
+  },
+];
+
 export default function WorkspaceTasks() {
   const [tasks, setTasks] = useState([]);
   const [subtasks, setSubtasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updatingSubtaskId, setUpdatingSubtaskId] =
+    useState(null);
+  const [statusMessage, setStatusMessage] =
+    useState("");
+  const [statusError, setStatusError] =
+    useState("");
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -30,6 +55,78 @@ export default function WorkspaceTasks() {
     fetchTasks();
   }, []);
 
+  const handleSubtaskStatusChange = async (
+    subtaskId,
+    nextStatus
+  ) => {
+    const currentSubtask = subtasks.find(
+      (subtask) => subtask.id === subtaskId
+    );
+
+    if (
+      !currentSubtask ||
+      currentSubtask.status === nextStatus
+    ) {
+      return;
+    }
+
+    const previousStatus = currentSubtask.status;
+
+    setStatusError("");
+    setStatusMessage("");
+    setUpdatingSubtaskId(subtaskId);
+
+    setSubtasks((items) =>
+      items.map((subtask) =>
+        subtask.id === subtaskId
+          ? {
+              ...subtask,
+              status: nextStatus,
+            }
+          : subtask
+      )
+    );
+
+    try {
+      const response = await api.patch(
+        `/workspace/subtasks/${subtaskId}/`,
+        {
+          status: nextStatus,
+        }
+      );
+
+      setSubtasks((items) =>
+        items.map((subtask) =>
+          subtask.id === subtaskId
+            ? response.data
+            : subtask
+        )
+      );
+
+      setStatusMessage(
+        "Subtask status updated."
+      );
+    } catch (err) {
+      setSubtasks((items) =>
+        items.map((subtask) =>
+          subtask.id === subtaskId
+            ? {
+                ...subtask,
+                status: previousStatus,
+              }
+            : subtask
+        )
+      );
+
+      setStatusError(
+        err.response?.data?.message ||
+          "Could not update subtask status."
+      );
+    } finally {
+      setUpdatingSubtaskId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="workspace-page">
@@ -48,6 +145,18 @@ export default function WorkspaceTasks() {
           Your assigned tasks and subtasks
         </p>
       </div>
+
+      {(statusMessage || statusError) && (
+        <div
+          className={`workspace-feedback ${
+            statusError
+              ? "workspace-feedback--error"
+              : "workspace-feedback--success"
+          }`}
+        >
+          {statusError || statusMessage}
+        </div>
+      )}
 
       <div className="workspace-section">
         <h2>
@@ -105,6 +214,38 @@ export default function WorkspaceTasks() {
                 <span>
                   Status: {subtask.status}
                 </span>
+                <label className="workspace-status-field">
+                  <span>
+                    Update status
+                  </span>
+                  <select
+                    value={subtask.status}
+                    disabled={
+                      updatingSubtaskId === subtask.id
+                    }
+                    onChange={(event) =>
+                      handleSubtaskStatusChange(
+                        subtask.id,
+                        event.target.value
+                      )
+                    }
+                  >
+                    {statusOptions.map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {updatingSubtaskId === subtask.id && (
+                  <p className="workspace-status-loading">
+                    Updating status...
+                  </p>
+                )}
               </div>
             ))}
           </div>

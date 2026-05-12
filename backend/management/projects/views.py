@@ -3,12 +3,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from accounts.models import User
+from accounts.permissions import IsManagerOrAdmin
 from .models import Project
 from .serializers import ProjectSerializer
 
 
 class ProjectListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request):
 
@@ -52,7 +53,7 @@ class ProjectListCreateView(APIView):
 # 
 
 class ProjectDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get_object(self, project_id, user):
 
@@ -145,7 +146,7 @@ class ProjectDetailView(APIView):
     
 
 class ProjectMembersView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def post(self, request, project_id):
 

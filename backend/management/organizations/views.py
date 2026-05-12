@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User
 from accounts.auth_cookies import set_auth_cookies
+from accounts.permissions import IsManagerOrAdmin
 from .serializers import RegisterOrganizationSerializer
 from rest_framework.permissions import IsAuthenticated
 
@@ -50,7 +51,7 @@ class RegisterOrganizationView(APIView):
     
 
 class OrganizationTeamView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request):
 

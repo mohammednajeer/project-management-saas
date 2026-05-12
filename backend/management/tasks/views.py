@@ -6,10 +6,11 @@ from .models import Task,SubTask,TaskComment
 from .serializers import TaskSerializer,SubTaskSerializer,TaskCommentSerializer
 from notifications.models import Notification
 from projects.models import Project
+from accounts.permissions import IsManagerOrAdmin
 
 
 class ProjectTaskListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request, project_id):
 
@@ -75,7 +76,7 @@ class ProjectTaskListCreateView(APIView):
         )
     
 class SubTaskListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request, task_id):
 
@@ -143,7 +144,7 @@ class SubTaskListCreateView(APIView):
     
 
 class SubTaskUpdateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def patch(self, request, subtask_id):
 
@@ -208,7 +209,7 @@ class SubTaskUpdateView(APIView):
 
 
 class TaskUpdateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def patch(self, request, task_id):
 
@@ -245,7 +246,7 @@ class TaskUpdateView(APIView):
         )
     
 class TaskDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get_object(self, task_id, user):
 
@@ -319,7 +320,7 @@ class TaskDetailView(APIView):
 
 class TaskCommentListCreateView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request, task_id):
 

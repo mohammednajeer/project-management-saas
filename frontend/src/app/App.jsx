@@ -12,6 +12,7 @@ import ProjectDetails from "../pages/projects/ProjectDetails";
 import Tasks from "../pages/tasks/Tasks";
 import TaskDetails from "../pages/tasks/TaskDetails";
 import Notifications from "../pages/notifications/Notifications";
+import WorkspacePage from "../pages/workspace/WorkspacePage";
 function App() {
   return (
     <BrowserRouter>
@@ -59,6 +60,7 @@ function App() {
           <Route path="tasks" element={<Tasks />}/>
           <Route path="tasks/:taskId" element={<TaskDetails />}/>
           <Route path="notifications" element={<Notifications />}/>
+          <Route path="workspace"element={<WorkspacePage />}/>
         </Route>
 
       </Routes>

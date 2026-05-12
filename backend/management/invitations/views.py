@@ -2,23 +2,19 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.tokens import RefreshToken
-from accounts.models import User
-from .serializers import CreateInvitationSerializer
 import csv
 from io import TextIOWrapper
 from django.core.mail import send_mail
-from django.core.mail import send_mail
 from django.utils import timezone
-from .models import Invitation
 from accounts.models import User
-from invitations.models import Invitation
+from accounts.permissions import IsManagerOrAdmin
+from .models import Invitation
+from .serializers import CreateInvitationSerializer
 
 
 
 class CreateInvitationView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def post(self, request):
 
@@ -103,7 +99,7 @@ class ValidateInvitationView(APIView):
  
 
 class BulkInviteView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def post(self, request):
 
@@ -176,7 +172,7 @@ class BulkInviteView(APIView):
         
 
 class TeamListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request):
         org = request.user.organization
@@ -218,7 +214,7 @@ class TeamListView(APIView):
     
 
 class ResendInvitationView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def post(self, request, invitation_id):
 
@@ -267,7 +263,7 @@ class ResendInvitationView(APIView):
     
 
 class CancelInvitationView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def delete(self, request, invitation_id):
 
@@ -299,7 +295,7 @@ class CancelInvitationView(APIView):
 
 
 class RemoveMemberView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def delete(self, request, user_id):
 
@@ -341,7 +337,7 @@ class RemoveMemberView(APIView):
         })
     
 class ChangeRoleView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def patch(self, request, user_id):
 

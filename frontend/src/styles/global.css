@@ -44,6 +44,17 @@
   box-sizing: border-box;
 }
 
+:where(
+  a,
+  button,
+  [role="button"],
+  [tabindex],
+  svg
+):focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
 html {
   min-height: 100%;
   background-color: var(--background);

@@ -248,6 +248,7 @@ export default function Dashboard() {
               <AreaChart
                 data={chartData}
                 margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+                accessibilityLayer={false}
               >
                 <defs>
                   <linearGradient id="taskGrad" x1="0" y1="0" x2="0" y2="1">

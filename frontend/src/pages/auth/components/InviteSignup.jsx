@@ -17,6 +17,16 @@ async function getApi() {
   return api;
 }
 
+const panelPathByRole = {
+  admin: "/dashboard",
+  manager: "/dashboard",
+  employee: "/workspace",
+};
+
+function getPanelPath(role) {
+  return panelPathByRole[role] || "/dashboard";
+}
+
 export default function InviteSignup({ token }) {
   const navigate = useNavigate();
 
@@ -89,7 +99,12 @@ export default function InviteSignup({ token }) {
         password,
       });
 
-      navigate("/dashboard");
+      const meResponse = await api.get("/auth/me/");
+
+      navigate(
+        getPanelPath(meResponse.data.role),
+        { replace: true }
+      );
     } catch (err) {
       setSubmitError(
         err?.response?.data?.message || "Something went wrong"

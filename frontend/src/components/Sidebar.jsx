@@ -5,7 +5,6 @@ import {
   FolderOpen,
   CheckSquare,
   Users,
-  Mail,
   BarChart2,
   Settings,
   LogOut,
@@ -44,12 +43,6 @@ const navItems = [
     icon: Users,
     label: "Team",
     to: "/dashboard/team",
-  },
-
-  {
-    icon: Mail,
-    label: "Invitations",
-    to: "/dashboard/invitations",
   },
 
   {

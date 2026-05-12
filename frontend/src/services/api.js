@@ -12,6 +12,14 @@ const refreshClient = axios.create({
 
 let refreshRequest = null;
 
+const isProtectedAppPath = () =>
+  window.location.pathname.startsWith(
+    "/dashboard"
+  ) ||
+  window.location.pathname.startsWith(
+    "/workspace"
+  );
+
 const refreshAccessToken = () => {
   if (!refreshRequest) {
     refreshRequest = refreshClient
@@ -45,11 +53,7 @@ api.interceptors.response.use(
         await refreshAccessToken();
         return api(originalRequest);
       } catch (refreshError) {
-        if (
-          window.location.pathname.startsWith(
-            "/dashboard"
-          )
-        ) {
+        if (isProtectedAppPath()) {
           window.location.href = "/signin";
         }
 
@@ -59,9 +63,7 @@ api.interceptors.response.use(
 
     if (
       (status === 401 || status === 403) &&
-      window.location.pathname.startsWith(
-        "/dashboard"
-      )
+      isProtectedAppPath()
     ) {
       window.location.href = "/signin";
     }

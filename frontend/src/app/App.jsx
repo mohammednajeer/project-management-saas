@@ -1,69 +1,116 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 
 import Homepage from "../pages/home/Homepage";
 import AuthPage from "../pages/auth/AuthPage";
 import Dashboard from "../pages/dashboard/Dashboard";
 import Members from "../pages/Members/Members";
 import Projects from "../pages/projects/Projects";
-import ProtectedRoute from "../components/ProtectedRoute";
-import PublicRoute from "../components/PublicRoute";
-import AppLayout from "../layout/AppLayout";
 import ProjectDetails from "../pages/projects/ProjectDetails";
 import Tasks from "../pages/tasks/Tasks";
 import TaskDetails from "../pages/tasks/TaskDetails";
 import Notifications from "../pages/notifications/Notifications";
-import WorkspacePage from "../pages/workspace/WorkspacePage";
+import WorkspaceHome from "../pages/workspace/WorkspaceHome";
+import WorkspaceTasks from "../pages/workspace/WorkspaceTasks";
+import WorkspaceNotifications from "../pages/workspace/WorkspaceNotifications";
+import PublicRoute from "../components/PublicRoute";
+import RoleProtectedRoute from "../components/RoleProtectedRoute";
+import AppLayout from "../layout/AppLayout";
+import WorkspaceLayout from "../layout/WorkspaceLayout";
+import { AuthProvider } from "../context/AuthContext";
+
+function PlaceholderPage({ title }) {
+  return (
+    <div style={{ padding: "2rem" }}>
+      <h1>
+        {title}
+      </h1>
+    </div>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <AuthProvider>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <PublicRoute>
+                <Homepage />
+              </PublicRoute>
+            }
+          />
 
-        {/* Public */}
-        <Route
-          path="/"
-          element={
-            <PublicRoute>
-              <Homepage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/signin"
-          element={
-            <PublicRoute>
-              <AuthPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <PublicRoute>
-              <AuthPage />
-            </PublicRoute>
-          }
-        />
+          <Route
+            path="/signin"
+            element={
+              <PublicRoute>
+                <AuthPage />
+              </PublicRoute>
+            }
+          />
 
-        {/* Protected */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="team" element={<Members />} />
-          <Route path="projects" element={<Projects />} />
-          <Route path="projects/:projectId" element={<ProjectDetails />}/>
-          <Route path="tasks" element={<Tasks />}/>
-          <Route path="tasks/:taskId" element={<TaskDetails />}/>
-          <Route path="notifications" element={<Notifications />}/>
-          <Route path="workspace"element={<WorkspacePage />}/>
-        </Route>
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <AuthPage />
+              </PublicRoute>
+            }
+          />
 
-      </Routes>
+          <Route
+            path="/dashboard"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={[
+                  "admin",
+                  "manager",
+                ]}
+                fallbackPath="/workspace"
+              >
+                <AppLayout />
+              </RoleProtectedRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="projects" element={<Projects />} />
+            <Route path="projects/:projectId" element={<ProjectDetails />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="tasks/:taskId" element={<TaskDetails />} />
+            <Route path="team" element={<Members />} />
+            <Route path="reports" element={<PlaceholderPage title="Reports" />} />
+            <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Route>
+
+          <Route
+            path="/workspace"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={["employee"]}
+                fallbackPath="/dashboard"
+              >
+                <WorkspaceLayout />
+              </RoleProtectedRoute>
+            }
+          >
+            <Route index element={<WorkspaceHome />} />
+            <Route path="tasks" element={<WorkspaceTasks />} />
+            <Route path="notifications" element={<WorkspaceNotifications />} />
+            <Route path="*" element={<Navigate to="/workspace" replace />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

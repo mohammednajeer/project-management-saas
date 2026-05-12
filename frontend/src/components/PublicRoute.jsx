@@ -1,43 +1,33 @@
-import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
-import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+
+const redirectByRole = {
+  admin: "/dashboard",
+  manager: "/dashboard",
+  employee: "/workspace",
+};
 
 export default function PublicRoute({
   children,
 }) {
-  const [isAuthenticated,
-    setIsAuthenticated
-  ] = useState(null);
+  const {
+    user,
+    loading,
+    isAuthenticated,
+  } = useAuth();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await api.get("/auth/me/");
-        setIsAuthenticated(true);
-      } catch {
-        setIsAuthenticated(false);
-      }
-    };
-
-    const timeoutId = window.setTimeout(
-      checkAuth,
-      0
-    );
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, []);
-
-  if (isAuthenticated === null) {
+  if (loading) {
     return <p>Loading...</p>;
   }
 
   if (isAuthenticated) {
     return (
       <Navigate
-        to="/dashboard"
+        to={
+          redirectByRole[user.role] ||
+          "/dashboard"
+        }
         replace
       />
     );

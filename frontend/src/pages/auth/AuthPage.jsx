@@ -4,12 +4,23 @@ import { ArrowRight, Check, Eye, EyeOff, Plus, Zap } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import InviteSignup from "../auth/components/InviteSignup";
 // ── ADDED ── ↑
+import api from "../../services/api";
 import "./AuthPage.css";
 
 /* ─────────────────────────────────────────────
    Signup multi-step config
 ───────────────────────────────────────────── */
 const STEPS = ["Account", "Workspace", "Invite"];
+
+const panelPathByRole = {
+  admin: "/dashboard",
+  manager: "/dashboard",
+  employee: "/workspace",
+};
+
+function getPanelPath(role) {
+  return panelPathByRole[role] || "/dashboard";
+}
 
 /* ─────────────────────────────────────────────
    Root AuthPage
@@ -115,9 +126,17 @@ function SigninForm({ onSwitchToSignup }) {
     setError("");
     setIsLoading(true);
     try {
-      const { default: api } = await import("../../services/api");
-      await api.post("/auth/login/", { email, password });
-      window.location.href = "/dashboard";
+      const response = await api.post(
+        "/auth/login/",
+        { email, password }
+      );
+
+      const role =
+        response.data?.user?.role ||
+        (await api.get("/auth/me/")).data.role;
+
+      window.location.href =
+        getPanelPath(role);
     } catch (err) {
       setError(
         err.response?.data?.detail ||
@@ -258,15 +277,18 @@ function SignupForm({ onSwitchToSignin }) {
 
     setIsLoading(true);
     try {
-      const { default: api } = await import("../../services/api");
-      await api.post("/organizations/register/", {
+      const response = await api.post("/organizations/register/", {
         name: formData.workspace_name,
         email: formData.email,
         phone: "0000000000",
         admin_name: formData.name,
         password: formData.password,
       });
-      window.location.href = "/dashboard";
+
+      window.location.href =
+        getPanelPath(
+          response.data?.user?.role
+        );
     } catch (err) {
       setError(
         err.response?.data?.message ||

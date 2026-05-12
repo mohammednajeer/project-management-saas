@@ -1,37 +1,9 @@
-import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
-import api from "../services/api";
+import RoleProtectedRoute from "./RoleProtectedRoute";
 
 export default function ProtectedRoute({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await api.get("/auth/me/");
-        setIsAuthenticated(true);
-      } catch {
-        setIsAuthenticated(false);
-      }
-    };
-
-    const timeoutId = window.setTimeout(
-      checkAuth,
-      0
-    );
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, []);
-
-  if (isAuthenticated === null) {
-    return <p>Loading...</p>;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/signin" replace />;
-  }
-
-  return children;
+  return (
+    <RoleProtectedRoute>
+      {children}
+    </RoleProtectedRoute>
+  );
 }

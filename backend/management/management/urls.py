@@ -26,5 +26,6 @@ urlpatterns = [
     path("api/tasks/",include("tasks.urls")),
     path("api/notifications/",include("notifications.urls")),
     path("api/workspace/",include("workspace.urls")),
+    path("api/dashboard/", include("analytics.urls")),
  
 ]

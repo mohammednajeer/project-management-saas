@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "invitations",
     "notifications",
     "workspace",
+    "analytics",
     
 ]
 

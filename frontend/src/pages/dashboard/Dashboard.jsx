@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   ChevronDown,
@@ -19,18 +19,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import api from "../../services/api";
 import "./Dashboard.css";
 
-const chartData = [
-  { day: "Mon", tasks: 4 },
-  { day: "Tue", tasks: 6 },
-  { day: "Wed", tasks: 6.5 },
-  { day: "Thu", tasks: 9 },
-  { day: "Fri", tasks: 7.5 },
-  { day: "Sat", tasks: 3 },
-  { day: "Sun", tasks: 11 },
-];
-
+// TODO: replace with real activity timeline system later
 const activityFeed = [
   { id: 1, color: "#22c55e", text: 'Alex Kim completed "API Integration"', time: "2 min ago" },
   { id: 2, color: "#4f6df5", text: 'New project "Analytics Dashboard" created', time: "15 min ago" },
@@ -40,100 +32,201 @@ const activityFeed = [
   { id: 6, color: "#6b7280", text: 'Comment added on "Backend API" task', time: "Yesterday" },
 ];
 
-const recentTasks = [
-  {
-    id: 1,
-    task: "Design homepage hero section",
-    project: "Website Redesign",
-    priority: "High",
-    priorityColor: "#f59e0b",
-    status: "In Progress",
-    statusBg: "#eff6ff",
-    statusColor: "#4f6df5",
-    assignee: "JD",
-    assigneeBg: "#4f6df5",
-    due: "Dec 20",
-  },
-  {
-    id: 2,
-    task: "Set up CI/CD pipeline",
-    project: "DevOps",
-    priority: "Critical",
-    priorityColor: "#ef4444",
-    status: "Backlog",
-    statusBg: "#f3f4f6",
-    statusColor: "#374151",
-    assignee: "AK",
-    assigneeBg: "#8b5cf6",
-    due: "Dec 18",
-  },
-  {
-    id: 3,
-    task: "Write API documentation",
-    project: "API v2",
-    priority: "Medium",
-    priorityColor: "#a855f7",
-    status: "Review",
-    statusBg: "#fdf4ff",
-    statusColor: "#a855f7",
-    assignee: "SP",
-    assigneeBg: "#ec4899",
-    due: "Dec 22",
-  },
+const DEFAULT_CHART_DATA = [
+  { day: "Mon", tasks: 0 },
+  { day: "Tue", tasks: 0 },
+  { day: "Wed", tasks: 0 },
+  { day: "Thu", tasks: 0 },
+  { day: "Fri", tasks: 0 },
+  { day: "Sat", tasks: 0 },
+  { day: "Sun", tasks: 0 },
 ];
 
-const statCards = [
-  {
-    icon: FolderOpen,
-    iconBg: "#eff6ff",
-    iconColor: "#4f6df5",
-    value: "12",
-    label: "Total Projects",
-    trend: "+2 this month",
-    up: true,
-  },
-  {
-    icon: CheckSquare,
-    iconBg: "#f5f3ff",
-    iconColor: "#8b5cf6",
-    value: "148",
-    label: "Total Tasks",
-    trend: "+24 this week",
-    up: true,
-  },
-  {
-    icon: null,
-    emoji: "🕐",
-    iconBg: "#fffbeb",
-    iconColor: "#f59e0b",
-    value: "31",
-    label: "Pending Tasks",
-    trend: "-5 from last week",
-    up: false,
-  },
-  {
-    icon: null,
-    checkGreen: true,
-    iconBg: "#f0fdf4",
-    iconColor: "#22c55e",
-    value: "107",
-    label: "Completed",
-    trend: "+18 this week",
-    up: true,
-  },
-  {
-    icon: Users,
-    iconBg: "#fff1f2",
-    iconColor: "#ef4444",
-    value: "24",
-    label: "Team Members",
-    trend: "3 pending invites",
-    up: null,
-  },
-];
+const PRIORITY_COLORS = {
+  critical: "#ef4444",
+  high: "#f59e0b",
+  medium: "#a855f7",
+  low: "#6b7280",
+};
+
+const STATUS_STYLES = {
+  backlog: { label: "Backlog", bg: "#f3f4f6", color: "#374151" },
+  todo: { label: "To Do", bg: "#f3f4f6", color: "#374151" },
+  pending: { label: "Pending", bg: "#fffbeb", color: "#d97706" },
+  in_progress: { label: "In Progress", bg: "#eff6ff", color: "#4f6df5" },
+  review: { label: "Review", bg: "#fdf4ff", color: "#a855f7" },
+  done: { label: "Done", bg: "#f0fdf4", color: "#22c55e" },
+  completed: { label: "Completed", bg: "#f0fdf4", color: "#22c55e" },
+};
+
+const ASSIGNEE_COLORS = ["#4f6df5", "#8b5cf6", "#ec4899", "#22c55e", "#f59e0b"];
+
+const formatLabel = (value) => {
+  if (!value) return "None";
+
+  return String(value)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const formatDueDate = (value) => {
+  if (!value) return "No date";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const buildInitials = (task) => {
+  const source = task.assignee || task.assignee_name || task.project || task.title || "?";
+
+  return String(source)
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join("");
+};
+
+const mapRecentTask = (task, index) => {
+  const priorityKey = String(task.priority || "").toLowerCase();
+  const statusKey = String(task.status || "").toLowerCase();
+  const statusStyle = STATUS_STYLES[statusKey] || {
+    label: formatLabel(task.status),
+    bg: "#f3f4f6",
+    color: "#374151",
+  };
+
+  return {
+    id: task.id || `${task.title}-${index}`,
+    task: task.title || task.task || "Untitled task",
+    project: task.project || "No project",
+    priority: formatLabel(task.priority),
+    priorityColor: PRIORITY_COLORS[priorityKey] || "#6b7280",
+    status: statusStyle.label,
+    statusBg: statusStyle.bg,
+    statusColor: statusStyle.color,
+    assignee: buildInitials(task),
+    assigneeBg: ASSIGNEE_COLORS[index % ASSIGNEE_COLORS.length],
+    due: formatDueDate(task.due_date || task.due),
+  };
+};
 
 export default function Dashboard() {
-  
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+
+    const fetchDashboardOverview = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await api.get("/dashboard/overview/");
+
+        if (!ignore) {
+          setOverview(response.data);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError("Unable to load dashboard overview. Please try again.");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchDashboardOverview();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const statCards = useMemo(
+    () => [
+      {
+        icon: FolderOpen,
+        iconBg: "#eff6ff",
+        iconColor: "#4f6df5",
+        value: overview?.total_projects ?? 0,
+        label: "Total Projects",
+        trend: "Workspace projects",
+        up: true,
+      },
+      {
+        icon: CheckSquare,
+        iconBg: "#f5f3ff",
+        iconColor: "#8b5cf6",
+        value: overview?.total_tasks ?? 0,
+        label: "Total Tasks",
+        trend: "All tracked tasks",
+        up: true,
+      },
+      {
+        icon: null,
+        emoji: "clock",
+        iconBg: "#fffbeb",
+        iconColor: "#f59e0b",
+        value: overview?.pending_tasks ?? 0,
+        label: "Pending Tasks",
+        trend: "Awaiting completion",
+        up: false,
+      },
+      {
+        icon: null,
+        checkGreen: true,
+        iconBg: "#f0fdf4",
+        iconColor: "#22c55e",
+        value: overview?.completed_tasks ?? 0,
+        label: "Completed Tasks",
+        trend: "Finished work",
+        up: true,
+      },
+      {
+        icon: Users,
+        iconBg: "#fff1f2",
+        iconColor: "#ef4444",
+        value: overview?.team_members ?? 0,
+        label: "Team Members",
+        trend: "Workspace members",
+        up: null,
+      },
+      {
+        icon: Sparkles,
+        iconBg: "#fef2f2",
+        iconColor: "#ef4444",
+        value: overview?.overdue_tasks ?? 0,
+        label: "Overdue Tasks",
+        trend: "Needs attention",
+        up: false,
+      },
+    ],
+    [overview]
+  );
+
+  const chartData =
+    overview?.weekly_task_activity?.length > 0
+      ? overview.weekly_task_activity
+      : DEFAULT_CHART_DATA;
+
+  const recentTasks = useMemo(
+    () => (overview?.recent_tasks || []).map(mapRecentTask),
+    [overview]
+  );
+
   return (
     <main className="db-page">
       {/* Topbar */}
@@ -175,16 +268,20 @@ export default function Dashboard() {
             </p>
             <span className="db-system-status">● All systems normal</span>
           </div>
-
-          
         </div>
 
+        {error && (
+          <div className="db-tasks-card" role="alert">
+            <p className="db-feed-text">{error}</p>
+          </div>
+        )}
+
         {/* Stat cards */}
-        <div className="db-stats">
+        <div className="db-stats" aria-busy={loading}>
           {statCards.map((card, i) => {
             const Icon = card.icon;
             return (
-              <div key={i} className="db-stat-card">
+              <div key={card.label} className="db-stat-card">
                 <div
                   className="db-stat-icon"
                   style={{ background: card.iconBg, color: card.iconColor }}
@@ -210,7 +307,9 @@ export default function Dashboard() {
                   )}
                 </div>
                 <div className="db-stat-body">
-                  <div className="db-stat-value">{card.value}</div>
+                  <div className="db-stat-value">
+                    {loading ? "..." : card.value}
+                  </div>
                   <div className="db-stat-label">{card.label}</div>
                   <div
                     className={`db-stat-trend ${
@@ -242,7 +341,9 @@ export default function Dashboard() {
                 <h2 className="db-section-title">Task Activity</h2>
                 <p className="db-section-sub">Tasks completed this week</p>
               </div>
-              <span className="db-chart-trend">↗ +18% vs last week</span>
+              <span className="db-chart-trend">
+                {loading ? "Loading..." : "↗ Live overview"}
+              </span>
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart
@@ -342,44 +443,58 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {recentTasks.map((row) => (
-                <tr key={row.id}>
-                  <td className="db-task-name">{row.task}</td>
-                  <td className="db-task-project">{row.project}</td>
-                  <td>
-                    <span
-                      className="db-priority"
-                      style={{
-                        color: row.priorityColor,
-                        borderColor: row.priorityColor + "33",
-                        background: row.priorityColor + "11",
-                      }}
-                    >
-                      {row.priority}
-                    </span>
+              {loading ? (
+                <tr>
+                  <td className="db-task-project" colSpan="6">
+                    Loading recent tasks...
                   </td>
-                  <td>
-                    <span
-                      className="db-status"
-                      style={{
-                        background: row.statusBg,
-                        color: row.statusColor,
-                      }}
-                    >
-                      {row.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div
-                      className="db-assignee"
-                      style={{ background: row.assigneeBg }}
-                    >
-                      {row.assignee}
-                    </div>
-                  </td>
-                  <td className="db-due">{row.due}</td>
                 </tr>
-              ))}
+              ) : recentTasks.length === 0 ? (
+                <tr>
+                  <td className="db-task-project" colSpan="6">
+                    No recent tasks found.
+                  </td>
+                </tr>
+              ) : (
+                recentTasks.map((row) => (
+                  <tr key={row.id}>
+                    <td className="db-task-name">{row.task}</td>
+                    <td className="db-task-project">{row.project}</td>
+                    <td>
+                      <span
+                        className="db-priority"
+                        style={{
+                          color: row.priorityColor,
+                          borderColor: row.priorityColor + "33",
+                          background: row.priorityColor + "11",
+                        }}
+                      >
+                        {row.priority}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className="db-status"
+                        style={{
+                          background: row.statusBg,
+                          color: row.statusColor,
+                        }}
+                      >
+                        {row.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div
+                        className="db-assignee"
+                        style={{ background: row.assigneeBg }}
+                      >
+                        {row.assignee}
+                      </div>
+                    </td>
+                    <td className="db-due">{row.due}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

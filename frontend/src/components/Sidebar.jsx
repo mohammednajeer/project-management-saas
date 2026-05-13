@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   FolderOpen,
   CheckSquare,
+  Activity,
   Users,
   BarChart2,
   Settings,
@@ -37,6 +38,12 @@ const navItems = [
     icon: CheckSquare,
     label: "Tasks",
     to: "/dashboard/tasks",
+  },
+
+  {
+    icon: Activity,
+    label: "Activity",
+    to: "/dashboard/activity",
   },
 
   {

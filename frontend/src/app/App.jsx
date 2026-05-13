@@ -13,6 +13,7 @@ import Projects from "../pages/projects/Projects";
 import ProjectDetails from "../pages/projects/ProjectDetails";
 import Tasks from "../pages/tasks/Tasks";
 import TaskDetails from "../pages/tasks/TaskDetails";
+import ActivityPage from "../pages/activity/ActivityPage";
 import Notifications from "../pages/notifications/Notifications";
 import WorkspaceHome from "../pages/workspace/WorkspaceHome";
 import WorkspaceTasks from "../pages/workspace/WorkspaceTasks";
@@ -84,6 +85,7 @@ function App() {
             <Route path="projects/:projectId" element={<ProjectDetails />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="tasks/:taskId" element={<TaskDetails />} />
+            <Route path="activity" element={<ActivityPage />} />
             <Route path="team" element={<Members />} />
             <Route path="reports" element={<PlaceholderPage title="Reports" />} />
             <Route path="settings" element={<PlaceholderPage title="Settings" />} />

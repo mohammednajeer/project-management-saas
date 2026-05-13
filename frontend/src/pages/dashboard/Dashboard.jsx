@@ -578,7 +578,7 @@ export default function Dashboard() {
           <div className="db-feed-card">
             <div className="db-feed-header">
               <h2 className="db-section-title">Activity Feed</h2>
-              <a href="#" className="db-view-all">View all</a>
+              <Link to="/dashboard/activity" className="db-view-all">View all</Link>
             </div>
             <div className="db-feed-list">
               {activitiesLoading ? (

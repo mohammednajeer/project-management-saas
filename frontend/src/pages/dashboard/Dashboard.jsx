@@ -58,13 +58,13 @@ const PRIORITY_COLORS = {
 };
 
 const STATUS_STYLES = {
-  backlog:     { label: "Backlog",      bg: "#F2F0F8", color: "#4B4963" },
-  todo:        { label: "To Do",        bg: "#F2F0F8", color: "#4B4963" },
-  pending:     { label: "Pending",      bg: "#FFFBEB", color: "#D97706" },
-  in_progress: { label: "In Progress",  bg: "#EFF6FF", color: "#3B82F6" },
-  review:      { label: "Review",       bg: "#F5F3FF", color: "#8B5CF6" },
-  done:        { label: "Done",         bg: "#F0FDF4", color: "#16A34A" },
-  completed:   { label: "Completed",    bg: "#F0FDF4", color: "#16A34A" },
+  backlog: { label: "Backlog", bg: "#F2F0F8", color: "#4B4963" },
+  todo: { label: "To Do", bg: "#F2F0F8", color: "#4B4963" },
+  pending: { label: "Pending", bg: "#FFFBEB", color: "#D97706" },
+  in_progress: { label: "In Progress", bg: "#EFF6FF", color: "#3B82F6" },
+  review: { label: "Review", bg: "#F5F3FF", color: "#8B5CF6" },
+  done: { label: "Done", bg: "#F0FDF4", color: "#16A34A" },
+  completed: { label: "Completed", bg: "#F0FDF4", color: "#16A34A" },
 };
 
 const ASSIGNEE_COLORS = ["#6C53B3", "#8B5CF6", "#EC4899", "#16A34A", "#F59E0B"];
@@ -345,9 +345,8 @@ export default function Dashboard() {
                   </div>
                   <div className="db-stat-label">{card.label}</div>
                   <div
-                    className={`db-stat-trend ${
-                      card.up === false ? "down" : card.up === null ? "neutral" : "up"
-                    }`}
+                    className={`db-stat-trend ${card.up === false ? "down" : card.up === null ? "neutral" : "up"
+                      }`}
                   >
                     {card.up === true && <TrendingUp size={12} />}
                     {card.up === false && <TrendingDown size={12} />}

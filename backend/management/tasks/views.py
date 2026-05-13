@@ -491,6 +491,29 @@ class TaskCommentListCreateView(APIView):
                 task=task,
                 user=request.user
             )
+            if comment.subtask:
+
+                activity_message = (
+                    f"Commented on subtask "
+                    f"'{comment.subtask.title}'"
+                )
+
+            else:
+
+                activity_message = (
+                    f"Commented on task "
+                    f"'{task.title}'"
+                )
+
+            create_activity(
+                organization=request.user.organization,
+                user=request.user,
+                action="comment_added",
+                message=activity_message,
+                project=task.project,
+                task=task,
+                subtask=comment.subtask,
+            )
             users_to_notify = set()
 
             for user in task.assigned_to.all():

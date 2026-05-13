@@ -215,6 +215,8 @@ const STATUS_DISTRIBUTION_CONFIG = [
   { key: "done", name: "Done", color: "#16A34A" },
 ];
 
+const DASHBOARD_ACTIVITY_LIMIT = 5;
+
 /* ─── EXTRA CHART DATA (derived from API or defaults) ────────────────────── */
 /* ─── CUSTOM TOOLTIP ─────────────────────────────────────────────────────── */
 function GlassTooltip({ active, payload, label }) {
@@ -368,6 +370,11 @@ export default function Dashboard() {
   const activityFeed = useMemo(
     () => activities.map(mapActivity),
     [activities]
+  );
+
+  const visibleActivityFeed = useMemo(
+    () => activityFeed.slice(0, DASHBOARD_ACTIVITY_LIMIT),
+    [activityFeed]
   );
 
   const projectProgress = useMemo(() => {
@@ -590,7 +597,7 @@ export default function Dashboard() {
                     <p className="db-feed-time">Try again later</p>
                   </div>
                 </div>
-              ) : activityFeed.length === 0 ? (
+              ) : visibleActivityFeed.length === 0 ? (
                 <div className="db-feed-item">
                   <span className="db-feed-dot" style={{ background: ACTIVITY_COLORS.default }} />
                   <div>
@@ -599,7 +606,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                activityFeed.map((item) => (
+                visibleActivityFeed.map((item) => (
                 <div key={item.id} className="db-feed-item">
                   <span className="db-feed-dot" style={{ background: item.color }} />
                   <div>

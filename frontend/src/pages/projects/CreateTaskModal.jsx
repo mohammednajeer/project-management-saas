@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import api from "../../services/api";
@@ -10,7 +10,12 @@ export default function CreateTaskModal({
   onClose,
   onSuccess,
   projectId,
+  projects = [],
+  initialProjectId = "",
 }) {
+
+  const [selectedProjectId, setSelectedProjectId] =
+    useState(initialProjectId || projectId || "");
 
   const [title, setTitle] =
     useState("");
@@ -30,6 +35,12 @@ export default function CreateTaskModal({
   const [error, setError] =
     useState("");
 
+  useEffect(() => {
+    if (open) {
+      setSelectedProjectId(initialProjectId || projectId || "");
+    }
+  }, [open, initialProjectId, projectId]);
+
   if (!open) return null;
 
   const handleCreate = async (e) => {
@@ -40,9 +51,17 @@ export default function CreateTaskModal({
     setError("");
 
     try {
+      const targetProjectId =
+        projectId || selectedProjectId;
+
+      if (!targetProjectId) {
+        setError("Please choose a project");
+        setLoading(false);
+        return;
+      }
 
       await api.post(
-        `/tasks/project/${projectId}/`,
+        `/tasks/project/${targetProjectId}/`,
         {
           title,
           description,
@@ -58,6 +77,7 @@ export default function CreateTaskModal({
       setDescription("");
       setPriority("medium");
       setDueDate("");
+      setSelectedProjectId(initialProjectId || projectId || "");
 
       onClose();
 
@@ -102,6 +122,37 @@ export default function CreateTaskModal({
           onSubmit={handleCreate}
           className="ct-form"
         >
+
+          {!projectId && (
+            <div className="ct-field">
+
+              <label>Project</label>
+
+              <select
+                value={selectedProjectId}
+                onChange={(e) =>
+                  setSelectedProjectId(
+                    e.target.value
+                  )
+                }
+                required
+              >
+                <option value="">
+                  Select project
+                </option>
+
+                {projects.map((project) => (
+                  <option
+                    key={project.id}
+                    value={project.id}
+                  >
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+
+            </div>
+          )}
 
           <div className="ct-field">
 

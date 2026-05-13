@@ -8,6 +8,7 @@ import {
 
 import api from "../../services/api";
 import "./Tasks.css";
+import CreateTaskModal from "../projects/CreateTaskModal";
 
 import { useNavigate } from "react-router-dom";
 
@@ -177,9 +178,13 @@ export default function Tasks() {
     setFilterProject
   ] = useState("all");
 
-  useEffect(() => {
+  const [taskModalOpen, setTaskModalOpen] =
+    useState(false);
 
-    const fetchTasks = async () => {
+  const [modalProjectId, setModalProjectId] =
+    useState("");
+
+  const fetchTasks = async () => {
 
       try {
 
@@ -232,9 +237,21 @@ export default function Tasks() {
       }
     };
 
+  useEffect(() => {
+
     fetchTasks();
 
   }, []);
+
+  const openCreateTaskModal = (projectId = "") => {
+    setModalProjectId(
+      projectId ||
+      (filterProject !== "all"
+        ? filterProject
+        : "")
+    );
+    setTaskModalOpen(true);
+  };
 
   const handleDragEnd =
     async (result) => {
@@ -352,7 +369,15 @@ export default function Tasks() {
 
           </select>
 
-          <button className="add-task-btn">
+          <button
+            type="button"
+            className="add-task-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openCreateTaskModal();
+            }}
+          >
 
             <Plus size={16} />
 
@@ -404,7 +429,7 @@ export default function Tasks() {
                       <div
                         className="column-accent"
                         style={{
-                          background:
+                          "--column-accent":
                             column.accent,
                         }}
                       />
@@ -665,7 +690,15 @@ export default function Tasks() {
 
                       </div>
 
-                      <button className="column-add-task-btn">
+                      <button
+                        type="button"
+                        className="column-add-task-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openCreateTaskModal();
+                        }}
+                      >
 
                         <Plus size={14} />
 
@@ -733,6 +766,16 @@ export default function Tasks() {
         </span>
 
       </div>
+
+      <CreateTaskModal
+        open={taskModalOpen}
+        onClose={() =>
+          setTaskModalOpen(false)
+        }
+        onSuccess={fetchTasks}
+        projects={projects}
+        initialProjectId={modalProjectId}
+      />
 
     </div>
   );

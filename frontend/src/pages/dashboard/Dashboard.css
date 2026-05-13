@@ -404,6 +404,12 @@
   box-shadow: var(--shadow-md);
 }
 
+.db-feed-card {
+  align-self: start;
+  max-height: 360px;
+  overflow: hidden;
+}
+
 /* Remove focus outlines on recharts elements */
 .db-chart-card .recharts-wrapper,
 .db-chart-card .recharts-wrapper *,
@@ -627,6 +633,8 @@
 .db-feed-list {
   display: flex;
   flex-direction: column;
+  max-height: 278px;
+  overflow: hidden;
 }
 
 .db-feed-item {

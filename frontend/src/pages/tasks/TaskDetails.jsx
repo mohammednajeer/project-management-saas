@@ -22,6 +22,65 @@ function PriorityBadge({ priority }) {
   );
 }
 
+const ACTIVITY_COLOR_CLASSES = {
+  task_created: "task-created",
+  task_updated: "task-updated",
+  subtask_created: "subtask-created",
+  subtask_updated: "subtask-updated",
+  comment_added: "comment-added",
+};
+
+function getActivityColor(action) {
+  return ACTIVITY_COLOR_CLASSES[action] || "default";
+}
+
+function formatRelativeTime(value) {
+  if (!value) return "Just now";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Just now";
+
+  const diffMs = Date.now() - date.getTime();
+  const diffSeconds = Math.max(0, Math.floor(diffMs / 1000));
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 60) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes === 1 ? "" : "s"} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+  });
+}
+
+function formatRole(role) {
+  if (!role) return "Member";
+  return String(role)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getActivityMessage(activity) {
+  if (activity.message) return activity.message;
+  return String(activity.action || "Activity recorded").replace(/_/g, " ");
+}
+
+function getActivityContextLabels(activity) {
+  const labels = [];
+
+  if (activity.project_data?.name) labels.push(`Project: ${activity.project_data.name}`);
+  if (activity.task_data?.title) labels.push(`Task: ${activity.task_data.title}`);
+  if (activity.subtask_data?.title) labels.push(`Subtask: ${activity.subtask_data.title}`);
+
+  return labels;
+}
+
 export default function TaskDetails() {
   const { taskId } = useParams();
   const navigate = useNavigate();
@@ -60,9 +119,38 @@ export default function TaskDetails() {
     const [comments, setComments] = useState([]);
     const [commentMessage, setCommentMessage] = useState("");
     const [commentSubtask,setCommentSubtask] = useState("");
+    const [selectedSubtask, setSelectedSubtask] = useState(null);
+    const [activities, setActivities] = useState([]);
+    const [activitiesLoading, setActivitiesLoading] = useState(true);
+    const [activitiesError, setActivitiesError] = useState("");
 
 
   useEffect(() => { fetchTask(); }, [taskId]);
+  useEffect(() => { fetchActivities(); }, [taskId]);
+
+  const fetchActivities = async () => {
+    try {
+      setActivitiesLoading(true);
+      setActivitiesError("");
+
+      const activitiesRes = await api.get(
+        `/activities/task/${taskId}/`
+      );
+
+      setActivities(
+        Array.isArray(activitiesRes.data)
+          ? activitiesRes.data
+          : []
+      );
+    } catch (err) {
+      console.log(err);
+      setActivitiesError(
+        "Unable to load activity history."
+      );
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
 
   const fetchTask = async () => {
     try {
@@ -142,7 +230,8 @@ export default function TaskDetails() {
       setPriority("medium");
       setStatus("todo");
       setDueDate("");
-      fetchTask();
+      await fetchTask();
+      await fetchActivities();
     } catch (err) {
       console.log(err);
     }
@@ -167,6 +256,7 @@ export default function TaskDetails() {
         setCommentMessage("");
 
         await fetchTask();
+        await fetchActivities();
 
       } catch (err) {
 
@@ -179,6 +269,7 @@ export default function TaskDetails() {
     try {
       await api.patch(`/tasks/subtask/${subtaskId}/`, data);
       await fetchTask();
+      await fetchActivities();
     } catch (err) {
       console.log(err);
     }
@@ -202,6 +293,7 @@ export default function TaskDetails() {
             );
 
             await fetchTask();
+            await fetchActivities();
 
             } catch (err) {
 
@@ -239,6 +331,7 @@ export default function TaskDetails() {
             );
 
             await fetchTask();
+            await fetchActivities();
 
             } catch (err) {
 
@@ -261,6 +354,7 @@ export default function TaskDetails() {
             }
             );
             await fetchTask();
+            await fetchActivities();
 
             setEditMode(false);
 
@@ -313,6 +407,9 @@ export default function TaskDetails() {
   const completedCount = task.completed_subtasks ?? 0;
   const totalCount = task.subtask_count ?? subtasks.length;
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const activeSubtask = selectedSubtask
+    ? subtasks.find((item) => item.id === selectedSubtask.id) || selectedSubtask
+    : null;
 
   return (
     <div className="task-details-page">
@@ -669,7 +766,13 @@ export default function TaskDetails() {
         ) : (
           <div className="subtasks-list">
             {subtasks.map((subtask) => (
-              <div key={subtask.id} className="subtask-card">
+              <div
+                key={subtask.id}
+                className="subtask-card"
+                onClick={() =>
+                  setSelectedSubtask(subtask)
+                }
+              >
 
                 <div className="subtask-card-left">
                   {editingSubtask ===
@@ -681,6 +784,9 @@ export default function TaskDetails() {
                         setEditingTitle(
                         e.target.value
                         )
+                    }
+                    onClick={(e) =>
+                      e.stopPropagation()
                     }
                     />
 
@@ -707,7 +813,12 @@ export default function TaskDetails() {
                   </div>
                 </div>
 
-                <div className="subtask-card-controls">
+                <div
+                  className="subtask-card-controls"
+                  onClick={(e) =>
+                    e.stopPropagation()
+                  }
+                >
                     <div className="subtask-actions">
 
                         {editingSubtask ===
@@ -911,6 +1022,224 @@ export default function TaskDetails() {
   </div>
 
 </div>
+<div className="task-activity-wrapper">
+
+  <div className="task-activity-header">
+
+    <div>
+      <h2>Activity Timeline</h2>
+      <p>Recent task history and team updates</p>
+    </div>
+
+    <span>
+      {activities.length}
+    </span>
+
+  </div>
+
+  <div className="task-activity-list">
+
+    {activitiesLoading ? (
+
+      <div className="activity-state-card">
+        Loading activity history...
+      </div>
+
+    ) : activitiesError ? (
+
+      <div className="activity-state-card activity-state-card--error">
+        {activitiesError}
+      </div>
+
+    ) : activities.length === 0 ? (
+
+      <div className="activity-state-card">
+        No activity history yet
+      </div>
+
+    ) : (
+
+      activities.map((activity) => {
+        const userName =
+          activity.user_data?.name ||
+          "Someone";
+
+        const userRole =
+          formatRole(
+            activity.user_data?.role
+          );
+
+        const colorClass =
+          getActivityColor(
+            activity.action
+          );
+
+        const contextLabels =
+          getActivityContextLabels(
+            activity
+          );
+
+        return (
+
+          <article
+            key={activity.id}
+            className="activity-timeline-item"
+          >
+
+            <span
+              className={`activity-timeline-dot activity-timeline-dot--${colorClass}`}
+            />
+
+            <div className="activity-timeline-card">
+
+              <div className="activity-timeline-top">
+
+                <div className="activity-user-block">
+                  <strong>{userName}</strong>
+                  <span className="activity-role-badge">
+                    {userRole}
+                  </span>
+                </div>
+
+                <time className="activity-time">
+                  {formatRelativeTime(
+                    activity.created_at
+                  )}
+                </time>
+
+              </div>
+
+              <p className="activity-message">
+                {getActivityMessage(activity)}
+              </p>
+
+              {contextLabels.length > 0 && (
+                <div className="activity-context-list">
+                  {contextLabels.map((label) => (
+                    <span
+                      key={label}
+                      className="activity-context-pill"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+            </div>
+
+          </article>
+        );
+      })
+    )}
+
+  </div>
+
+</div>
+{activeSubtask && (
+  <div
+    className="subtask-modal-overlay"
+    onClick={() =>
+      setSelectedSubtask(null)
+    }
+  >
+    <div
+      className="subtask-modal"
+      onClick={(e) =>
+        e.stopPropagation()
+      }
+    >
+      <div className="subtask-modal-header">
+        <div>
+          <span className="subtask-modal-eyebrow">
+            Subtask Details
+          </span>
+          <h2>{activeSubtask.title}</h2>
+        </div>
+        <button
+          type="button"
+          className="subtask-modal-close"
+          onClick={() =>
+            setSelectedSubtask(null)
+          }
+        >
+          x
+        </button>
+      </div>
+
+      <p className="subtask-modal-description">
+        {activeSubtask.description ||
+          "No description provided."}
+      </p>
+
+      <div className="subtask-modal-grid">
+        <div className="subtask-modal-field">
+          <span>Status</span>
+          <strong>
+            {activeSubtask.status?.replace("_", " ") || "todo"}
+          </strong>
+        </div>
+        <div className="subtask-modal-field">
+          <span>Priority</span>
+          <strong>
+            {activeSubtask.priority || "medium"}
+          </strong>
+        </div>
+        <div className="subtask-modal-field">
+          <span>Due Date</span>
+          <strong>
+            {activeSubtask.due_date || "No due date"}
+          </strong>
+        </div>
+      </div>
+
+      <div className="subtask-modal-section">
+        <span>Assigned Members</span>
+        <div className="assigned-users">
+          {activeSubtask.assigned_users?.length ? (
+            activeSubtask.assigned_users.map((user) => (
+              <div
+                key={user.id}
+                className="assigned-user-pill"
+              >
+                <div className="assigned-avatar">
+                  {user.name?.slice(0, 2).toUpperCase()}
+                </div>
+                {user.name}
+              </div>
+            ))
+          ) : (
+            <span className="unassigned-text">
+              Unassigned
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="subtask-modal-actions">
+        <button
+          type="button"
+          onClick={() => {
+            startEditSubtask(activeSubtask);
+            setSelectedSubtask(null);
+          }}
+        >
+          Edit Subtask
+        </button>
+        <button
+          type="button"
+          className="danger"
+          onClick={() => {
+            setSelectedSubtask(null);
+            deleteSubtask(activeSubtask.id);
+          }}
+        >
+          Delete Subtask
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

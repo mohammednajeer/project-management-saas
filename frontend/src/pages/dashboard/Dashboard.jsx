@@ -26,19 +26,12 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import { Link } from "react-router-dom";
 import api from "../../services/api";
 import "./Dashboard.css";
 
 /* ─── STATIC DATA ────────────────────────────────────────────────────────── */
-// TODO: replace with real activity timeline system later
-const activityFeed = [
-  { id: 1, color: "#16A34A", text: 'Alex Kim completed "API Integration"', time: "2 min ago" },
-  { id: 2, color: "#6C53B3", text: 'New project "Analytics Dashboard" created', time: "15 min ago" },
-  { id: 3, color: "#8B5CF6", text: "Sara Patel joined the workspace", time: "1 hour ago" },
-  { id: 4, color: "#F59E0B", text: '"Mobile App" deadline moved to Dec 30', time: "3 hours ago" },
-  { id: 5, color: "#16A34A", text: '5 tasks moved to "Done" in Website Redesign', time: "5 hours ago" },
-  { id: 6, color: "#8A87A0", text: 'Comment added on "Backend API" task', time: "Yesterday" },
-];
+// TODO: replace with richer real-time timeline later
 
 const DEFAULT_CHART_DATA = [
   { day: "Mon", tasks: 0 },
@@ -59,15 +52,25 @@ const PRIORITY_COLORS = {
 
 const STATUS_STYLES = {
   backlog: { label: "Backlog", bg: "#F2F0F8", color: "#4B4963" },
-  todo: { label: "To Do", bg: "#F2F0F8", color: "#4B4963" },
+  todo: { label: "Backlog", bg: "#F2F0F8", color: "#4B4963" },
   pending: { label: "Pending", bg: "#FFFBEB", color: "#D97706" },
   in_progress: { label: "In Progress", bg: "#EFF6FF", color: "#3B82F6" },
+  inprogress: { label: "In Progress", bg: "#EFF6FF", color: "#3B82F6" },
   review: { label: "Review", bg: "#F5F3FF", color: "#8B5CF6" },
   done: { label: "Done", bg: "#F0FDF4", color: "#16A34A" },
   completed: { label: "Completed", bg: "#F0FDF4", color: "#16A34A" },
 };
 
 const ASSIGNEE_COLORS = ["#6C53B3", "#8B5CF6", "#EC4899", "#16A34A", "#F59E0B"];
+
+const ACTIVITY_COLORS = {
+  task_created: "#16A34A",
+  subtask_created: "#8B5CF6",
+  comment_added: "#F59E0B",
+  task_updated: "#3B82F6",
+  subtask_updated: "#3B82F6",
+  default: "#8A87A0",
+};
 
 /* ─── HELPERS ────────────────────────────────────────────────────────────── */
 const formatLabel = (value) => {
@@ -84,8 +87,81 @@ const formatDueDate = (value) => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
+const formatRelativeTime = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.max(0, Math.floor(diffMs / 1000));
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 60) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+const extractQuotedText = (message) => {
+  const match = String(message || "").match(/'([^']+)'|"([^"]+)"/);
+  return match?.[1] || match?.[2] || "";
+};
+
+const buildActivityText = (activity) => {
+  const userName = activity.user_data?.name || "Someone";
+  const action = activity.action || "";
+  const itemName = extractQuotedText(activity.message);
+  const quotedName = itemName ? ` "${itemName}"` : "";
+
+  if (action === "task_created") return `${userName} created task${quotedName}`;
+  if (action === "subtask_created") return `${userName} created subtask${quotedName}`;
+  if (action === "subtask_updated") return `${userName} updated subtask${quotedName}`;
+  if (action === "task_updated") return `${userName} updated task${quotedName}`;
+  if (action === "comment_added") return `${userName} added a comment`;
+
+  return activity.message ? `${userName} ${activity.message}` : `${userName} recorded activity`;
+};
+
+const getProjectName = (task) => {
+  const project = task.project || task.project_name;
+  if (!project) return "No project";
+  if (typeof project === "string") return project;
+  return project.name || project.title || "No project";
+};
+
+const getAssigneeName = (task) => {
+  const assignee = task.assigned_users || task.assignee || task.assignee_name || task.user || task.user_data;
+  if (!assignee) return "Unassigned";
+  if (Array.isArray(assignee)) {
+    if (assignee.length === 0) return "Unassigned";
+    return assignee.map((user) => user.name || user.email).filter(Boolean).join(", ") || "Unassigned";
+  }
+  if (typeof assignee === "string") return assignee;
+  return assignee.name || assignee.email || "Unassigned";
+};
+
+const normalizeStatusKey = (status) => {
+  const key = String(status || "").toLowerCase().replace(/\s+/g, "_");
+  if (key === "backlog" || key === "todo") return "backlog";
+  if (key === "inprogress" || key === "in_progress") return "in_progress";
+  if (key === "completed" || key === "done") return "done";
+  if (key === "review") return "review";
+  return key || "backlog";
+};
+
+const isCompletedTask = (task) => {
+  return normalizeStatusKey(task.status) === "done";
+};
+
 const buildInitials = (task) => {
-  const source = task.assignee || task.assignee_name || task.project || task.title || "?";
+  const source = getAssigneeName(task) || getProjectName(task) || task.title || "?";
   return String(source)
     .split(" ")
     .filter(Boolean)
@@ -96,7 +172,7 @@ const buildInitials = (task) => {
 
 const mapRecentTask = (task, index) => {
   const priorityKey = String(task.priority || "").toLowerCase();
-  const statusKey = String(task.status || "").toLowerCase();
+  const statusKey = normalizeStatusKey(task.status);
   const statusStyle = STATUS_STYLES[statusKey] || {
     label: formatLabel(task.status),
     bg: "#F2F0F8",
@@ -105,7 +181,7 @@ const mapRecentTask = (task, index) => {
   return {
     id: task.id || `${task.title}-${index}`,
     task: task.title || task.task || "Untitled task",
-    project: task.project || "No project",
+    project: getProjectName(task),
     priority: formatLabel(task.priority),
     priorityColor: PRIORITY_COLORS[priorityKey] || "#8A87A0",
     status: statusStyle.label,
@@ -117,29 +193,29 @@ const mapRecentTask = (task, index) => {
   };
 };
 
+const mapActivity = (activity, index) => {
+  const action = activity.action || "default";
+  return {
+    id: activity.id || `${action}-${index}`,
+    text: buildActivityText(activity),
+    time: formatRelativeTime(activity.created_at),
+    color: ACTIVITY_COLORS[action] || ACTIVITY_COLORS.default,
+  };
+};
+
+const normalizeChartPoint = (point, index) => ({
+  day: point.day || point.label || DEFAULT_CHART_DATA[index]?.day || "",
+  tasks: Number(point.tasks ?? point.count ?? point.value ?? 0),
+});
+
+const STATUS_DISTRIBUTION_CONFIG = [
+  { key: "backlog", name: "Backlog", color: "#8A87A0" },
+  { key: "in_progress", name: "In Progress", color: "#3B82F6" },
+  { key: "review", name: "Review", color: "#8B5CF6" },
+  { key: "done", name: "Done", color: "#16A34A" },
+];
+
 /* ─── EXTRA CHART DATA (derived from API or defaults) ────────────────────── */
-const DEFAULT_STATUS_DIST = [
-  { name: "Done", value: 12, color: "#16A34A" },
-  { name: "In Progress", value: 8, color: "#3B82F6" },
-  { name: "Pending", value: 5, color: "#F59E0B" },
-  { name: "Backlog", value: 3, color: "#8A87A0" },
-];
-
-const DEFAULT_PROJECT_PROGRESS = [
-  { name: "Website Redesign", pct: 78, color: "#6C53B3" },
-  { name: "Mobile App v2", pct: 45, color: "#3B82F6" },
-  { name: "API Integration", pct: 92, color: "#16A34A" },
-  { name: "Analytics Dashboard", pct: 30, color: "#F59E0B" },
-];
-
-const DEFAULT_WORKLOAD = [
-  { name: "Alex", tasks: 8, color: "#6C53B3" },
-  { name: "Sara", tasks: 6, color: "#8B5CF6" },
-  { name: "Mike", tasks: 10, color: "#3B82F6" },
-  { name: "Priya", tasks: 4, color: "#059669" },
-  { name: "John", tasks: 7, color: "#F59E0B" },
-];
-
 /* ─── CUSTOM TOOLTIP ─────────────────────────────────────────────────────── */
 function GlassTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -170,6 +246,9 @@ export default function Dashboard() {
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [activitiesError, setActivitiesError] = useState("");
 
   useEffect(() => {
     let ignore = false;
@@ -188,6 +267,26 @@ export default function Dashboard() {
     };
 
     fetchDashboardOverview();
+    return () => { ignore = true; };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const fetchActivities = async () => {
+      try {
+        setActivitiesLoading(true);
+        setActivitiesError("");
+        const response = await api.get("/activities/");
+        if (!ignore) setActivities(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        if (!ignore) setActivitiesError("Unable to load recent activity.");
+      } finally {
+        if (!ignore) setActivitiesLoading(false);
+      }
+    };
+
+    fetchActivities();
     return () => { ignore = true; };
   }, []);
 
@@ -252,30 +351,89 @@ export default function Dashboard() {
     [overview]
   );
 
-  const chartData =
-    overview?.weekly_task_activity?.length > 0
-      ? overview.weekly_task_activity
-      : DEFAULT_CHART_DATA;
-
-  const recentTasks = useMemo(
-    () => (overview?.recent_tasks || []).map(mapRecentTask),
+  const rawRecentTasks = useMemo(
+    () => (Array.isArray(overview?.recent_tasks) ? overview.recent_tasks : []),
     [overview]
   );
 
+  const chartData = Array.isArray(overview?.weekly_task_activity)
+    ? overview.weekly_task_activity.map(normalizeChartPoint)
+    : DEFAULT_CHART_DATA;
+
+  const recentTasks = useMemo(
+    () => rawRecentTasks.map(mapRecentTask),
+    [rawRecentTasks]
+  );
+
+  const activityFeed = useMemo(
+    () => activities.map(mapActivity),
+    [activities]
+  );
+
+  const projectProgress = useMemo(() => {
+    const projects = rawRecentTasks.reduce((acc, task) => {
+      const name = getProjectName(task);
+      if (!acc[name]) acc[name] = { total: 0, completed: 0 };
+      acc[name].total += 1;
+      if (isCompletedTask(task)) acc[name].completed += 1;
+      return acc;
+    }, {});
+
+    return Object.entries(projects).map(([name, data], index) => ({
+      name,
+      pct: data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0,
+      color: ASSIGNEE_COLORS[index % ASSIGNEE_COLORS.length],
+    }));
+  }, [rawRecentTasks]);
+
+  const teamWorkload = useMemo(() => {
+    if (Array.isArray(overview?.team_workload)) {
+      return overview.team_workload.map((item, index) => ({
+        name: item.name || "Unassigned",
+        tasks: Number(item.tasks ?? item.count ?? 0),
+        color: ASSIGNEE_COLORS[index % ASSIGNEE_COLORS.length],
+      }));
+    }
+
+    const assignees = rawRecentTasks.reduce((acc, task) => {
+      const name = getAssigneeName(task);
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(assignees).map(([name, tasks], index) => ({
+      name,
+      tasks,
+      color: ASSIGNEE_COLORS[index % ASSIGNEE_COLORS.length],
+    }));
+  }, [overview, rawRecentTasks]);
+
   const statusDistribution = useMemo(() => {
-    if (!overview) return DEFAULT_STATUS_DIST;
-    const done = overview.completed_tasks ?? 12;
-    const pending = overview.pending_tasks ?? 5;
-    const total = overview.total_tasks ?? 28;
-    const inProgress = Math.max(0, Math.round((total - done - pending) * 0.6));
-    const backlog = Math.max(0, total - done - pending - inProgress);
-    return [
-      { name: "Done", value: done, color: "#16A34A" },
-      { name: "In Progress", value: inProgress, color: "#3B82F6" },
-      { name: "Pending", value: pending, color: "#F59E0B" },
-      { name: "Backlog", value: backlog, color: "#8A87A0" },
-    ];
-  }, [overview]);
+    const counts = {
+      backlog: 0,
+      in_progress: 0,
+      review: 0,
+      done: 0,
+    };
+
+    if (Array.isArray(overview?.task_status_distribution)) {
+      overview.task_status_distribution.forEach((item) => {
+        const key = normalizeStatusKey(item.status || item.name);
+        if (counts[key] !== undefined) counts[key] += Number(item.count ?? item.value ?? 0);
+      });
+    } else {
+      rawRecentTasks.forEach((task) => {
+        const key = normalizeStatusKey(task.status);
+        if (counts[key] !== undefined) counts[key] += 1;
+      });
+    }
+
+    return STATUS_DISTRIBUTION_CONFIG.map((item) => ({
+      name: item.name,
+      value: counts[item.key],
+      color: item.color,
+    }));
+  }, [overview, rawRecentTasks]);
 
   /* ── Render ────────────────────────────────────────────────────────────── */
   return (
@@ -394,7 +552,7 @@ export default function Dashboard() {
                   tick={{ fontSize: 12, fill: "#8A87A0" }}
                   axisLine={false}
                   tickLine={false}
-                  ticks={[0, 3, 6, 9, 12]}
+                  allowDecimals={false}
                 />
                 <Tooltip content={<GlassTooltip />} />
                 <Area
@@ -416,7 +574,32 @@ export default function Dashboard() {
               <a href="#" className="db-view-all">View all</a>
             </div>
             <div className="db-feed-list">
-              {activityFeed.map((item) => (
+              {activitiesLoading ? (
+                <div className="db-feed-item">
+                  <span className="db-feed-dot" style={{ background: ACTIVITY_COLORS.default }} />
+                  <div>
+                    <p className="db-feed-text">Loading recent activity...</p>
+                    <p className="db-feed-time">Please wait</p>
+                  </div>
+                </div>
+              ) : activitiesError ? (
+                <div className="db-feed-item">
+                  <span className="db-feed-dot" style={{ background: ACTIVITY_COLORS.default }} />
+                  <div>
+                    <p className="db-feed-text">{activitiesError}</p>
+                    <p className="db-feed-time">Try again later</p>
+                  </div>
+                </div>
+              ) : activityFeed.length === 0 ? (
+                <div className="db-feed-item">
+                  <span className="db-feed-dot" style={{ background: ACTIVITY_COLORS.default }} />
+                  <div>
+                    <p className="db-feed-text">No recent activity</p>
+                    <p className="db-feed-time">You're all caught up</p>
+                  </div>
+                </div>
+              ) : (
+                activityFeed.map((item) => (
                 <div key={item.id} className="db-feed-item">
                   <span className="db-feed-dot" style={{ background: item.color }} />
                   <div>
@@ -424,7 +607,8 @@ export default function Dashboard() {
                     <p className="db-feed-time">{item.time}</p>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -476,7 +660,21 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="db-progress-list">
-              {DEFAULT_PROJECT_PROGRESS.map((p) => (
+              {projectProgress.length === 0 ? (
+                <div>
+                  <div className="db-progress-item-header">
+                    <span className="db-progress-name">No project data</span>
+                    <span className="db-progress-pct">0%</span>
+                  </div>
+                  <div className="db-progress-bar">
+                    <div
+                      className="db-progress-fill"
+                      style={{ width: "0%", background: ASSIGNEE_COLORS[0] }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                projectProgress.map((p) => (
                 <div key={p.name}>
                   <div className="db-progress-item-header">
                     <span className="db-progress-name">{p.name}</span>
@@ -489,7 +687,8 @@ export default function Dashboard() {
                     />
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -502,7 +701,7 @@ export default function Dashboard() {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={DEFAULT_WORKLOAD} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <BarChart data={teamWorkload} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E8E6F3" vertical={false} />
                 <XAxis
                   dataKey="name"
@@ -517,7 +716,7 @@ export default function Dashboard() {
                 />
                 <Tooltip content={<GlassTooltip />} />
                 <Bar dataKey="tasks" radius={[6, 6, 0, 0]} barSize={28}>
-                  {DEFAULT_WORKLOAD.map((entry, i) => (
+                  {teamWorkload.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Bar>
@@ -530,7 +729,7 @@ export default function Dashboard() {
         <div className="db-tasks-card">
           <div className="db-tasks-header">
             <h2 className="db-section-title">Recent Tasks</h2>
-            <a href="#" className="db-view-all">View all tasks →</a>
+            <Link to="/dashboard/tasks" className="db-view-all">View all tasks →</Link>
           </div>
           <table className="db-tasks-table">
             <thead>

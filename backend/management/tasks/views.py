@@ -203,10 +203,43 @@ class SubTaskUpdateView(APIView):
             data=request.data,
             partial=True
         )
+        old_status = subtask.status
 
         if serializer.is_valid():
 
             serializer.save()
+            new_status = serializer.instance.status
+
+            if old_status != new_status:
+
+                create_activity(
+
+                    organization=
+                        request.user.organization,
+
+                    user=
+                        request.user,
+
+                    action=
+                        "subtask_updated",
+
+                    message=
+                        f"Changed subtask "
+                        f"'{subtask.title}' "
+                        f"status from "
+                        f"{old_status} "
+                        f"to "
+                        f"{new_status}",
+
+                    project=
+                        subtask.task.project,
+
+                    task=
+                        subtask.task,
+
+                    subtask=
+                        subtask,
+                )
 
             return Response(serializer.data)
 

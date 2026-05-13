@@ -27,5 +27,6 @@ urlpatterns = [
     path("api/notifications/",include("notifications.urls")),
     path("api/workspace/",include("workspace.urls")),
     path("api/dashboard/", include("analytics.urls")),
+    path("api/activities/", include("activities.urls")),
  
 ]

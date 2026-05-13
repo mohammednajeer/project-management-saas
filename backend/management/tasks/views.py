@@ -303,8 +303,67 @@ class TaskUpdateView(APIView):
         )
 
         if serializer.is_valid():
+            old_status = task.status
+
+            old_priority = task.priority
+
+            old_due_date = task.due_date
 
             serializer.save()
+            updated_task = serializer.instance
+
+            if old_status != updated_task.status:
+
+                create_activity(
+                    organization=request.user.organization,
+                    user=request.user,
+                    action="task_updated",
+                    message=(
+                        f"Changed task "
+                        f"'{task.title}' "
+                        f"status from "
+                        f"{old_status} "
+                        f"to "
+                        f"{updated_task.status}"
+                    ),
+                    project=task.project,
+                    task=task,
+                )
+
+
+            if old_priority != updated_task.priority:
+
+                create_activity(
+                    organization=request.user.organization,
+                    user=request.user,
+                    action="task_updated",
+                    message=(
+                        f"Changed task "
+                        f"'{task.title}' "
+                        f"priority from "
+                        f"{old_priority} "
+                        f"to "
+                        f"{updated_task.priority}"
+                    ),
+                    project=task.project,
+                    task=task,
+                )
+
+
+            if old_due_date != updated_task.due_date:
+
+                create_activity(
+                    organization=request.user.organization,
+                    user=request.user,
+                    action="task_updated",
+                    message=(
+                        f"Updated due date for "
+                        f"task "
+                        f"'{task.title}'"
+                    ),
+                    project=task.project,
+                    task=task,
+                )
 
             return Response(serializer.data)
 

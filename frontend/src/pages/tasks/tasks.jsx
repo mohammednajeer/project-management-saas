@@ -475,7 +475,7 @@ export default function Tasks() {
                                 }
                               >
 
-                                {(provided) => (
+                                {(provided, snapshot) => (
 
                                   <div
                                     className="task-card"
@@ -484,6 +484,12 @@ export default function Tasks() {
                                     }
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
+                                    style={{
+                                      ...provided.draggableProps.style,
+                                      zIndex: snapshot.isDragging ? 9999 : "auto",
+                                      opacity: snapshot.isDragging ? 0.98 : 1,
+                                      pointerEvents: snapshot.isDragging ? "none" : "auto",
+                                    }}
                                     onClick={() =>
                                       navigate(
                                         `/dashboard/tasks/${task.id}`

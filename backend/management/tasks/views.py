@@ -7,6 +7,7 @@ from .serializers import TaskSerializer,SubTaskSerializer,TaskCommentSerializer
 from notifications.models import Notification
 from projects.models import Project
 from accounts.permissions import IsManagerOrAdmin
+from activities.utils import create_activity
 
 
 class ProjectTaskListCreateView(APIView):
@@ -64,6 +65,22 @@ class ProjectTaskListCreateView(APIView):
                 project=project,
                 created_by=request.user
             )
+            create_activity(
+
+                organization=request.user.organization,
+
+                user=request.user,
+
+                action= "task_created",
+
+                message=
+                    f"Created task "
+                    f"'{task.title}'",
+
+                task=task,
+
+                project= task.project,
+            )
 
             return Response(
                 TaskSerializer(task).data,
@@ -115,6 +132,24 @@ class SubTaskListCreateView(APIView):
         if serializer.is_valid():
 
             subtask = serializer.save(task=task)
+            create_activity(
+
+                organization=request.user.organization,
+
+                user=request.user,
+
+                action="subtask_created",
+
+                message=
+                    f"Created subtask "
+                    f"'{subtask.title}'",
+
+                project=task.project,
+
+                task= task,
+
+                subtask=subtask,
+            )
 
             for user in subtask.assigned_to.all():
 

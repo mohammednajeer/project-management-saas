@@ -1,23 +1,44 @@
 /* ─────────────────────────────────────────────
-   InviteSignup.css
-   Mirrors AuthPage.css conventions exactly —
-   same tokens, spacing scale, and naming prefix
-   so the invite page is indistinguishable from
-   the rest of your auth flow.
+   InviteSignup.css — Purple Glass Theme
+   Matches AuthPage.css conventions exactly.
 ───────────────────────────────────────────── */
 
-/* ── Root layout ─────────────────────────────────────────────────────────── */
+/* ── Root layout ── */
 .inv-root {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ap-bg, #f5f5f7);
+  background: #FAF9FC;
   padding: 24px;
-  font-family: var(--ap-font, "DM Sans", system-ui, sans-serif);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
-/* ── Shell: brand left + form right ─────────────────────────────────────── */
+/* Atmospheric blobs */
+.inv-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 65% 45% at 15% 8%,  rgba(156,170,242,0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 35% at 88% 85%, rgba(192,129,228,0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 35% 25% at 55% 45%, rgba(108,83,179,0.09) 0%, transparent 50%);
+}
+
+/* Dot grid */
+.inv-root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(108,83,179,0.11) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Shell: brand left + form right ── */
 .inv-shell {
   display: grid;
   grid-template-columns: 420px 1fr;
@@ -26,12 +47,18 @@
   min-height: 560px;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.13);
+  border: 1px solid rgba(108,83,179,0.16);
+  box-shadow: 0 24px 80px rgba(108,83,179,0.14), 0 6px 20px rgba(108,83,179,0.08);
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  position: relative;
+  z-index: 1;
 }
 
-/* ── Left brand panel ────────────────────────────────────────────────────── */
+/* ── Left brand panel ── */
 .inv-brand {
-  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
+  background: linear-gradient(135deg, #6C53B3 0%, #9CAAF2 100%);
   color: #fff;
   padding: 44px 40px;
   display: flex;
@@ -39,37 +66,54 @@
   gap: 28px;
   position: relative;
   overflow: hidden;
+  border-radius: 20px 0 0 20px;
 }
 
-/* Subtle grain overlay */
+/* Orb decorations */
 .inv-brand::before {
   content: "";
   position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  bottom: -5rem;
+  right: -5rem;
+  width: 20rem;
+  height: 20rem;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
   pointer-events: none;
 }
 
-/* ── Brand logo — mirrors .ap-brand-logo ─────────────────────────────────── */
+.inv-brand::after {
+  content: "";
+  position: absolute;
+  top: -3rem;
+  left: -3rem;
+  width: 14rem;
+  height: 14rem;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+
+/* ── Brand logo ── */
 .inv-brand-logo {
   display: flex;
   align-items: center;
   gap: 10px;
   text-decoration: none;
   color: #fff;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  position: relative;
   z-index: 1;
 }
 
-/* Mirrors .ap-logo-icon */
 .inv-logo-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.45rem;
+  background: rgba(255,255,255,0.22);
+  border: 1px solid rgba(255,255,255,0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,22 +125,24 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  position: relative;
   z-index: 1;
 }
 
-/* Workspace pill badge */
+/* ── Workspace pill badge ── */
 .inv-workspace-badge {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
   border-radius: 99px;
   padding: 5px 14px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.92);
   width: fit-content;
+  backdrop-filter: blur(6px);
 }
 
 .inv-workspace-dot {
@@ -104,65 +150,58 @@
   height: 7px;
   border-radius: 50%;
   background: #4ade80;
-  box-shadow: 0 0 6px #4ade80;
+  box-shadow: 0 0 6px rgba(74,222,128,0.7);
 }
 
 .inv-brand-title {
   font-size: 23px;
   font-weight: 800;
   line-height: 1.25;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.03em;
   color: #fff;
   margin: 0;
 }
 
 .inv-brand-desc {
   font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.6;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.65;
   margin: 0;
 }
 
-/* ── Inviter card ────────────────────────────────────────────────────────── */
+/* ── Inviter card ── */
 .inv-inviter-card {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.20);
   border-radius: 14px;
   padding: 16px 18px;
   display: flex;
   align-items: center;
   gap: 13px;
+  position: relative;
   z-index: 1;
+  backdrop-filter: blur(8px);
 }
 
 .inv-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: rgba(255,255,255,0.24);
+  border: 1.5px solid rgba(255,255,255,0.30);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: #fff;
   flex-shrink: 0;
-  letter-spacing: -0.3px;
 }
 
-.inv-inviter-info strong {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-}
+.inv-inviter-info strong { display: block; font-size: 13px; font-weight: 700; color: #fff; }
+.inv-inviter-info span  { font-size: 12px; color: rgba(255,255,255,0.55); }
 
-.inv-inviter-info span {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-/* ── Benefits list — mirrors .ap-benefits / .ap-benefit ─────────────────── */
+/* ── Benefits list ── */
 .inv-benefits {
   list-style: none;
   margin: 0;
@@ -170,6 +209,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  position: relative;
   z-index: 1;
 }
 
@@ -178,123 +218,103 @@
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255,255,255,0.80);
 }
 
-/* Mirrors .ap-benefit-dot */
 .inv-benefit-dot {
-  width: 20px;
-  height: 20px;
+  width: 1.3rem;
+  height: 1.3rem;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.28);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4ade80;
+  color: #fff;
   flex-shrink: 0;
 }
 
-/* ── Right form panel ────────────────────────────────────────────────────── */
+/* ── Right form panel ── */
 .inv-form-panel {
-  background: #fff;
+  background: rgba(255,255,255,0.80);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 48px 44px;
+  border-radius: 0 20px 20px 0;
 }
 
-/* ── The inner form ──────────────────────────────────────────────────────── */
+/* ── The inner form ── */
 .inv-form {
   width: 100%;
   max-width: 360px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  animation: inv-fadein 0.35s ease both;
+  gap: 20px;
+  animation: inv-fadein 0.38s ease both;
 }
 
 @keyframes inv-fadein {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Form head — matches .ap-form-head ───────────────────────────────────── */
+/* ── Form head ── */
 .inv-form-head h2 {
-  font-size: 22px;
+  font-size: 1.4rem;
   font-weight: 800;
-  color: #0f172a;
+  color: #1C1C1C;
   margin: 0 0 6px;
-  letter-spacing: -0.45px;
-  line-height: 1.25;
+  letter-spacing: -0.02em;
+  line-height: 1.22;
 }
 
-.inv-form-head p {
-  font-size: 14px;
-  color: #64748b;
-  margin: 0;
-  line-height: 1.5;
-}
+.inv-form-head p { font-size: 0.875rem; color: #888; margin: 0; line-height: 1.55; }
 
-/* ── Fields — mirrors .ap-field / .ap-label / .ap-input ─────────────────── */
-.inv-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+/* ── Fields ── */
+.inv-fields { display: flex; flex-direction: column; gap: 16px; }
 
-.inv-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.inv-field { display: flex; flex-direction: column; gap: 6px; }
 
-/* Mirrors .ap-label */
-.inv-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  letter-spacing: 0.05px;
-}
+.inv-label { font-size: 0.82rem; font-weight: 600; color: #374151; }
 
-/* Mirrors .ap-input */
 .inv-input {
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  font-size: 14px;
-  color: #0f172a;
-  background: #fff;
+  padding: 0 0.85rem;
+  height: 2.6rem;
+  border-radius: 0.55rem;
+  border: 1.5px solid rgba(108,83,179,0.16);
+  font-size: 0.875rem;
+  color: #1C1C1C;
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(8px);
   width: 100%;
   box-sizing: border-box;
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
   font-family: inherit;
 }
 
+.inv-input::placeholder { color: rgba(136,136,136,0.7); }
+
 .inv-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #6C53B3;
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 3px rgba(108,83,179,0.12);
 }
 
 .inv-input[readonly],
 .inv-input:disabled {
-  background: #f8fafc;
-  color: #94a3b8;
+  background: rgba(243,241,249,0.80);
+  color: #9ca3af;
   cursor: not-allowed;
-  border-color: #e2e8f0;
+  border-color: rgba(108,83,179,0.10);
 }
 
-/* Password eye toggle — mirrors .ap-input-wrap / .ap-eye-btn */
-.inv-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.inv-input-wrap .inv-input {
-  padding-right: 42px;
-}
+/* Password toggle */
+.inv-input-wrap { position: relative; display: flex; align-items: center; }
+.inv-input-wrap .inv-input { padding-right: 42px; }
 
 .inv-eye-btn {
   position: absolute;
@@ -302,156 +322,129 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #94a3b8;
+  color: #888;
   display: flex;
   align-items: center;
   padding: 0;
   transition: color 0.15s;
 }
 
-.inv-eye-btn:hover { color: #475569; }
+.inv-eye-btn:hover { color: #6C53B3; }
 
-/* ── Submit button — mirrors .ap-submit ──────────────────────────────────── */
+/* ── Submit button ── */
 .inv-submit {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 20px;
-  border-radius: 10px;
+  padding: 0 20px;
+  height: 2.65rem;
+  border-radius: 0.55rem;
   border: none;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #6C53B3 0%, #9CAAF2 100%);
   color: #fff;
-  font-size: 15px;
+  font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
   width: 100%;
-  letter-spacing: -0.1px;
-  transition: opacity 0.15s, transform 0.12s;
+  letter-spacing: 0.01em;
+  transition: opacity 0.18s, box-shadow 0.18s, transform 0.15s;
   font-family: inherit;
+  box-shadow: 0 6px 20px rgba(108,83,179,0.34);
 }
 
 .inv-submit:hover:not(:disabled) {
-  opacity: 0.9;
+  opacity: 0.91;
+  box-shadow: 0 10px 28px rgba(108,83,179,0.44);
   transform: translateY(-1px);
 }
 
-.inv-submit:active:not(:disabled) {
-  transform: translateY(0);
-}
+.inv-submit:active:not(:disabled) { transform: translateY(0); }
+.inv-submit:disabled { opacity: 0.54; cursor: not-allowed; }
 
-.inv-submit:disabled {
-  opacity: 0.52;
-  cursor: not-allowed;
-}
-
-/* ── Switch note — mirrors .ap-switch-note / .ap-switch-btn ─────────────── */
-.inv-switch-note {
-  text-align: center;
-  font-size: 13px;
-  color: #94a3b8;
-  margin: 0;
-}
+/* ── Switch note ── */
+.inv-switch-note { text-align: center; font-size: 0.84rem; color: #888; margin: 0; }
 
 .inv-switch-btn {
   background: none;
   border: none;
-  color: #6366f1;
+  color: #6C53B3;
   font-weight: 700;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 0.84rem;
   padding: 0;
   font-family: inherit;
   transition: color 0.15s;
 }
 
-.inv-switch-btn:hover { color: #4f46e5; }
+.inv-switch-btn:hover { color: #8B74D0; text-decoration: underline; }
 
-/* ── Error alert — mirrors .ap-error ─────────────────────────────────────── */
+/* ── Error alert ── */
 .inv-error {
-  background: #fef2f2;
-  border: 1.5px solid #fecaca;
-  border-radius: 10px;
+  background: rgba(239,68,68,0.07);
+  border: 1px solid rgba(239,68,68,0.22);
+  border-radius: 0.55rem;
   padding: 11px 14px;
   color: #dc2626;
-  font-size: 13.5px;
+  font-size: 0.83rem;
   font-weight: 500;
   display: flex;
   align-items: flex-start;
   gap: 9px;
   line-height: 1.45;
+  animation: inv-fadein 0.2s ease both;
 }
 
-.inv-error-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: #ef4444;
-}
+.inv-error-icon { flex-shrink: 0; margin-top: 1px; color: #ef4444; }
 
-/* ── Loading skeleton ────────────────────────────────────────────────────── */
+/* ── Loading skeleton ── */
 .inv-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
   padding: 40px 0;
-  color: #64748b;
+  color: #888;
   font-size: 14px;
 }
 
 .inv-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #6366f1;
+  border: 3px solid rgba(108,83,179,0.14);
+  border-top-color: #6C53B3;
   border-radius: 50%;
   animation: inv-spin 0.7s linear infinite;
 }
 
-@keyframes inv-spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes inv-spin { to { transform: rotate(360deg); } }
 
-/* ── Invalid-token state ─────────────────────────────────────────────────── */
+/* ── Invalid-token state ── */
 .inv-invalid {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   animation: inv-fadein 0.3s ease both;
+  max-width: 360px;
+  width: 100%;
 }
 
 .inv-invalid-icon-wrap {
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  background: #fef2f2;
-  border: 1.5px solid #fecaca;
+  background: rgba(239,68,68,0.08);
+  border: 1.5px solid rgba(239,68,68,0.20);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ef4444;
 }
 
-.inv-invalid h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 6px;
-  letter-spacing: -0.4px;
-}
+.inv-invalid h2 { font-size: 1.25rem; font-weight: 800; color: #1C1C1C; margin: 0 0 6px; letter-spacing: -0.02em; }
+.inv-invalid p  { font-size: 0.875rem; color: #888; margin: 0; line-height: 1.55; }
 
-.inv-invalid p {
-  font-size: 14px;
-  color: #64748b;
-  margin: 0;
-  line-height: 1.55;
-}
-
-.inv-invalid-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.inv-invalid-actions { display: flex; flex-direction: column; gap: 10px; }
 
 /* Secondary ghost button */
 .inv-btn-secondary {
@@ -459,40 +452,40 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 11px 20px;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  background: #fff;
+  padding: 0 20px;
+  height: 2.55rem;
+  border-radius: 0.55rem;
+  border: 1.5px solid rgba(108,83,179,0.22);
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(8px);
   color: #374151;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   width: 100%;
   font-family: inherit;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.18s, background 0.18s, transform 0.15s;
 }
 
 .inv-btn-secondary:hover {
-  border-color: #6366f1;
-  background: #fafafe;
+  border-color: #6C53B3;
+  background: rgba(255,255,255,0.90);
+  transform: translateY(-1px);
 }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+/* ── Responsive ── */
 @media (max-width: 720px) {
-  .inv-shell {
-    grid-template-columns: 1fr;
-    max-width: 440px;
-  }
-
-  .inv-brand {
-    padding: 28px 28px 22px;
-    gap: 14px;
-  }
-
+  .inv-shell { grid-template-columns: 1fr; max-width: 440px; }
+  .inv-brand { border-radius: 20px 20px 0 0; padding: 28px 28px 22px; gap: 14px; }
+  .inv-brand::before, .inv-brand::after { display: none; }
   .inv-brand-title { font-size: 18px; }
-  .inv-benefits    { display: none; }
+  .inv-benefits { display: none; }
+  .inv-form-panel { border-radius: 0 0 20px 20px; padding: 32px 28px; }
+}
 
-  .inv-form-panel {
-    padding: 32px 28px;
-  }
+@media (max-width: 480px) {
+  .inv-root { padding: 0; }
+  .inv-shell { border-radius: 0; max-width: 100%; min-height: 100vh; }
+  .inv-brand { border-radius: 0; }
+  .inv-form-panel { border-radius: 0; padding: 28px 20px; }
 }

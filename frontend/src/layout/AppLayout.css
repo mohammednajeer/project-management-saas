@@ -2,7 +2,11 @@
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background: #f5f7fb;
+  background: #FAFAFE;
+  background-image:
+    radial-gradient(900px 400px at 10% -5%, rgba(108,83,179,0.07), transparent 60%),
+    radial-gradient(600px 350px at 90% 10%, rgba(59,130,246,0.05), transparent 60%);
+  background-attachment: fixed;
 }
 
 /* 

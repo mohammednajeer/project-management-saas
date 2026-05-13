@@ -4,7 +4,7 @@ from .views import (
     WorkspaceDashboardView,
     WorkspaceTasksView,
     WorkspaceSubTasksView,
-    WorkspaceSubTaskStatusUpdateView,
+    WorkspaceSubTaskStatusUpdateView ,
 )
 
 urlpatterns = [

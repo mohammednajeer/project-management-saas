@@ -26,18 +26,18 @@ class RegisterOrganizationSerializer(serializers.ModelSerializer):
                 )
 
             return value
-    # IMPORTANT: This must be aligned with Meta, not inside it
+    
     def create(self, validated_data):
 
         admin_name = validated_data.pop("admin_name")
         password = validated_data.pop("password")
 
-        # Create organization
+        
         organization = Organization.objects.create(
             **validated_data
         )
 
-        # Create admin user
+        
         User.objects.create_user(
             email=validated_data["email"],
             password=password,

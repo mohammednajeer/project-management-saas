@@ -10,6 +10,7 @@ from .serializers import RegisterOrganizationSerializer
 from rest_framework.permissions import IsAuthenticated
 
 
+
 class RegisterOrganizationView(APIView):
 
     permission_classes = [AllowAny]
@@ -22,7 +23,7 @@ class RegisterOrganizationView(APIView):
 
             organization = serializer.save()
 
-            # FIX HERE
+             
             user = organization.users.filter(role="admin").first()
 
             refresh = RefreshToken.for_user(user)

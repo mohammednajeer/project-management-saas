@@ -146,7 +146,7 @@ class InviteRegisterView(APIView):
         name = request.data.get("name")
         password = request.data.get("password")
 
-        # 🔥 Validate token
+        
         try:
             invitation = Invitation.objects.get(token=token)
         except Invitation.DoesNotExist:
@@ -167,7 +167,7 @@ class InviteRegisterView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 🔥 Create user
+        
         user = User.objects.create_user(
             email=invitation.email,
             password=password,
@@ -176,11 +176,11 @@ class InviteRegisterView(APIView):
             organization=invitation.organization
         )
 
-        # 🔥 Mark invite as used
+        
         invitation.is_used = True
         invitation.save()
 
-        # 🔥 Auto login
+        
         refresh = RefreshToken.for_user(user)
         response = Response({
             "message": "Account created via invite"

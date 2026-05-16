@@ -231,7 +231,8 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 0.9rem;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
@@ -352,6 +353,11 @@
 .tm-meta {
   font-size: 0.845rem;
   color: #6b7280;
+}
+
+.tm-meta--muted {
+  color: #9ca3af;
+  font-style: italic;
 }
 
 /* ─── More Button ─────────────────────────────────────────────────────────── */
@@ -526,6 +532,10 @@
   position: relative;
 }
 
+.tm-actions--open {
+  z-index: 20;
+}
+
 .tm-dropdown {
   position: absolute;
   top: 42px;
@@ -539,6 +549,11 @@
   z-index: 100;
   display: flex;
   flex-direction: column;
+}
+
+.tm-dropdown--up {
+  top: auto;
+  bottom: 42px;
 }
 
 .tm-dropdown button {

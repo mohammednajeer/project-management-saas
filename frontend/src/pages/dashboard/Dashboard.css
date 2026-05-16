@@ -228,13 +228,14 @@
 
 /* ─── CONTENT ────────────────────────────────────────────────────────────── */
 .db-content {
-  padding: 1.75rem 2rem;
+  padding: 1.75rem clamp(1rem, 1.6vw, 1.5rem);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1400px;
+  max-width: none;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* ─── WELCOME ────────────────────────────────────────────────────────────── */
@@ -381,8 +382,8 @@
 /* ─── MID ROW: Chart + Feed ──────────────────────────────────────────────── */
 .db-mid-row {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1.15rem;
 }
 
 /* Glass card base */

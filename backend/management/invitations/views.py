@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 import csv
 from io import TextIOWrapper
-from django.core.mail import send_mail
+from .tasks import send_invitation_email
 from django.utils import timezone
 from accounts.models import User
 from accounts.permissions import IsManagerOrAdmin
@@ -32,23 +32,23 @@ class CreateInvitationView(APIView):
         if serializer.is_valid():
             invitation = serializer.save()
 
-            # 🔥 generate link
+            
             invite_link = f"http://localhost:5173/signup?token={invitation.token}"
 
-            # 🔥 SEND EMAIL
-            send_mail(
+            
+            send_invitation_email.delay(
                 subject="You're invited to join ProjectFlow",
+
                 message=f"""
-                            You have been invited to join a workspace.
+                You have been invited to join a workspace.
 
-                            Click the link below to join:
-                            {invite_link}
+                Click the link below to join:
+                {invite_link}
 
-                            This link will expire in 2 days.
-                            """,
-                from_email="mohammednajeer785@gmail.com",
-                recipient_list=[invitation.email],
-                fail_silently=False,
+                This link will expire in 2 days.
+                """,
+
+                recipient=invitation.email,
             )
 
             return Response({
@@ -152,15 +152,22 @@ class BulkInviteView(APIView):
             print("--------------------------------")
 
             try:
-                send_mail(
+
+                send_invitation_email.delay(
                     subject="You're invited to ProjectFlow",
-                    message=f"Join using this link:\n{invite_link}",
-                    from_email="your_email@gmail.com",
-                    recipient_list=[email],
-                    fail_silently=False,
+
+                    message=f"""
+                    Join using this link:
+                    {invite_link}
+                    """,
+
+                    recipient=email,
                 )
+
                 success_count += 1
+
             except Exception as e:
+
                 errors.append(f"{email}: {str(e)}")
 
         return Response({
@@ -187,6 +194,7 @@ class TeamListView(APIView):
                 "email": user.email,
                 "role": user.role,
                 "status": "active",
+                "created_at": user.created_at,
                 "joined_at": user.created_at,
             }
             for user in users
@@ -205,6 +213,7 @@ class TeamListView(APIView):
                 "email": inv.email,
                 "role": inv.role,
                 "status": "invited",
+                "created_at": inv.created_at,
                 "joined_at": None,
             }
             for inv in invites
@@ -241,17 +250,17 @@ class ResendInvitationView(APIView):
             f"token={invitation.token}"
         )
 
-        send_mail(
+        send_invitation_email.delay(
             subject="Reminder: Join ProjectFlow",
+
             message=f"""
             You were invited to join ProjectFlow.
 
             Join here:
             {invite_link}
             """,
-            from_email="your_email@gmail.com",
-            recipient_list=[invitation.email],
-            fail_silently=False,
+
+            recipient=invitation.email,
         )
 
         print("\nRESENT INVITE")

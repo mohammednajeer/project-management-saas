@@ -26,6 +26,22 @@ const STATUS_DOT = {
 };
 
 // ─── Stat Card ─────────────────
+const formatJoinedDate = (member) => {
+  if (member.status !== "active") return "Not joined yet";
+
+  const value = member.created_at || member.joined_at;
+  if (!value) return "Date unavailable";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 function StatCard({ icon: Icon, iconBg, iconColor, value, label }) {
   return (
     <div className="tm-stat-card">
@@ -219,10 +235,11 @@ export default function Members() {
                 <td colSpan={5} className="tm-empty">No members found</td>
               </tr>
             ) : (
-              filtered.map((m) => {
+              filtered.map((m, index) => {
                 const roleKey =
                   m.role?.charAt(0).toUpperCase() + m.role?.slice(1);
                 const roleStyle = ROLE_STYLE[roleKey] || ROLE_STYLE.Employee;
+                const menuOpensUp = index >= filtered.length - 2;
 
                 return (
                   <tr key={m.id}>
@@ -270,13 +287,17 @@ export default function Members() {
                     </td>
 
                     {/* Joined */}
-                    <td>—</td>
+                    <td>
+                      <span className={m.status === "active" ? "tm-meta" : "tm-meta tm-meta--muted"}>
+                        {formatJoinedDate(m)}
+                      </span>
+                    </td>
 
                     {/* Actions */}
                     {/* ✅ FIX: wrap the whole actions cell with the ref so click-outside works correctly */}
                     <td>
                       <div
-                        className="tm-actions"
+                        className={`tm-actions ${openMenu === m.id ? "tm-actions--open" : ""}`}
                         ref={openMenu === m.id ? dropdownRef : null}
                       >
                         <button
@@ -289,7 +310,7 @@ export default function Members() {
                         </button>
 
                         {openMenu === m.id && (
-                          <div className="tm-dropdown">
+                          <div className={`tm-dropdown ${menuOpensUp ? "tm-dropdown--up" : ""}`}>
                             {m.status === "invited" ? (
                               <>
                                 <button

@@ -201,7 +201,7 @@ class WorkspaceDashboardView(APIView):
                     ).data,
             }
         )
-
+from activities.utils import create_activity
 
 class WorkspaceSubTaskStatusUpdateView(APIView):
 
@@ -271,6 +271,22 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
                 subtask,
                 request.user,
             )
+            create_activity(
+                organization=request.user.organization,
+                user=request.user,
+                action="subtask_updated",
+                message=(
+                    f"{request.user.name} "
+                    f"changed subtask "
+                    f"'{subtask.title}' "
+                    f"status to "
+                    f"'{new_status}'"
+                ),
+                project=subtask.task.project,
+                task=subtask.task,
+                subtask=subtask,
+            )
+
 
         serializer = SubTaskSerializer(subtask)
 

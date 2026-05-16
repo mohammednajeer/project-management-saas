@@ -3,12 +3,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from .models import Task,SubTask,TaskComment
-from .serializers import TaskSerializer,SubTaskSerializer,TaskCommentSerializer
+from .serializers import TaskSerializer,TaskAttachmentSerializer,SubTaskSerializer,TaskCommentSerializer
 from notifications.models import Notification
 from projects.models import Project
 from accounts.permissions import IsManagerOrAdmin
 from activities.utils import create_activity
-
+from .models import TaskAttachment
 
 class ProjectTaskListCreateView(APIView):
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
@@ -550,3 +550,93 @@ class TaskCommentListCreateView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class TaskAttachmentUploadView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsManagerOrAdmin,
+    ]
+
+    def post(self, request, task_id):
+
+        try:
+
+            task = Task.objects.get(
+                id=task_id,
+                project__organization=
+                    request.user.organization
+            )
+
+        except Task.DoesNotExist:
+
+            return Response(
+                {
+                    "message":
+                    "Task not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        uploaded_file = request.FILES.get(
+            "file"
+        )
+
+        if not uploaded_file:
+
+            return Response(
+                {
+                    "message":
+                    "No file uploaded"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        attachment = (
+            TaskAttachment.objects.create(
+                task=task,
+                uploaded_by=request.user,
+                file=uploaded_file,
+            )
+        )
+
+        serializer = (
+            TaskAttachmentSerializer(
+                attachment
+            )
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+class TaskAttachmentListView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def get(self, request, task_id):
+
+        attachments = (
+            TaskAttachment.objects.filter(
+                task_id=task_id,
+                task__project__organization=
+                    request.user.organization
+            )
+            .select_related(
+                "uploaded_by"
+            )
+            .order_by("-uploaded_at")
+        )
+
+        serializer = (
+            TaskAttachmentSerializer(
+                attachments,
+                many=True
+            )
+        )
+
+        return Response(serializer.data)

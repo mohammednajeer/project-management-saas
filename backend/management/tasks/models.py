@@ -183,3 +183,38 @@ class TaskComment(models.Model):
             f"{self.user.name} - "
             f"{self.task.title}"
         )
+    
+class TaskAttachment(models.Model):
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    task = models.ForeignKey(
+        "Task",
+        on_delete=models.CASCADE,
+        related_name="attachments"
+    )
+
+    uploaded_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="task_attachments"
+    )
+
+    file = models.FileField(
+        upload_to="task_attachments/"
+    )
+
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+
+        return (
+            f"{self.task.title} - "
+            f"{self.file.name}"
+        )

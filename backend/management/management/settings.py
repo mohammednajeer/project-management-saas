@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "workspace",
     "analytics",
     "activities",
+    'storages',
     
 ]
 
@@ -177,3 +178,28 @@ CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 
 CELERY_TASK_SERIALIZER = "json"
+
+
+AWS_ACCESS_KEY_ID = os.getenv(
+    "AWS_ACCESS_KEY_ID"
+)
+
+AWS_SECRET_ACCESS_KEY = os.getenv(
+    "AWS_SECRET_ACCESS_KEY"
+)
+
+AWS_STORAGE_BUCKET_NAME = os.getenv(
+    "AWS_STORAGE_BUCKET_NAME"
+)
+
+AWS_S3_REGION_NAME = os.getenv(
+    "AWS_S3_REGION_NAME"
+)
+
+AWS_QUERYSTRING_AUTH = False
+
+AWS_DEFAULT_ACL = None
+
+DEFAULT_FILE_STORAGE = (
+    "storages.backends.s3boto3.S3Boto3Storage"
+)

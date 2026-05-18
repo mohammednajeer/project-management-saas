@@ -1,7 +1,7 @@
-import { Download, Eye, UserRound } from "lucide-react";
+import { Download, Eye, Trash2, UserRound } from "lucide-react";
 import {
+  getAttachmentFilename,
   formatAttachmentDate,
-  getFilenameFromUrl,
   getFileMeta,
   isImageFile,
 } from "./attachmentUtils";
@@ -13,15 +13,12 @@ function formatRole(role) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export default function AttachmentCard({ attachment, onPreview }) {
-  const filename = getFilenameFromUrl(attachment.file);
-  const image = isImageFile(attachment.file);
-  const { Icon, label, tone } = getFileMeta(attachment.file);
+export default function AttachmentCard({ attachment, onPreview, onDelete, canDelete = false }) {
+  const filename = getAttachmentFilename(attachment);
+  const fileIdentity = attachment.original_name || attachment.file;
+  const image = isImageFile(fileIdentity);
+  const { Icon, label, tone } = getFileMeta(fileIdentity);
   const uploader = attachment.uploaded_by_data || {};
-
-  const handleDownload = () => {
-    window.open(attachment.file, "_blank", "noopener,noreferrer");
-  };
 
   return (
     <article className="ta-card">
@@ -52,7 +49,7 @@ export default function AttachmentCard({ attachment, onPreview }) {
       </div>
 
       <div className="ta-card-actions">
-        {image && (
+        {image ? (
           <button
             type="button"
             className="ta-action-button"
@@ -63,18 +60,44 @@ export default function AttachmentCard({ attachment, onPreview }) {
             <Eye size={16} />
             <span>Preview</span>
           </button>
+        ) : (
+          <a
+            className="ta-action-button"
+            href={attachment.file}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Preview ${filename}`}
+            title="Preview"
+          >
+            <Eye size={16} />
+            <span>Preview</span>
+          </a>
         )}
 
-        <button
-          type="button"
+        <a
           className="ta-action-button ta-action-button--primary"
-          onClick={handleDownload}
+          href={attachment.file}
+          target="_blank"
+          rel="noopener noreferrer"
           aria-label={`Download ${filename}`}
           title="Download"
         >
           <Download size={16} />
           <span>Download</span>
-        </button>
+        </a>
+
+        {canDelete && (
+          <button
+            type="button"
+            className="ta-action-button ta-action-button--danger"
+            onClick={() => onDelete(attachment)}
+            aria-label={`Delete ${filename}`}
+            title="Delete"
+          >
+            <Trash2 size={16} />
+            <span>Delete</span>
+          </button>
+        )}
       </div>
     </article>
   );

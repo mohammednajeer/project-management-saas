@@ -11,6 +11,8 @@ from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny
 from accounts.models import User
 from accounts.auth_cookies import ACCESS_COOKIE_MAX_AGE, set_auth_cookies
+from .serializers import UserSerializer, LoginSerializer
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
@@ -38,12 +40,7 @@ class LoginView(APIView):
         response = Response(
             {
                 "message": "Login successful",
-                "user": {
-                    "email": user.email,
-                    "name": user.name,
-                    "role": user.role,
-                    "organization": user.organization.name,
-                },
+                "user": UserSerializer(user).data,
                 "access": access_token,
                 "refresh": str(refresh),
             }
@@ -121,12 +118,17 @@ class MeView(APIView):
     def get(self, request):
         user = request.user
 
-        return Response({
-            "email": user.email,
-            "name": user.name,
-            "role": user.role,
-            "organization": user.organization.name
-        })
+        # return Response({
+        #     "email": user.email,
+        #     "name": user.name,
+        #     "role": user.role,
+        #     "organization": user.organization.name
+        # })
+        serializer = UserSerializer(user)
+
+        return Response(
+            serializer.data
+        )
 
 
 
@@ -189,3 +191,58 @@ class InviteRegisterView(APIView):
         set_auth_cookies(response, refresh)
 
         return response
+
+
+class ProfileUpdateView(APIView):
+
+    permission_classes = [
+        IsAuthenticated
+    ]
+
+    def patch(self, request):
+
+        user = request.user
+
+        fields = [
+            "name",
+            "bio",
+            "designation",
+            "department",
+            "phone_number",
+            "work_status",
+        ]
+
+        for field in fields:
+
+            value = request.data.get(field)
+
+            if value is not None:
+
+                setattr(
+                    user,
+                    field,
+                    value
+                )
+                
+
+        profile_picture = request.FILES.get(
+            "profile_picture"
+        )
+
+        if profile_picture:
+            
+            if user.profile_picture:
+
+                user.profile_picture.delete(
+                    save=False
+                )
+
+            user.profile_picture = (
+                profile_picture
+            )
+
+        user.save()
+
+        serializer = UserSerializer(user)
+
+        return Response(serializer.data)

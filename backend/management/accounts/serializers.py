@@ -7,12 +7,20 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
+
         fields = [
             "id",
             "email",
             "name",
             "role",
             "organization",
+            "profile_picture",
+            "bio",
+            "designation",
+            "department",
+            "phone_number",
+            "work_status",
+            "joined_at",
         ]
 
 class LoginSerializer(serializers.Serializer):
@@ -47,3 +55,4 @@ class LoginSerializer(serializers.Serializer):
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         }
+    

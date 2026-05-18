@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Calendar, Flag, CheckCircle2, FolderOpen, ArrowLeft } from "lucide-react";
 import api from "../../services/api";
 import TaskAttachmentsSection from "../../components/tasks/TaskAttachmentsSection";
+import SubTaskAttachmentsSection from "../../components/tasks/SubTaskAttachmentsSection";
 import "./TaskDetails.css";
 
 /* ─── helpers ─── */
@@ -1217,6 +1218,8 @@ export default function TaskDetails() {
           )}
         </div>
       </div>
+
+      <SubTaskAttachmentsSection subtaskId={activeSubtask.id} />
 
       <div className="subtask-modal-actions">
         <button

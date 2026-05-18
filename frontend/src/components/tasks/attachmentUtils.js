@@ -24,6 +24,10 @@ export function getFilenameFromUrl(fileUrl = "") {
   }
 }
 
+export function getAttachmentFilename(attachment = {}) {
+  return attachment.original_name || getFilenameFromUrl(attachment.file);
+}
+
 export function getFileExtension(fileUrl = "") {
   const filename = getFilenameFromUrl(fileUrl);
   const cleanName = filename.split("?")[0].split("#")[0];

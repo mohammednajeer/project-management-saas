@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Download, X } from "lucide-react";
-import { getFilenameFromUrl } from "./attachmentUtils";
+import { getAttachmentFilename } from "./attachmentUtils";
 
 export default function AttachmentPreviewModal({ attachment, onClose }) {
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function AttachmentPreviewModal({ attachment, onClose }) {
 
   if (!attachment) return null;
 
-  const filename = getFilenameFromUrl(attachment.file);
+  const filename = getAttachmentFilename(attachment);
 
   return (
     <div className="ta-modal-backdrop" onClick={onClose} role="presentation">
@@ -39,15 +39,16 @@ export default function AttachmentPreviewModal({ attachment, onClose }) {
           </div>
 
           <div className="ta-preview-actions">
-            <button
-              type="button"
+            <a
               className="ta-icon-button"
-              onClick={() => window.open(attachment.file, "_blank", "noopener,noreferrer")}
+              href={attachment.file}
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label={`Download ${filename}`}
               title="Download"
             >
               <Download size={18} />
-            </button>
+            </a>
             <button
               type="button"
               className="ta-icon-button"

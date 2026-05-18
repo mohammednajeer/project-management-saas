@@ -83,6 +83,56 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(
         auto_now_add=True
     )
+    PROFILE_STATUS_CHOICES = [
+
+        ("available", "Available"),
+
+        ("busy", "Busy"),
+
+        ("meeting", "In Meeting"),
+
+        ("focused", "Focused"),
+
+        ("offline", "Offline"),
+    ]
+    profile_picture = models.ImageField(
+        upload_to="profile_pictures/",
+        null=True,
+        blank=True
+    )
+
+    bio = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    designation = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    department = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True
+    )
+
+    work_status = models.CharField(
+        max_length=20,
+        choices=PROFILE_STATUS_CHOICES,
+        default="available"
+    )
+
+    joined_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

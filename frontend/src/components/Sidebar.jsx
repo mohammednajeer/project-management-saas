@@ -5,6 +5,7 @@ import {
   FolderOpen,
   CheckSquare,
   Activity,
+  AlertCircle,
   Users,
   BarChart2,
   Settings,
@@ -44,6 +45,12 @@ const navItems = [
     icon: Activity,
     label: "Activity",
     to: "/dashboard/activity",
+  },
+
+  {
+    icon: AlertCircle,
+    label: "Issues",
+    to: "/dashboard/issues",
   },
 
   {

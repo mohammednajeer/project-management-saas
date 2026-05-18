@@ -318,6 +318,139 @@
   font-weight: 600;
 }
 
+.workspace-attachment-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 16px;
+  border: 1px solid rgba(108, 83, 179, 0.16);
+  border-radius: 8px;
+  background: rgba(108, 83, 179, 0.08);
+  color: #6c53b3;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.workspace-attachment-open:hover {
+  transform: translateY(-1px);
+  border-color: rgba(108, 83, 179, 0.24);
+  background: rgba(108, 83, 179, 0.12);
+}
+
+.workspace-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(12px);
+}
+
+.workspace-subtask-modal {
+  width: min(1040px, 100%);
+  max-height: min(90vh, 860px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.72)),
+    rgba(255, 255, 255, 0.82);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.workspace-subtask-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.workspace-subtask-modal-header span {
+  display: block;
+  margin-bottom: 6px;
+  color: #6c53b3;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workspace-subtask-modal-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+}
+
+.workspace-subtask-modal-header p {
+  margin: 8px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.workspace-subtask-modal-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #374151;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.workspace-subtask-modal-header button:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.workspace-subtask-modal .ta-section,
+.subtask-modal .ta-section {
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 20px;
+}
+
+.workspace-subtask-modal .ta-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.workspace-subtask-modal .ta-file-visual {
+  height: 108px;
+}
+
+.workspace-subtask-modal .ta-card-body {
+  padding: 14px;
+}
+
+.workspace-subtask-modal .ta-card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.workspace-subtask-modal .ta-action-button {
+  min-height: 36px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
 @media (max-width: 900px) {
   .workspace-dashboard-grid {
     grid-template-columns: 1fr;
@@ -341,5 +474,25 @@
 
   .workspace-list-item {
     flex-direction: column;
+  }
+
+  .workspace-modal-overlay {
+    padding: 12px;
+  }
+
+  .workspace-subtask-modal {
+    padding: 16px;
+  }
+
+  .workspace-subtask-modal-header {
+    flex-direction: column;
+  }
+
+  .workspace-subtask-modal-header button {
+    align-self: flex-end;
+  }
+
+  .workspace-subtask-modal .ta-card-actions {
+    grid-template-columns: 1fr;
   }
 }

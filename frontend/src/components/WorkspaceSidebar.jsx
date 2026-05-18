@@ -2,6 +2,7 @@ import {
   Bell,
   CheckSquare,
   Home,
+  AlertCircle,
   LogOut,
   Sparkles,
 } from "lucide-react";
@@ -23,6 +24,11 @@ const workspaceNavItems = [
     icon: CheckSquare,
     label: "My Tasks",
     to: "/workspace/tasks",
+  },
+  {
+    icon: AlertCircle,
+    label: "Issues",
+    to: "/workspace/issues",
   },
   {
     icon: Bell,

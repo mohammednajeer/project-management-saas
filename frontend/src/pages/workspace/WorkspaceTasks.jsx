@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Paperclip, X } from "lucide-react";
 
 import api from "../../services/api";
+import SubTaskAttachmentsSection from "../../components/tasks/SubTaskAttachmentsSection";
 
 import "./WorkspacePage.css";
 
@@ -28,6 +30,8 @@ export default function WorkspaceTasks() {
   const [subtasks, setSubtasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingSubtaskId, setUpdatingSubtaskId] =
+    useState(null);
+  const [selectedSubtask, setSelectedSubtask] =
     useState(null);
   const [statusMessage, setStatusMessage] =
     useState("");
@@ -214,6 +218,14 @@ export default function WorkspaceTasks() {
                 <span>
                   Status: {subtask.status}
                 </span>
+                <button
+                  type="button"
+                  className="workspace-attachment-open"
+                  onClick={() => setSelectedSubtask(subtask)}
+                >
+                  <Paperclip size={15} />
+                  Work Attachments
+                </button>
                 <label className="workspace-status-field">
                   <span>
                     Update status
@@ -251,6 +263,36 @@ export default function WorkspaceTasks() {
           </div>
         )}
       </div>
+
+      {selectedSubtask && (
+        <div
+          className="workspace-modal-overlay"
+          onClick={() => setSelectedSubtask(null)}
+        >
+          <div
+            className="workspace-subtask-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="workspace-subtask-modal-header">
+              <div>
+                <span>Subtask Work</span>
+                <h2>{selectedSubtask.title}</h2>
+                <p>{selectedSubtask.description || "No description provided."}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedSubtask(null)}
+                aria-label="Close subtask attachments"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <SubTaskAttachmentsSection subtaskId={selectedSubtask.id} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

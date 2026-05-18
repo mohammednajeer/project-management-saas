@@ -3,12 +3,15 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from .models import Task,SubTask,TaskComment
-from .serializers import TaskSerializer,TaskAttachmentSerializer,SubTaskSerializer,TaskCommentSerializer
+from .serializers import TaskSerializer,SubTaskAttachmentSerializer,TaskAttachmentSerializer,SubTaskSerializer,TaskCommentSerializer
 from notifications.models import Notification
 from projects.models import Project
 from accounts.permissions import IsManagerOrAdmin
 from activities.utils import create_activity
-from .models import TaskAttachment
+from .models import (
+    TaskAttachment,
+    SubTaskAttachment,
+)
 
 class ProjectTaskListCreateView(APIView):
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
@@ -600,6 +603,7 @@ class TaskAttachmentUploadView(APIView):
                 file=uploaded_file,
             )
         )
+        print(attachment.file.url)
 
         serializer = (
             TaskAttachmentSerializer(
@@ -640,3 +644,156 @@ class TaskAttachmentListView(APIView):
         )
 
         return Response(serializer.data)
+    
+class TaskAttachmentDeleteView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsManagerOrAdmin,
+    ]
+
+    def delete(self, request, attachment_id):
+
+        try:
+
+            attachment = TaskAttachment.objects.get(
+                id=attachment_id,
+                task__project__organization=request.user.organization
+            )
+
+        except TaskAttachment.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Attachment not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        attachment.file.delete(save=False)
+
+        attachment.delete()
+
+        return Response(
+            {
+                "message": "Attachment deleted successfully"
+            }
+        )
+
+
+class SubTaskAttachmentUploadView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def post(self, request, subtask_id):
+
+        try:
+
+            subtask = SubTask.objects.get(
+                id=subtask_id,
+                task__project__organization=request.user.organization
+            )
+
+        except SubTask.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Subtask not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        uploaded_file = request.FILES.get("file")
+
+        if not uploaded_file:
+
+            return Response(
+                {
+                    "message": "No file uploaded"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        attachment = SubTaskAttachment.objects.create(
+            subtask=subtask,
+            uploaded_by=request.user,
+            file=uploaded_file,
+            original_name=uploaded_file.name,
+        )
+
+        serializer = SubTaskAttachmentSerializer(
+            attachment
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+    
+class SubTaskAttachmentListView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def get(self, request, subtask_id):
+
+        attachments = (
+            SubTaskAttachment.objects
+            .filter(
+                subtask_id=subtask_id,
+                subtask__task__project__organization=request.user.organization
+            )
+            .select_related(
+                "uploaded_by"
+            )
+            .order_by(
+                "-uploaded_at"
+            )
+        )
+
+        serializer = SubTaskAttachmentSerializer(
+            attachments,
+            many=True
+        )
+
+        return Response(serializer.data)
+    
+class SubTaskAttachmentDeleteView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsManagerOrAdmin,
+    ]
+
+    def delete(self, request, attachment_id):
+
+        try:
+
+            attachment = (
+                SubTaskAttachment.objects.get(
+                    id=attachment_id,
+                    subtask__task__project__organization=request.user.organization
+                )
+            )
+
+        except SubTaskAttachment.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Attachment not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        attachment.file.delete()
+
+        attachment.delete()
+
+        return Response(
+            {
+                "message": "Attachment deleted successfully"
+            }
+        )

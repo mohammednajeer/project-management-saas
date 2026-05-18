@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Calendar, Flag, CheckCircle2, FolderOpen, ArrowLeft } from "lucide-react";
 import api from "../../services/api";
+import TaskAttachmentsSection from "../../components/tasks/TaskAttachmentsSection";
 import "./TaskDetails.css";
 
 /* ─── helpers ─── */
@@ -1136,6 +1137,7 @@ export default function TaskDetails() {
   </div>
 
 </div>
+<TaskAttachmentsSection taskId={taskId} />
 {activeSubtask && (
   <div
     className="subtask-modal-overlay"

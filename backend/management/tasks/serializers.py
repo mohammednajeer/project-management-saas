@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import Task,SubTask,TaskComment,TaskAttachment
+from .models import (
+    Task,
+    SubTask,
+    TaskComment,
+    TaskAttachment,
+    SubTaskAttachment,
+)
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -184,5 +190,29 @@ class TaskAttachmentSerializer( serializers.ModelSerializer):
 
             "name":  obj.uploaded_by.name,
 
+            "role": obj.uploaded_by.role,
+        }
+    
+
+class SubTaskAttachmentSerializer(serializers.ModelSerializer):
+
+    uploaded_by_data = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SubTaskAttachment
+
+        fields = [
+            "id",
+            "file",
+            "original_name",
+            "uploaded_at",
+            "uploaded_by_data",
+        ]
+
+    def get_uploaded_by_data(self, obj):
+
+        return {
+            "id": str(obj.uploaded_by.id),
+            "name": obj.uploaded_by.name,
             "role": obj.uploaded_by.role,
         }

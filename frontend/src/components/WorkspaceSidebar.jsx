@@ -5,10 +5,12 @@ import {
   AlertCircle,
   LogOut,
   Sparkles,
+  UserRound,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import useNotifications from "../context/useNotifications";
 
 import "./WorkspaceSidebar.css";
@@ -39,6 +41,14 @@ const workspaceNavItems = [
 
 export default function WorkspaceSidebar() {
   const { unreadCount } = useNotifications();
+  const { user } = useAuth();
+  const initials = (user?.name || user?.email || "U")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
   const handleLogout = async () => {
     try {
@@ -98,6 +108,26 @@ export default function WorkspaceSidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <NavLink
+        to="/workspace/profile"
+        className={({ isActive }) =>
+          `workspace-sidebar-profile${
+            isActive ? " is-active" : ""
+          }`
+        }
+      >
+        <span className="workspace-sidebar-avatar">
+          {user?.profile_picture ? (
+            <img src={user.profile_picture} alt="" />
+          ) : (
+            initials || <UserRound size={15} />
+          )}
+        </span>
+        <span>
+          Profile
+        </span>
+      </NavLink>
 
       <button
         className="workspace-sidebar-logout"

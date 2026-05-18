@@ -15,6 +15,7 @@ import Tasks from "../pages/tasks/Tasks";
 import TaskDetails from "../pages/tasks/TaskDetails";
 import ActivityPage from "../pages/activity/ActivityPage";
 import IssuesPage from "../pages/issues/IssuesPage";
+import ProfilePage from "../pages/profile/ProfilePage";
 import Notifications from "../pages/notifications/Notifications";
 import WorkspaceHome from "../pages/workspace/WorkspaceHome";
 import WorkspaceTasks from "../pages/workspace/WorkspaceTasks";
@@ -87,6 +88,7 @@ function App() {
             <Route path="tasks" element={<Tasks />} />
             <Route path="tasks/:taskId" element={<TaskDetails />} />
             <Route path="issues" element={<IssuesPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="activity" element={<ActivityPage />} />
             <Route path="team" element={<Members />} />
             <Route path="reports" element={<PlaceholderPage title="Reports" />} />
@@ -109,6 +111,7 @@ function App() {
             <Route index element={<WorkspaceHome />} />
             <Route path="tasks" element={<WorkspaceTasks />} />
             <Route path="issues" element={<IssuesPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="notifications" element={<WorkspaceNotifications />} />
             <Route path="*" element={<Navigate to="/workspace" replace />} />
           </Route>

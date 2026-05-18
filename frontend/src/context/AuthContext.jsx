@@ -38,6 +38,10 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((nextUser) => {
+    setUser(nextUser);
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -45,11 +49,13 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(user),
       refreshUser,
       clearUser,
+      updateUser,
     }),
     [
       clearUser,
       loading,
       refreshUser,
+      updateUser,
       user,
     ]
   );

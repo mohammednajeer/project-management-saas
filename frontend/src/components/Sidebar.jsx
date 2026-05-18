@@ -12,11 +12,13 @@ import {
   LogOut,
   Sparkles,
   Bell,
+  UserRound,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
 
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import useNotifications from "../context/useNotifications";
 
 import "./Sidebar.css";
@@ -85,6 +87,15 @@ export default function Sidebar() {
 
   const { unreadCount } =
     useNotifications();
+  const { user } = useAuth();
+
+  const initials = (user?.name || user?.email || "U")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
   const handleLogout =
     async () => {
@@ -204,6 +215,28 @@ export default function Sidebar() {
       {/* Footer */}
 
       <div className="sidebar-footer">
+        <NavLink
+          to="/dashboard/profile"
+          data-label="Profile"
+          className={({ isActive }) =>
+            `sidebar-profile${
+              isActive
+                ? " is-active"
+                : ""
+            }`
+          }
+        >
+          <span className="sidebar-profile-avatar">
+            {user?.profile_picture ? (
+              <img src={user.profile_picture} alt="" />
+            ) : (
+              initials || <UserRound size={16} />
+            )}
+          </span>
+          <span className="sidebar-nav-label">
+            Profile
+          </span>
+        </NavLink>
 
         <button
           className="sidebar-logout"

@@ -3,7 +3,7 @@
 .profile-page {
   --profile-brand: #6c53b3;
   --profile-brand-hover: #5c44a0;
-  --profile-bg: #f8f7fc;
+  --profile-bg: #FAFAFE;
   --profile-border: rgba(108,83,179,0.14);
   --profile-text-1: #0d0c1a;
   --profile-text-2: #4b4963;
@@ -11,6 +11,10 @@
   min-height: 100vh;
   padding: 36px 40px 64px;
   background: var(--profile-bg);
+  background-image:
+    radial-gradient(900px 400px at 10% -5%, rgba(108, 83, 179, 0.07), transparent 60%),
+    radial-gradient(600px 350px at 90% 10%, rgba(59, 130, 246, 0.05), transparent 60%);
+  background-attachment: fixed;
   color: var(--profile-text-1);
   font-family: 'Manrope', sans-serif;
 }

@@ -73,7 +73,13 @@ export default function NotificationProvider({  children,}) {
 
     fetchNotifications();
 
-    if (socketRef.current) {
+    if (
+      socketRef.current &&
+      (
+        socketRef.current.readyState === WebSocket.OPEN ||
+        socketRef.current.readyState === WebSocket.CONNECTING
+      )
+    ) {
       return;
     }
 
@@ -131,7 +137,15 @@ export default function NotificationProvider({  children,}) {
 
     return () => {
 
-      socket.close();
+      if (
+        socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING
+      ) {
+
+        socket.close();
+      }
+
+      socketRef.current = null;
     };
 
   }, [fetchNotifications]);

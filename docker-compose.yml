@@ -9,7 +9,7 @@ services:
 
     container_name: projectflow_backend
 
-    command: python manage.py runserver 0.0.0.0:8000
+    command: daphne -b 0.0.0.0 -p 8000 management.asgi:application
 
     volumes:
       - ./backend/management:/app

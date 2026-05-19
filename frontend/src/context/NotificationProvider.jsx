@@ -3,21 +3,17 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from "react";
 
 import api from "../services/api";
 import NotificationContext from "./notificationContext";
 
-export default function NotificationProvider({
-  children,
-}) {
-  const [notifications,
-    setNotifications
-  ] = useState([]);
+export default function NotificationProvider({  children,}) {
+  const [notifications, setNotifications] = useState([]);
 
-  const [loading,
-    setLoading
-  ] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const socketRef = useRef(null);
 
   const fetchNotifications =
     useCallback(async () => {
@@ -75,27 +71,67 @@ export default function NotificationProvider({
 
   useEffect(() => {
 
-    const timeoutId =
-      window.setTimeout(
-        fetchNotifications,
-        0
+    fetchNotifications();
+
+    if (socketRef.current) {
+      return;
+    }
+
+    const protocol =
+      window.location.protocol === "https:"
+        ? "wss"
+        : "ws";
+
+    const socket = new WebSocket(
+      `${protocol}://localhost:8000/ws/notifications/`
+    );
+
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+
+      console.log(
+        "WebSocket connected"
+      );
+    };
+
+    socket.onmessage = (event) => {
+
+      const data = JSON.parse(
+        event.data
       );
 
-    const intervalId =
-      window.setInterval(
-        fetchNotifications,
-        10000
+      setNotifications((prev) => [
+
+        data,
+
+        ...prev.filter(
+          (item) =>
+            item.id !== data.id
+        ),
+      ]);
+    };
+
+    socket.onerror = (error) => {
+
+      console.log(
+        "WebSocket error:",
+        error
       );
+    };
+
+    socket.onclose = () => {
+
+      console.log(
+        "WebSocket disconnected"
+      );
+
+      socketRef.current = null;
+    };
 
     return () => {
 
-      window.clearTimeout(
-        timeoutId
-      );
-
-      window.clearInterval(
-        intervalId
-      );
+      socket.close();
     };
 
   }, [fetchNotifications]);

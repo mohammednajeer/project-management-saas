@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "analytics",
     "activities",
     'storages',
+    "channels",
     
 ]
 
@@ -89,7 +90,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'management.wsgi.application'
-
+ASGI_APPLICATION = "management.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -211,3 +212,20 @@ STORAGES = {
         "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 } 
+
+
+
+
+CHANNEL_LAYERS = {
+
+    "default": {
+
+        "BACKEND":
+            "channels_redis.core.RedisChannelLayer",
+
+        "CONFIG": {
+
+            "hosts": [("redis", 6379)],
+        },
+    },
+}

@@ -11,6 +11,10 @@ from tasks.models import (
 )
 from accounts.models import User
 from accounts.permissions import (IsManagerOrAdmin)
+from notifications.models import Notification
+from notifications.realtime import (
+    send_realtime_notification
+)
 
 
 
@@ -127,6 +131,35 @@ class IssueListCreateView(APIView):
                 "medium"
             ),
         )
+        managers = User.objects.filter(
+            organization=project.organization,
+            role__in=["admin", "manager"]
+        )
+
+        for manager in managers:
+
+            notification = Notification.objects.create(
+                user=manager,
+                title="New Issue Raised",
+                message=(
+                    f"{request.user.name} "
+                    f"raised issue: "
+                    f"{issue.title}"
+                )
+            )
+
+            send_realtime_notification(
+                manager.id,
+                {
+                    "id": str(notification.id),
+                    "title": notification.title,
+                    "message": notification.message,
+                    "created_at": str(
+                        notification.created_at
+                    ),
+                    "is_read": notification.is_read,
+                }
+            )
 
         response_serializer = IssueSerializer(
             issue

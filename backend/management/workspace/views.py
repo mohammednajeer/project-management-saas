@@ -291,3 +291,85 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
         serializer = SubTaskSerializer(subtask)
 
         return Response(serializer.data)
+
+
+
+
+from activities.models import Activity
+
+
+class ActivityFeedView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        activities = (
+            Activity.objects
+            .filter(user=request.user)
+            .order_by("-created_at")[:10]
+        )
+
+        data = []
+
+        for activity in activities:
+
+            data.append({
+                "id": str(activity.id),
+                "message": activity.message,
+                "type": activity.action,
+                "created_at": activity.created_at,
+            })
+
+        return Response(data)
+    
+class MyTasksView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        subtasks = (
+            SubTask.objects
+            .filter(
+                assigned_to=request.user
+            )
+            .select_related(
+                "task",
+                "task__project"
+            )
+            .order_by("due_date")
+        )
+
+        data = []
+
+        for subtask in subtasks:
+
+            data.append({
+
+                "id": str(subtask.id),
+
+                "title": subtask.title,
+
+                "status": subtask.status,
+
+                "priority": subtask.priority,
+
+                "due_date": subtask.due_date,
+
+                "task": {
+                    "id": str(subtask.task.id),
+                    "title": subtask.task.title,
+                },
+
+                "project": {
+                    "id": str(
+                        subtask.task.project.id
+                    ),
+                    "title": (
+                        subtask.task.project.name
+                    ),
+                },
+            })
+
+        return Response(data)

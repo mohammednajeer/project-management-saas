@@ -603,7 +603,18 @@ class TaskAttachmentUploadView(APIView):
                 file=uploaded_file,
             )
         )
-        print(attachment.file.url)
+        create_activity(
+            organization=request.user.organization,
+            user=request.user,
+            action="attachment_uploaded",
+            message=(
+                f'Uploaded attachment to '
+                f'"{task.title}"'
+            ),
+            project=task.project,
+            task=task,
+        )
+        # print(attachment.file.url)
 
         serializer = (
             TaskAttachmentSerializer(
@@ -721,6 +732,18 @@ class SubTaskAttachmentUploadView(APIView):
             uploaded_by=request.user,
             file=uploaded_file,
             original_name=uploaded_file.name,
+        )
+        create_activity(
+            organization=request.user.organization,
+            user=request.user,
+            action="attachment_uploaded",
+            message=(
+                f'Uploaded attachment to '
+                f'"{subtask.title}"'
+            ),
+            project=subtask.task.project,
+            task=subtask.task,
+            subtask=subtask,
         )
 
         serializer = SubTaskAttachmentSerializer(

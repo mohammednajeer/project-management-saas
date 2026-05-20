@@ -25,7 +25,7 @@ import RoleProtectedRoute from "../components/RoleProtectedRoute";
 import AppLayout from "../layout/AppLayout";
 import WorkspaceLayout from "../layout/WorkspaceLayout";
 import { AuthProvider } from "../context/AuthContext";
-
+import MyTasks from "../pages/workspace/MyTasks";
 function PlaceholderPage({ title }) {
   return (
     <div style={{ padding: "2rem" }}>
@@ -113,6 +113,7 @@ function App() {
             <Route path="issues" element={<IssuesPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="notifications" element={<WorkspaceNotifications />} />
+            <Route path="my-tasks" element={<MyTasks />} />
             <Route path="*" element={<Navigate to="/workspace" replace />} />
           </Route>
 

@@ -15,7 +15,7 @@ from notifications.models import Notification
 from notifications.realtime import (
     send_realtime_notification
 )
-
+from activities.utils import create_activity
 
 
 class IssueListCreateView(APIView):
@@ -131,6 +131,15 @@ class IssueListCreateView(APIView):
                 "medium"
             ),
         )
+        create_activity(
+            organization=request.user.organization,
+            user=request.user,
+            action="issue_create",
+            message=f'Raised issue "{issue.title}"',
+            project=issue.project,
+            task=issue.task,
+            subtask=issue.subtask,
+        )
         managers = User.objects.filter(
             organization=project.organization,
             role__in=["admin", "manager"]
@@ -195,7 +204,8 @@ class IssueUpdateView(APIView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
-
+        old_status = issue.status
+        old_priority = issue.priority
         status_value = request.data.get("status")
 
         priority_value = request.data.get(
@@ -231,8 +241,43 @@ class IssueUpdateView(APIView):
                     },
                     status=status.HTTP_404_NOT_FOUND
                 )
-
+            
         issue.save()
+        if old_status != issue.status:
+
+                create_activity(
+                    organization=request.user.organization,
+                    user=request.user,
+                    action="issue_updated",
+                    message=(
+                        f'Updated issue "{issue.title}" '
+                        f'status from {old_status} '
+                        f'to {issue.status}'
+                    ),
+                    project=issue.project,
+                    task=issue.task,
+                    subtask=issue.subtask,
+                )
+
+
+        if old_priority != issue.priority:
+
+                create_activity(
+                    organization=request.user.organization,
+                    user=request.user,
+                    action="issue_updated",
+                    message=(
+                        f'Changed issue "{issue.title}" '
+                        f'priority from {old_priority} '
+                        f'to {issue.priority}'
+                    ),
+                    project=issue.project,
+                    task=issue.task,
+                    subtask=issue.subtask,
+                )
+        
+
+        
 
         serializer = IssueSerializer(issue)
 

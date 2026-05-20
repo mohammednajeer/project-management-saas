@@ -21,6 +21,7 @@ import WorkspaceHome from "../pages/workspace/WorkspaceHome";
 import WorkspaceTasks from "../pages/workspace/WorkspaceTasks";
 import WorkspaceNotifications from "../pages/workspace/WorkspaceNotifications";
 import TaskWorkspace from "../pages/workspace/TaskWorkspace";
+import EmployeeActivityPage from "../pages/workspace/EmployeeActivityPage";
 import PublicRoute from "../components/PublicRoute";
 import RoleProtectedRoute from "../components/RoleProtectedRoute";
 import AppLayout from "../layout/AppLayout";
@@ -89,8 +90,8 @@ function App() {
             <Route path="tasks" element={<Tasks />} />
             <Route path="tasks/:taskId" element={<TaskDetails />} />
             <Route path="issues" element={<IssuesPage />} />
-            <Route path="profile" element={<ProfilePage />} />
             <Route path="activity" element={<ActivityPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="team" element={<Members />} />
             <Route path="reports" element={<PlaceholderPage title="Reports" />} />
             <Route path="settings" element={<PlaceholderPage title="Settings" />} />
@@ -112,6 +113,7 @@ function App() {
             <Route index element={<WorkspaceHome />} />
             <Route path="tasks" element={<WorkspaceTasks />} />
             <Route path="issues" element={<IssuesPage />} />
+            <Route path="activity" element={<EmployeeActivityPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="notifications" element={<WorkspaceNotifications />} />
             <Route path="my-tasks" element={<MyTasks />} />

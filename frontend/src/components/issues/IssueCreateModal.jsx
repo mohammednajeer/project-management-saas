@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Loader2, Plus, X } from "lucide-react";
+import { AlertCircle, Loader2, Paperclip, Plus, UploadCloud, X } from "lucide-react";
 import useIssues from "../../context/issues/useIssues";
 import { ISSUE_PRIORITIES, formatIssueLabel, getErrorMessage } from "./issueUtils";
 
@@ -21,12 +21,14 @@ export default function IssueCreateModal({ open, onClose }) {
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [attachments, setAttachments] = useState([]);
 
   const resetForm = () => {
     setForm(initialForm);
     setTasks([]);
     setSubtasks([]);
     setError("");
+    setAttachments([]);
   };
 
   const closeModal = () => {
@@ -118,14 +120,16 @@ export default function IssueCreateModal({ open, onClose }) {
       setSubmitting(true);
       setError("");
 
-      await createIssue({
-        title: form.title.trim(),
-        description: form.description.trim(),
-        priority: form.priority,
-        project: form.project,
-        task: form.task || null,
-        subtask: form.subtask || null,
-      });
+      const formData = new FormData();
+      formData.append("title", form.title.trim());
+      formData.append("description", form.description.trim());
+      formData.append("priority", form.priority);
+      formData.append("project", form.project);
+      if (form.task) formData.append("task", form.task);
+      if (form.subtask) formData.append("subtask", form.subtask);
+      attachments.forEach((file) => formData.append("attachments", file));
+
+      await createIssue(formData);
 
       closeModal();
     } catch (err) {
@@ -225,6 +229,56 @@ export default function IssueCreateModal({ open, onClose }) {
               </select>
             </label>
           </div>
+
+          <div
+            className="issue-upload-dropzone"
+            onClick={() => document.getElementById("issue-create-attachments")?.click()}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              setAttachments((files) => [
+                ...files,
+                ...Array.from(event.dataTransfer.files || []),
+              ]);
+            }}
+          >
+            <UploadCloud size={22} />
+            <strong>Attach evidence</strong>
+            <span>Screenshots, images, logs, PDFs, documents, or videos</span>
+            <input
+              id="issue-create-attachments"
+              type="file"
+              multiple
+              hidden
+              onChange={(event) =>
+                setAttachments((files) => [
+                  ...files,
+                  ...Array.from(event.target.files || []),
+                ])
+              }
+            />
+          </div>
+
+          {attachments.length > 0 && (
+            <div className="issue-attachment-drafts">
+              {attachments.map((file, index) => (
+                <div key={`${file.name}-${index}`} className="issue-attachment-draft">
+                  <Paperclip size={14} />
+                  <span>{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAttachments((files) =>
+                        files.filter((_, itemIndex) => itemIndex !== index)
+                      )
+                    }
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="issue-modal-footer">
             <button type="button" className="issue-secondary-button" onClick={closeModal}>

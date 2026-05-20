@@ -2,11 +2,13 @@ import {
   Bell,
   CheckSquare,
   Home,
+  Activity,
   AlertCircle,
   LogOut,
   Sparkles,
   UserRound,
 } from "lucide-react";
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import api from "../services/api";
@@ -33,6 +35,11 @@ const workspaceNavItems = [
     to: "/workspace/issues",
   },
   {
+    icon: Activity,
+    label: "Activity",
+    to: "/workspace/activity",
+  },
+  {
     icon: Bell,
     label: "Notifications",
     to: "/workspace/notifications",
@@ -40,6 +47,7 @@ const workspaceNavItems = [
 ];
 
 export default function WorkspaceSidebar() {
+  const [hovered, setHovered] = useState(false);
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
   const initials = (user?.name || user?.email || "U")
@@ -61,7 +69,15 @@ export default function WorkspaceSidebar() {
   };
 
   return (
-    <aside className="workspace-sidebar">
+    <aside
+      className={`workspace-sidebar ${
+        hovered
+          ? "workspace-sidebar--expanded"
+          : "workspace-sidebar--collapsed"
+      }`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <a
         href="/workspace"
         className="workspace-sidebar-brand"
@@ -85,6 +101,7 @@ export default function WorkspaceSidebar() {
             key={label}
             to={to}
             end={end}
+            data-label={label}
             className={({ isActive }) =>
               `workspace-sidebar-link${
                 isActive ? " is-active" : ""
@@ -102,7 +119,7 @@ export default function WorkspaceSidebar() {
                   </span>
                 )}
             </span>
-            <span>
+            <span className="workspace-sidebar-label">
               {label}
             </span>
           </NavLink>
@@ -111,6 +128,7 @@ export default function WorkspaceSidebar() {
 
       <NavLink
         to="/workspace/profile"
+        data-label="Profile"
         className={({ isActive }) =>
           `workspace-sidebar-profile${
             isActive ? " is-active" : ""
@@ -124,7 +142,7 @@ export default function WorkspaceSidebar() {
             initials || <UserRound size={15} />
           )}
         </span>
-        <span>
+        <span className="workspace-sidebar-label">
           Profile
         </span>
       </NavLink>
@@ -135,7 +153,7 @@ export default function WorkspaceSidebar() {
         onClick={handleLogout}
       >
         <LogOut size={18} />
-        <span>
+        <span className="workspace-sidebar-label">
           Logout
         </span>
       </button>

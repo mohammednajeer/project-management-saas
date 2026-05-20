@@ -295,8 +295,30 @@
   line-height: 1.55;
 }
 
+.issue-reference-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -6px 0 14px;
+}
+
+.issue-reference-line span {
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(108,83,179,0.14);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(242,239,254,0.56);
+  color: var(--issue-text-2);
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .issue-status-badge,
-.issue-priority-badge {
+.issue-priority-badge,
+.issue-task-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -318,6 +340,11 @@
   background: rgba(239,68,68,0.12);
   color: #dc2626;
   box-shadow: 0 0 24px rgba(239,68,68,0.16);
+}
+
+.issue-task-badge {
+  background: rgba(108,83,179,0.11);
+  color: var(--issue-brand);
 }
 
 .issue-card-people {
@@ -392,6 +419,12 @@
 }
 
 .issue-card-dates span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.issue-card-dates span:last-child {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -480,6 +513,57 @@
   gap: 14px;
 }
 
+.issue-upload-dropzone {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 20px;
+  border: 1px dashed rgba(108,83,179,0.3);
+  border-radius: 18px;
+  background: rgba(242,239,254,0.48);
+  color: var(--issue-brand);
+  cursor: pointer;
+  text-align: center;
+}
+
+.issue-upload-dropzone strong {
+  color: var(--issue-text-1);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.issue-upload-dropzone span {
+  color: var(--issue-text-3);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.issue-attachment-drafts {
+  display: grid;
+  gap: 8px;
+}
+
+.issue-attachment-draft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid var(--issue-border);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.72);
+  color: var(--issue-text-2);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.issue-attachment-draft button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--issue-text-3);
+  cursor: pointer;
+}
+
 .issue-form label,
 .issue-manager-panel label {
   display: grid;
@@ -539,6 +623,66 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+}
+
+.issue-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.issue-evidence-card {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--issue-border);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.68);
+  color: var(--issue-text-2);
+  text-decoration: none;
+}
+
+.issue-evidence-card > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(108,83,179,0.1);
+  color: var(--issue-brand);
+}
+
+.issue-evidence-card strong {
+  overflow: hidden;
+  color: var(--issue-text-1);
+  font-size: 13px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue-evidence-card small,
+.issue-evidence-empty {
+  color: var(--issue-text-3);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.issue-evidence-card img {
+  width: 100%;
+  max-height: 130px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.issue-evidence-empty {
+  padding: 14px;
+  border: 1px dashed var(--issue-border);
+  border-radius: 14px;
+  text-align: center;
 }
 
 .issue-timeline-grid {

@@ -2,7 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from django.db import OperationalError, ProgrammingError
 from django.db.models import Q
+from django.db.models import Count
 from django.utils import timezone
 
 from accounts.models import User
@@ -23,7 +25,6 @@ from tasks.serializers import (
 from activities.models import Activity
 from activities.serializers import ActivitySerializer
 from issues.models import Issue
-from issues.serializers import IssueSerializer
 
 
 ALLOWED_SUBTASK_STATUSES = [
@@ -306,33 +307,51 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
 
 
 
-from activities.models import Activity
-
-
 class ActivityFeedView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsEmployee]
 
     def get(self, request):
 
+        limit = request.query_params.get("limit")
+
         activities = (
             Activity.objects
-            .filter(user=request.user)
-            .order_by("-created_at")[:10]
+            .filter(
+                organization=request.user.organization
+            )
+            .filter(
+                Q(user=request.user) |
+                Q(task__assigned_to=request.user) |
+                Q(task__subtasks__assigned_to=request.user) |
+                Q(subtask__assigned_to=request.user)
+            )
+            .select_related(
+                "user",
+                "project",
+                "task",
+                "subtask",
+            )
+            .distinct()
+            .order_by("-created_at")
         )
 
-        data = []
+        if limit:
+            try:
+                limit = min(max(int(limit), 1), 100)
+            except (TypeError, ValueError):
+                limit = 100
+        else:
+            limit = 100
 
-        for activity in activities:
+        activities = activities[:limit]
 
-            data.append({
-                "id": str(activity.id),
-                "message": activity.message,
-                "type": activity.action,
-                "created_at": activity.created_at,
-            })
+        serializer = ActivitySerializer(
+            activities,
+            many=True,
+        )
 
-        return Response(data)
+        return Response(serializer.data)
     
 class MyTasksView(APIView):
 
@@ -397,6 +416,7 @@ class EmployeeTaskWorkspaceView(APIView):
                 Task.objects
                 .select_related(
                     "project",
+                    "project__organization",
                     "created_by",
                 )
                 .prefetch_related(
@@ -440,6 +460,8 @@ class EmployeeTaskWorkspaceView(APIView):
             )
         )
 
+        today = timezone.localdate()
+
         editable_subtask_ids = [
             str(subtask.id)
             for subtask in subtasks
@@ -469,9 +491,16 @@ class EmployeeTaskWorkspaceView(APIView):
         task_data["project_data"] = {
             "id": str(task.project.id),
             "name": task.project.name,
+            "description": task.project.description,
             "status": task.project.status,
             "priority": task.project.priority,
             "due_date": task.project.due_date,
+            "organization": (
+                task.project.organization.name
+                if task.project.organization
+                else None
+            ),
+            "progress": task_data.get("progress", 0),
         }
         task_data["created_by_data"] = {
             "id": str(task.created_by.id),
@@ -517,6 +546,150 @@ class EmployeeTaskWorkspaceView(APIView):
             .order_by("-created_at")
         )
 
+        task_members = (
+            User.objects
+            .filter(
+                Q(assigned_tasks=task) |
+                Q(assigned_subtasks__task=task)
+            )
+            .distinct()
+            .annotate(
+                assigned_subtasks_count=Count(
+                    "assigned_subtasks",
+                    filter=Q(assigned_subtasks__task=task),
+                    distinct=True,
+                )
+            )
+        )
+
+        team_data = [
+            {
+                "id": str(member.id),
+                "name": member.name,
+                "email": member.email,
+                "role": member.role,
+                "designation": member.designation,
+                "department": member.department,
+                "work_status": member.work_status,
+                "assigned_subtasks_count":
+                    member.assigned_subtasks_count,
+            }
+            for member in task_members
+        ]
+
+        issue_data = []
+
+        for issue in issues:
+            attachments = []
+
+            try:
+                attachments = [
+                    {
+                        "id": str(attachment.id),
+                        "file": attachment.file.url,
+                        "original_name": attachment.original_name,
+                        "uploaded_at": attachment.uploaded_at,
+                        "uploaded_by_data": {
+                            "id": str(attachment.uploaded_by.id),
+                            "name": attachment.uploaded_by.name,
+                            "email": attachment.uploaded_by.email,
+                            "role": attachment.uploaded_by.role,
+                        },
+                        "file_size": attachment.file.size,
+                    }
+                    for attachment in issue.attachments.select_related(
+                        "uploaded_by"
+                    ).all()
+                ]
+
+            except (AttributeError, OperationalError, ProgrammingError):
+                attachments = []
+
+            issue_data.append(
+                {
+                    "id": str(issue.id),
+                    "title": issue.title,
+                    "description": issue.description,
+                    "project": str(issue.project_id),
+                    "project_data": {
+                        "id": str(issue.project.id),
+                        "name": issue.project.name,
+                    },
+                    "task": (
+                        str(issue.task_id)
+                        if issue.task_id
+                        else None
+                    ),
+                    "task_data": (
+                        {
+                            "id": str(issue.task.id),
+                            "title": issue.task.title,
+                        }
+                        if issue.task
+                        else None
+                    ),
+                    "subtask": (
+                        str(issue.subtask_id)
+                        if issue.subtask_id
+                        else None
+                    ),
+                    "subtask_data": (
+                        {
+                            "id": str(issue.subtask.id),
+                            "title": issue.subtask.title,
+                        }
+                        if issue.subtask
+                        else None
+                    ),
+                    "raised_by": str(issue.raised_by_id),
+                    "raised_by_data": {
+                        "id": str(issue.raised_by.id),
+                        "name": issue.raised_by.name,
+                        "email": issue.raised_by.email,
+                        "role": issue.raised_by.role,
+                    },
+                    "assigned_to": (
+                        str(issue.assigned_to_id)
+                        if issue.assigned_to_id
+                        else None
+                    ),
+                    "assigned_to_data": (
+                        {
+                            "id": str(issue.assigned_to.id),
+                            "name": issue.assigned_to.name,
+                            "email": issue.assigned_to.email,
+                            "role": issue.assigned_to.role,
+                        }
+                        if issue.assigned_to
+                        else None
+                    ),
+                    "status": issue.status,
+                    "priority": issue.priority,
+                    "attachments": attachments,
+                    "created_at": issue.created_at,
+                    "updated_at": issue.updated_at,
+                }
+            )
+
+        insights = {
+            "total_subtasks": subtasks.count(),
+            "completed_subtasks": subtasks.filter(
+                status="done"
+            ).count(),
+            "review_subtasks": subtasks.filter(
+                status="review"
+            ).count(),
+            "overdue_subtasks": subtasks.filter(
+                due_date__lt=today
+            ).exclude(
+                status="done"
+            ).count(),
+            "completion_rate": task_data.get("progress", 0),
+            "blockers_count": issues.exclude(
+                status__in=["resolved", "closed"]
+            ).count(),
+        }
+
         return Response(
             {
                 "task": task_data,
@@ -535,10 +708,9 @@ class EmployeeTaskWorkspaceView(APIView):
                     activities,
                     many=True,
                 ).data,
-                "issues": IssueSerializer(
-                    issues,
-                    many=True,
-                ).data,
+                "issues": issue_data,
+                "team": team_data,
+                "insights": insights,
                 "permissions": {
                     "can_edit_task": False,
                     "can_comment": True,

@@ -1197,6 +1197,65 @@
   margin: 0;
 }
 
+.mt-sb-link {
+  border: 1px solid var(--brand-mid);
+  border-radius: var(--r-full);
+  padding: 3px 8px;
+  background: var(--brand-dim);
+  color: var(--brand);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.mt-sb-link:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+.mt-sb-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mt-sb-activity-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-subtle);
+}
+
+.mt-sb-activity-item > span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  background: var(--brand-dim);
+  color: var(--brand);
+}
+
+.mt-sb-activity-item strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mt-sb-activity-item small {
+  color: var(--text-4);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
 /* ─── SKELETON LOADER ────────────────────────────────────────────────────── */
 @keyframes mt-shimmer {
   0%   { background-position: -600px 0; }

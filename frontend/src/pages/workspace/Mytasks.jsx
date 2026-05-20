@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowUpDown,
@@ -342,7 +342,7 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
 }
 
 /* ─── SIDEBAR ────────────────────────────────────────────────────────────── */
-function Sidebar({ tasks }) {
+function Sidebar({ tasks, activities = [] }) {
   const upcoming = useMemo(() =>
     tasks
       .filter((t) => t.due_date && t.status !== "done" && !isOverdue(t.due_date, t.status))
@@ -442,6 +442,28 @@ function Sidebar({ tasks }) {
         )}
       </section>
 
+      <section className="mt-sidebar-card">
+        <div className="mt-sb-header">
+          <h3 className="mt-sb-title">Activity</h3>
+          <Link to="/workspace/activity" className="mt-sb-link">View all</Link>
+        </div>
+        {activities.length === 0 ? (
+          <p className="mt-sb-empty">No recent activity.</p>
+        ) : (
+          <div className="mt-sb-activity-list">
+            {activities.slice(0, 4).map((item) => (
+              <article key={item.id} className="mt-sb-activity-item">
+                <span><Activity size={12} /></span>
+                <div>
+                  <strong>{item.message}</strong>
+                  <small>{formatRelative(item.created_at)}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Overdue Alert */}
       {overdueTasks.length > 0 && (
         <section className="mt-sidebar-card mt-sidebar-card--danger">
@@ -508,6 +530,7 @@ export default function MyTasks() {
   const [sortBy, setSortBy]             = useState("due_date_asc");
   const [viewMode, setViewMode]         = useState("grid"); // grid | list
   const [showFilters, setShowFilters]   = useState(false);
+  const [recentActivities, setRecentActivities] = useState([]);
 
   /* ── Fetch ──────────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -522,6 +545,19 @@ export default function MyTasks() {
       }
     };
     load();
+  }, []);
+
+  useEffect(() => {
+    const loadActivity = async () => {
+      try {
+        const response = await api.get("/workspace/activity-feed/?limit=5");
+        setRecentActivities(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    loadActivity();
   }, []);
 
   /* ── Status update ──────────────────────────────────────────────────── */
@@ -896,7 +932,7 @@ export default function MyTasks() {
         </div>
 
         {/* Sidebar */}
-        {!loading && <Sidebar tasks={tasks} />}
+        {!loading && <Sidebar tasks={tasks} activities={recentActivities} />}
       </div>
 
     </div>

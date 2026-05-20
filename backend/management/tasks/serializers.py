@@ -170,6 +170,8 @@ class TaskCommentSerializer(serializers.ModelSerializer):
 class TaskAttachmentSerializer( serializers.ModelSerializer):
 
     uploaded_by_data = ( serializers.SerializerMethodField())
+    file_size = serializers.SerializerMethodField()
+    original_name = serializers.SerializerMethodField()
 
     class Meta:
 
@@ -178,6 +180,8 @@ class TaskAttachmentSerializer( serializers.ModelSerializer):
         fields = [
             "id",
             "file",
+            "original_name",
+            "file_size",
             "uploaded_at",
             "uploaded_by_data",
         ]
@@ -192,11 +196,27 @@ class TaskAttachmentSerializer( serializers.ModelSerializer):
 
             "role": obj.uploaded_by.role,
         }
+
+    def get_file_size(self, obj):
+
+        try:
+            return obj.file.size
+
+        except OSError:
+            return None
+
+    def get_original_name(self, obj):
+
+        if not obj.file:
+            return None
+
+        return obj.file.name.split("/")[-1]
     
 
 class SubTaskAttachmentSerializer(serializers.ModelSerializer):
 
     uploaded_by_data = serializers.SerializerMethodField()
+    file_size = serializers.SerializerMethodField()
 
     class Meta:
         model = SubTaskAttachment
@@ -205,6 +225,7 @@ class SubTaskAttachmentSerializer(serializers.ModelSerializer):
             "id",
             "file",
             "original_name",
+            "file_size",
             "uploaded_at",
             "uploaded_by_data",
         ]
@@ -216,3 +237,11 @@ class SubTaskAttachmentSerializer(serializers.ModelSerializer):
             "name": obj.uploaded_by.name,
             "role": obj.uploaded_by.role,
         }
+
+    def get_file_size(self, obj):
+
+        try:
+            return obj.file.size
+
+        except OSError:
+            return None

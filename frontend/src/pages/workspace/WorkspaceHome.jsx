@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   CalendarClock,
@@ -196,7 +197,7 @@ export default function WorkspaceHome() {
 
         const response =
           await api.get(
-            "/workspace/activity-feed/"
+            "/workspace/activity-feed/?limit=6"
           );
 
         setActivityFeed(
@@ -268,6 +269,11 @@ export default function WorkspaceHome() {
     { variant: "today",    icon: CalendarClock, value: dashboard.upcoming_deadlines.length, label: "Due Soon" },
   ], [dashboard]);
 
+  const activityPreview = useMemo(
+    () => activityFeed.slice(0, 5),
+    [activityFeed]
+  );
+
   /* Simulate activity feed from recent_subtasks for realtime-ready design */
   // const activityFeed = useMemo(() =>
   //   dashboard.recent_subtasks.slice(0, 6).map((s, i) => ({
@@ -305,6 +311,9 @@ export default function WorkspaceHome() {
   task_update: "#8B5CF6",
   task_complete: "#16A34A",
   issue_create: "#EF4444",
+  issue_assigned: "#DC2626",
+  subtask_updated: "#16A34A",
+  comment_added: "#2563EB",
 };
   /* ── Render ───────────────────────────────────────────────────────────── */
   return (
@@ -406,20 +415,23 @@ export default function WorkspaceHome() {
           <div className="wh-panel-header">
             <div>
               <h2 className="wh-section-title">Activity Feed</h2>
-              <p className="wh-section-sub">Latest assigned subtasks</p>
+              <p className="wh-section-sub">Latest workspace updates</p>
             </div>
-            <Sparkles size={17} className="wh-panel-icon" />
+            <Link to="/workspace/activity" className="wh-panel-action">
+              View all
+            </Link>
           </div>
 
-          {activityFeed.length === 0 ? (
+          {activityPreview.length === 0 ? (
             <p className="wh-empty">No recent activity yet.</p>
           ) : (
             <div className="wh-feed-list">
-              {activityFeed.map((item) => (
+              {activityPreview.map((item) => (
                 <div key={item.id} className="wh-feed-item">
                   <span className="wh-feed-dot" style={{
                       background:
                         ACTIVITY_COLORS[item.type]
+                        || ACTIVITY_COLORS[item.action]
                         || "#6C53B3"
                     }}/>
                   <div>

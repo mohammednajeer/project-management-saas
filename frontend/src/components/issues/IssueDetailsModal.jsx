@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertCircle, Loader2, Save, UserRound, X } from "lucide-react";
+import { AlertCircle, FileImage, FileText, Layers, Loader2, Save, UserRound, X } from "lucide-react";
 import useIssues from "../../context/issues/useIssues";
 import IssuePriorityBadge from "./IssuePriorityBadge";
 import IssueStatusBadge from "./IssueStatusBadge";
@@ -23,6 +23,26 @@ function DetailPerson({ label, user }) {
       </div>
     </div>
   );
+}
+
+function isImage(file = "") {
+  return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file);
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return "Unknown size";
+  const units = ["B", "KB", "MB", "GB"];
+  let size = bytes;
+  let unit = 0;
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024;
+    unit += 1;
+  }
+  return `${size.toFixed(unit ? 1 : 0)} ${units[unit]}`;
+}
+
+function getReferenceName(item, fallback) {
+  return item?.name || item?.title || fallback || "None";
 }
 
 export default function IssueDetailsModal({ issue, onClose }) {
@@ -83,6 +103,12 @@ export default function IssueDetailsModal({ issue, onClose }) {
         <div className="issue-details-badges">
           <IssueStatusBadge status={currentIssue.status} />
           <IssuePriorityBadge priority={currentIssue.priority} />
+          {(currentIssue.task || currentIssue.subtask) && (
+            <span className="issue-task-badge">
+              <Layers size={12} />
+              Issue task
+            </span>
+          )}
         </div>
 
         {error && (
@@ -102,15 +128,15 @@ export default function IssueDetailsModal({ issue, onClose }) {
             <div className="issue-reference-grid">
               <div>
                 <span>Project</span>
-                <strong>{currentIssue.project || "None"}</strong>
+                <strong>{getReferenceName(currentIssue.project_data, currentIssue.project)}</strong>
               </div>
               <div>
                 <span>Task</span>
-                <strong>{currentIssue.task || "None"}</strong>
+                <strong>{getReferenceName(currentIssue.task_data, currentIssue.task)}</strong>
               </div>
               <div>
                 <span>Subtask</span>
-                <strong>{currentIssue.subtask || "None"}</strong>
+                <strong>{getReferenceName(currentIssue.subtask_data, currentIssue.subtask)}</strong>
               </div>
             </div>
 
@@ -124,6 +150,37 @@ export default function IssueDetailsModal({ issue, onClose }) {
                 <strong>{formatIssueDate(currentIssue.updated_at)}</strong>
               </div>
             </div>
+
+            <section>
+              <span className="issue-section-label">Evidence</span>
+              <div className="issue-evidence-grid">
+                {(currentIssue.attachments || []).map((attachment) => (
+                  <a
+                    key={attachment.id}
+                    className="issue-evidence-card"
+                    href={attachment.file}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <span>
+                      {isImage(attachment.file) ? (
+                        <FileImage size={17} />
+                      ) : (
+                        <FileText size={17} />
+                      )}
+                    </span>
+                    <strong>{attachment.original_name}</strong>
+                    <small>
+                      {formatBytes(attachment.file_size)} · {attachment.uploaded_by_data?.name}
+                    </small>
+                    {isImage(attachment.file) && <img src={attachment.file} alt="" />}
+                  </a>
+                ))}
+                {!currentIssue.attachments?.length && (
+                  <div className="issue-evidence-empty">No evidence files attached.</div>
+                )}
+              </div>
+            </section>
           </div>
 
           <aside className="issue-details-side">

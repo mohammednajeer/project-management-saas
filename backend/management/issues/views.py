@@ -2,7 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from .models import Issue
+from django.db.models import Q
+from .models import Issue, IssueAttachment
 from .serializers import IssueSerializer
 from projects.models import Project
 from tasks.models import (
@@ -26,16 +27,30 @@ class IssueListCreateView(APIView):
 
     def get(self, request):
 
+        issues = Issue.objects.filter(
+            project__organization=request.user.organization
+        )
+
+        if request.user.role == "employee":
+            issues = issues.filter(
+                Q(raised_by=request.user) |
+                Q(task__assigned_to=request.user) |
+                Q(task__subtasks__assigned_to=request.user) |
+                Q(subtask__assigned_to=request.user)
+            ).distinct()
+
         issues = (
-            Issue.objects.filter(
-                project__organization=request.user.organization
-            )
+            issues
             .select_related(
                 "raised_by",
                 "assigned_to",
                 "project",
                 "task",
                 "subtask",
+            )
+            .prefetch_related(
+                "attachments",
+                "attachments__uploaded_by",
             )
             .order_by("-created_at")
         )
@@ -165,6 +180,20 @@ class IssueListCreateView(APIView):
                 "medium"
             ),
         )
+
+        uploaded_files = (
+            request.FILES.getlist("attachments") or
+            request.FILES.getlist("attachment")
+        )
+
+        for uploaded_file in uploaded_files:
+            IssueAttachment.objects.create(
+                issue=issue,
+                uploaded_by=request.user,
+                file=uploaded_file,
+                original_name=uploaded_file.name,
+            )
+
         create_activity(
             organization=request.user.organization,
             user=request.user,
@@ -225,9 +254,16 @@ class IssueUpdateView(APIView):
 
         try:
 
-            issue = Issue.objects.get(
-                id=issue_id,
-                project__organization=request.user.organization
+            issue = (
+                Issue.objects
+                .prefetch_related(
+                    "attachments",
+                    "attachments__uploaded_by",
+                )
+                .get(
+                    id=issue_id,
+                    project__organization=request.user.organization
+                )
             )
 
         except Issue.DoesNotExist:
@@ -246,9 +282,9 @@ class IssueUpdateView(APIView):
             "priority"
         )
 
-        assigned_to_id = request.data.get(
-            "assigned_to"
-        )
+        assigned_to_provided = "assigned_to" in request.data
+        assigned_to_id = request.data.get("assigned_to")
+        old_assigned_to = issue.assigned_to
 
         if status_value:
             issue.status = status_value
@@ -256,7 +292,12 @@ class IssueUpdateView(APIView):
         if priority_value:
             issue.priority = priority_value
 
-        if assigned_to_id:
+        if assigned_to_provided and (
+            assigned_to_id in [None, "", "null", "undefined"]
+        ):
+            issue.assigned_to = None
+
+        elif assigned_to_id:
 
             try:
 
@@ -277,6 +318,28 @@ class IssueUpdateView(APIView):
                 )
             
         issue.save()
+
+        if assigned_to_provided and old_assigned_to != issue.assigned_to:
+            if issue.assigned_to:
+                assignment_message = (
+                    f'Assigned issue task "{issue.title}" '
+                    f'to {issue.assigned_to.name}'
+                )
+            else:
+                assignment_message = (
+                    f'Unassigned issue task "{issue.title}"'
+                )
+
+            create_activity(
+                organization=request.user.organization,
+                user=request.user,
+                action="issue_assigned",
+                message=assignment_message,
+                project=issue.project,
+                task=issue.task,
+                subtask=issue.subtask,
+            )
+
         if old_status != issue.status:
 
                 create_activity(

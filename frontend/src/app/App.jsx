@@ -20,6 +20,7 @@ import Notifications from "../pages/notifications/Notifications";
 import WorkspaceHome from "../pages/workspace/WorkspaceHome";
 import WorkspaceTasks from "../pages/workspace/WorkspaceTasks";
 import WorkspaceNotifications from "../pages/workspace/WorkspaceNotifications";
+import TaskWorkspace from "../pages/workspace/TaskWorkspace";
 import PublicRoute from "../components/PublicRoute";
 import RoleProtectedRoute from "../components/RoleProtectedRoute";
 import AppLayout from "../layout/AppLayout";
@@ -114,6 +115,7 @@ function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="notifications" element={<WorkspaceNotifications />} />
             <Route path="my-tasks" element={<MyTasks />} />
+            <Route path="task/:taskId" element={<TaskWorkspace />} />
             <Route path="*" element={<Navigate to="/workspace" replace />} />
           </Route>
 

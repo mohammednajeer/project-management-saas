@@ -450,13 +450,48 @@ class TaskDetailView(APIView):
 
 class TaskCommentListCreateView(APIView):
 
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated]
+
+    def user_can_access_task(self, task, user):
+
+        if user.role in [
+            "admin",
+            "manager",
+        ]:
+            return True
+
+        return (
+            task.assigned_to.filter(id=user.id).exists() or
+            task.subtasks.filter(assigned_to=user).exists()
+        )
 
     def get(self, request, task_id):
 
+        try:
+            task = Task.objects.get(
+                id=task_id,
+                project__organization=request.user.organization
+            )
+
+        except Task.DoesNotExist:
+            return Response(
+                {
+                    "message": "Task not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not self.user_can_access_task(task, request.user):
+            return Response(
+                {
+                    "message":
+                    "You are not allowed to view these comments"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         comments = TaskComment.objects.filter(
-            task__id=task_id,
-            task__project__organization=request.user.organization
+            task=task
         ).order_by("-created_at")
 
         serializer = TaskCommentSerializer(
@@ -483,6 +518,33 @@ class TaskCommentListCreateView(APIView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        if not self.user_can_access_task(task, request.user):
+            return Response(
+                {
+                    "message":
+                    "You are not allowed to comment on this task"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        subtask_id = request.data.get("subtask")
+
+        if subtask_id:
+            try:
+                SubTask.objects.get(
+                    id=subtask_id,
+                    task=task,
+                )
+
+            except SubTask.DoesNotExist:
+                return Response(
+                    {
+                        "message":
+                        "Subtask does not belong to this task"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         serializer = TaskCommentSerializer(
             data=request.data
@@ -635,6 +697,27 @@ class TaskAttachmentListView(APIView):
 
     def get(self, request, task_id):
 
+        if request.user.role == "employee":
+            has_access = Task.objects.filter(
+                id=task_id,
+                project__organization=request.user.organization,
+            ).filter(
+                assigned_to=request.user
+            ).exists() or SubTask.objects.filter(
+                task_id=task_id,
+                task__project__organization=request.user.organization,
+                assigned_to=request.user,
+            ).exists()
+
+            if not has_access:
+                return Response(
+                    {
+                        "message":
+                        "You are not allowed to view these attachments"
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
         attachments = (
             TaskAttachment.objects.filter(
                 task_id=task_id,
@@ -716,6 +799,20 @@ class SubTaskAttachmentUploadView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        if (
+            request.user.role == "employee" and
+            not subtask.assigned_to.filter(
+                id=request.user.id
+            ).exists()
+        ):
+            return Response(
+                {
+                    "message":
+                    "You can upload files only to assigned subtasks"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         uploaded_file = request.FILES.get("file")
 
         if not uploaded_file:
@@ -762,6 +859,23 @@ class SubTaskAttachmentListView(APIView):
     ]
 
     def get(self, request, subtask_id):
+
+        if request.user.role == "employee":
+            has_access = SubTask.objects.filter(
+                id=subtask_id,
+                task__project__organization=request.user.organization,
+            ).filter(
+                task__subtasks__assigned_to=request.user
+            ).exists()
+
+            if not has_access:
+                return Response(
+                    {
+                        "message":
+                        "You are not allowed to view these attachments"
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         attachments = (
             SubTaskAttachment.objects

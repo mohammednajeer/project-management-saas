@@ -24,7 +24,7 @@ const workspaceNavItems = [
   },
   {
     icon: CheckSquare,
-    label: "My Tasks",
+    label: "My Work",
     to: "/workspace/my-tasks",
   },
   {

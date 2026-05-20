@@ -7,6 +7,7 @@ from .views import (
     WorkspaceSubTaskStatusUpdateView ,
     ActivityFeedView,
     MyTasksView,
+    EmployeeTaskWorkspaceView,
 )
 
 urlpatterns = [
@@ -16,4 +17,5 @@ urlpatterns = [
     path("subtasks/<uuid:subtask_id>/", WorkspaceSubTaskStatusUpdateView.as_view()),
     path("activity-feed/", ActivityFeedView.as_view()),
     path("my-tasks/", MyTasksView.as_view()),
+    path("task/<uuid:task_id>/", EmployeeTaskWorkspaceView.as_view()),
 ]

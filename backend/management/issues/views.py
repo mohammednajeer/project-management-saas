@@ -107,7 +107,8 @@ class IssueListCreateView(APIView):
             try:
 
                 subtask = SubTask.objects.get(
-                    id=subtask_id
+                    id=subtask_id,
+                    task__project=project,
                 )
 
             except SubTask.DoesNotExist:
@@ -117,6 +118,39 @@ class IssueListCreateView(APIView):
                         "message": "Subtask not found"
                     },
                     status=status.HTTP_404_NOT_FOUND
+                )
+
+            if task and subtask.task_id != task.id:
+                return Response(
+                    {
+                        "message":
+                        "Subtask does not belong to this task"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not task:
+                task = subtask.task
+
+        if request.user.role == "employee":
+            if not subtask:
+                return Response(
+                    {
+                        "message":
+                        "Employees can raise issues only for assigned subtasks"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not subtask.assigned_to.filter(
+                id=request.user.id
+            ).exists():
+                return Response(
+                    {
+                        "message":
+                        "You can raise issues only for assigned subtasks"
+                    },
+                    status=status.HTTP_403_FORBIDDEN
                 )
 
         issue = Issue.objects.create(

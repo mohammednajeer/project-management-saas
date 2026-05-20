@@ -8,11 +8,22 @@ from django.utils import timezone
 from accounts.models import User
 from accounts.permissions import IsEmployee
 from notifications.models import Notification
-from tasks.models import Task, SubTask
+from tasks.models import (
+    Task,
+    SubTask,
+    TaskComment,
+)
 from tasks.serializers import (
     TaskSerializer,
     SubTaskSerializer,
+    TaskAttachmentSerializer,
+    SubTaskAttachmentSerializer,
+    TaskCommentSerializer,
 )
+from activities.models import Activity
+from activities.serializers import ActivitySerializer
+from issues.models import Issue
+from issues.serializers import IssueSerializer
 
 
 ALLOWED_SUBTASK_STATUSES = [
@@ -373,3 +384,173 @@ class MyTasksView(APIView):
             })
 
         return Response(data)
+
+
+class EmployeeTaskWorkspaceView(APIView):
+
+    permission_classes = [IsAuthenticated, IsEmployee]
+
+    def get(self, request, task_id):
+
+        try:
+            task = (
+                Task.objects
+                .select_related(
+                    "project",
+                    "created_by",
+                )
+                .prefetch_related(
+                    "assigned_to",
+                    "subtasks",
+                    "subtasks__assigned_to",
+                    "subtasks__attachments",
+                    "subtasks__comments",
+                    "attachments",
+                    "comments",
+                )
+                .filter(
+                    id=task_id,
+                    project__organization=request.user.organization,
+                    subtasks__assigned_to=request.user,
+                )
+                .distinct()
+                .get()
+            )
+
+        except Task.DoesNotExist:
+            return Response(
+                {
+                    "message":
+                    "Task workspace not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        subtasks = (
+            task.subtasks
+            .all()
+            .prefetch_related(
+                "assigned_to",
+                "attachments",
+                "comments",
+            )
+            .order_by(
+                "due_date",
+                "created_at",
+            )
+        )
+
+        editable_subtask_ids = [
+            str(subtask.id)
+            for subtask in subtasks
+            if subtask.assigned_to.filter(
+                id=request.user.id
+            ).exists()
+        ]
+
+        subtask_data = []
+
+        for subtask in subtasks:
+            data = SubTaskSerializer(subtask).data
+            data["is_assigned_to_me"] = (
+                str(subtask.id) in editable_subtask_ids
+            )
+            data["comments_count"] = subtask.comments.count()
+            data["attachments_count"] = subtask.attachments.count()
+            data["attachments"] = SubTaskAttachmentSerializer(
+                subtask.attachments.select_related(
+                    "uploaded_by"
+                ).order_by("-uploaded_at"),
+                many=True,
+            ).data
+            subtask_data.append(data)
+
+        task_data = TaskSerializer(task).data
+        task_data["project_data"] = {
+            "id": str(task.project.id),
+            "name": task.project.name,
+            "status": task.project.status,
+            "priority": task.project.priority,
+            "due_date": task.project.due_date,
+        }
+        task_data["created_by_data"] = {
+            "id": str(task.created_by.id),
+            "name": task.created_by.name,
+            "email": task.created_by.email,
+            "role": task.created_by.role,
+        }
+        task_data["comments_count"] = task.comments.count()
+        task_data["attachments_count"] = task.attachments.count()
+
+        comments = (
+            TaskComment.objects
+            .filter(task=task)
+            .select_related(
+                "user",
+                "subtask",
+            )
+            .order_by("-created_at")
+        )
+
+        activities = (
+            Activity.objects
+            .filter(task=task)
+            .select_related(
+                "user",
+                "project",
+                "task",
+                "subtask",
+            )
+            .order_by("-created_at")[:50]
+        )
+
+        issues = (
+            Issue.objects
+            .filter(task=task)
+            .select_related(
+                "raised_by",
+                "assigned_to",
+                "project",
+                "task",
+                "subtask",
+            )
+            .order_by("-created_at")
+        )
+
+        return Response(
+            {
+                "task": task_data,
+                "subtasks": subtask_data,
+                "comments": TaskCommentSerializer(
+                    comments,
+                    many=True,
+                ).data,
+                "attachments": TaskAttachmentSerializer(
+                    task.attachments.select_related(
+                        "uploaded_by"
+                    ).order_by("-uploaded_at"),
+                    many=True,
+                ).data,
+                "activities": ActivitySerializer(
+                    activities,
+                    many=True,
+                ).data,
+                "issues": IssueSerializer(
+                    issues,
+                    many=True,
+                ).data,
+                "permissions": {
+                    "can_edit_task": False,
+                    "can_comment": True,
+                    "can_raise_issue": True,
+                    "can_upload_task_attachment": False,
+                    "editable_subtasks": editable_subtask_ids,
+                    "readonly_subtasks": [
+                        str(subtask.id)
+                        for subtask in subtasks
+                        if str(subtask.id)
+                        not in editable_subtask_ids
+                    ],
+                },
+            }
+        )

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowUpDown,
@@ -224,7 +225,15 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
   }, [menuOpen]);
 
   return (
-    <article className={`mt-task-card ${overdue ? "mt-task-card--overdue" : ""}`}>
+    <article
+      className={`mt-task-card ${overdue ? "mt-task-card--overdue" : ""}`}
+      onClick={() => onOpenTask?.(task)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onOpenTask?.(task);
+      }}
+      role="button"
+      tabIndex={0}
+    >
       {/* Priority stripe */}
       <div className="mt-card-stripe" style={{ background: priCfg.dot }} />
 
@@ -232,27 +241,40 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
       <div className="mt-card-top">
         <div className="mt-card-project">
           <Layers size={10} />
-          {task.task?.project?.name || task.project?.name || "—"}
+          {task.task?.project?.name || task.project?.name || task.project?.title || "—"}
         </div>
         <div className="mt-card-actions-row">
           <button
             className="mt-card-icon-btn"
             title="Open Task"
-            onClick={() => onOpenTask?.(task)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenTask?.(task);
+            }}
           >
             <ExternalLink size={12} />
           </button>
           <button
             className="mt-card-icon-btn"
             title="Raise Issue"
-            onClick={() => onRaiseIssue?.(task)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRaiseIssue?.(task);
+            }}
           >
             <MessageSquarePlus size={12} />
           </button>
-          <div className="mt-card-menu-wrap" ref={menuRef}>
+          <div
+            className="mt-card-menu-wrap"
+            ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               className="mt-card-icon-btn"
-              onClick={() => setMenuOpen((o) => !o)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((o) => !o);
+              }}
             >
               <MoreHorizontal size={12} />
             </button>
@@ -475,6 +497,7 @@ function Sidebar({ tasks }) {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function MyTasks() {
+  const navigate = useNavigate();
   const [tasks, setTasks]               = useState([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState("");
@@ -507,7 +530,7 @@ export default function MyTasks() {
       prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
     );
     try {
-      await api.patch(`/workspace/my-tasks/${taskId}/`, { status: newStatus });
+      await api.patch(`/workspace/subtasks/${taskId}/`, { status: newStatus });
     } catch {
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, status: t.status } : t))
@@ -515,11 +538,19 @@ export default function MyTasks() {
     }
   }, []);
 
+  const openTaskWorkspace = useCallback((subtask) => {
+    const taskId = subtask?.task?.id;
+
+    if (!taskId) return;
+
+    navigate(`/workspace/task/${taskId}?subtask=${subtask.id}`);
+  }, [navigate]);
+
   /* ── Derived ─────────────────────────────────────────────────────────── */
   const projects = useMemo(() => {
     const set = new Set();
     tasks.forEach((t) => {
-      const name = t.task?.project?.name || t.project?.name;
+      const name = t.task?.project?.name || t.project?.name || t.project?.title;
       if (name) set.add(name);
     });
     return Array.from(set);
@@ -551,7 +582,8 @@ export default function MyTasks() {
         (t) =>
           t.title?.toLowerCase().includes(q) ||
           t.description?.toLowerCase().includes(q) ||
-          t.task?.project?.name?.toLowerCase().includes(q)
+          t.task?.project?.name?.toLowerCase().includes(q) ||
+          t.project?.title?.toLowerCase().includes(q)
       );
     }
 
@@ -563,7 +595,7 @@ export default function MyTasks() {
     // Project
     if (projectFilter !== "all") {
       list = list.filter(
-        (t) => (t.task?.project?.name || t.project?.name) === projectFilter
+        (t) => (t.task?.project?.name || t.project?.name || t.project?.title) === projectFilter
       );
     }
 
@@ -848,8 +880,8 @@ export default function MyTasks() {
                   key={task.id}
                   task={task}
                   onStatusChange={handleStatusChange}
-                  onRaiseIssue={() => {}}
-                  onOpenTask={() => {}}
+                  onRaiseIssue={openTaskWorkspace}
+                  onOpenTask={openTaskWorkspace}
                 />
               ))}
             </div>

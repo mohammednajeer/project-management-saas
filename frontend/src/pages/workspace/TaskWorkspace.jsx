@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link as RouterLink, useParams, useSearchParams } from "react-router-dom";
+import { Link as RouterLink, useParams, useSearchParams,useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -148,6 +148,7 @@ function Skeleton() {
 
 export default function TaskWorkspace() {
   const { taskId } = useParams();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightedSubtaskId = searchParams.get("subtask");
   const highlightedRef = useRef(null);
@@ -460,7 +461,12 @@ export default function TaskWorkspace() {
                     key={subtask.id}
                     ref={highlightedSubtaskId === subtask.id ? highlightedRef : null}
                     className={`tw-subtask ${isEditable ? "is-editable" : "is-locked"} ${isFocused ? "is-highlighted" : ""}`}
-                    onClick={() => setFocusSubtaskId(subtask.id)}
+                   onClick={() => {
+                      if (!isEditable) return;
+
+                      setFocusSubtaskId(subtask.id);
+                      navigate(`/workspace/subtask/${subtask.id}`);
+                    }}
                   >
                     <div className="tw-subtask-top">
                       <div>

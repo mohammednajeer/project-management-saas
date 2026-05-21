@@ -219,6 +219,121 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
 
     permission_classes = [IsAuthenticated, IsEmployee]
 
+    def get(self, request, subtask_id):
+
+        try:
+            subtask = (
+                SubTask.objects
+                .select_related(
+                    "task",
+                    "task__project",
+                )
+                .prefetch_related(
+                    "assigned_to",
+                    "comments",
+                    "comments__user",
+                    "attachments",
+                )
+                .get(
+                    id=subtask_id,
+                    task__project__organization=request.user.organization,
+                )
+            )
+
+        except SubTask.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Subtask not found"
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not subtask.assigned_to.filter(
+            id=request.user.id
+        ).exists():
+
+            return Response(
+                {
+                    "message":
+                    "You are not allowed to access this subtask"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        comments = (
+            TaskComment.objects
+            .filter(subtask=subtask)
+            .select_related("user")
+            .order_by("-created_at")
+        )
+
+        activities = (
+            Activity.objects
+            .filter(subtask=subtask)
+            .select_related("user")
+            .order_by("-created_at")
+        )
+
+        issues = (
+            Issue.objects
+            .filter(subtask=subtask)
+            .select_related(
+                "raised_by",
+                "assigned_to",
+            )
+            .order_by("-created_at")
+        )
+
+        sibling_subtasks = (
+            SubTask.objects
+            .filter(task=subtask.task)
+            .exclude(id=subtask.id)
+        )
+
+        data = SubTaskSerializer(subtask).data
+
+        data["comments"] = (
+            TaskCommentSerializer(
+                comments,
+                many=True
+            ).data
+        )
+
+        data["activities"] = (
+            ActivitySerializer(
+                activities,
+                many=True
+            ).data
+        )
+
+        data["issues"] = [
+            {
+                "id": str(issue.id),
+                "title": issue.title,
+                "description": issue.description,
+                "status": issue.status,
+                "priority": issue.priority,
+            }
+            for issue in issues
+        ]
+
+        data["sibling_subtasks"] = (
+            SubTaskSerializer(
+                sibling_subtasks,
+                many=True
+            ).data
+        )
+
+        data["task_attachments"] = (
+            TaskAttachmentSerializer(
+                subtask.task.attachments.all(),
+                many=True
+            ).data
+        )
+
+        return Response(data)
+
     def patch(self, request, subtask_id):
 
         requested_fields = set(request.data.keys())

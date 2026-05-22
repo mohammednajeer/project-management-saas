@@ -29,6 +29,9 @@ import AppLayout from "../layout/AppLayout";
 import WorkspaceLayout from "../layout/WorkspaceLayout";
 import { AuthProvider } from "../context/AuthContext";
 import MyTasks from "../pages/workspace/MyTasks";
+import ChatPage from "../pages/chat/ChatPage";
+
+
 
 function PlaceholderPage({ title }) {
   return (
@@ -93,6 +96,7 @@ function App() {
             <Route path="reports" element={<PlaceholderPage title="Reports" />} />
             <Route path="settings" element={<PlaceholderPage title="Settings" />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="chat" element={<ChatPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
@@ -113,6 +117,7 @@ function App() {
             <Route path="activity" element={<EmployeeActivityPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="notifications" element={<WorkspaceNotifications />} />
+            <Route path="chat" element={<ChatPage />} />
             <Route path="my-tasks" element={<MyTasks />} />
             <Route path="task/:taskId" element={<TaskWorkspace />} />
             {/* ── Employee subtask workspace ── */}

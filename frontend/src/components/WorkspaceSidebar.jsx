@@ -7,6 +7,7 @@ import {
   LogOut,
   Sparkles,
   UserRound,
+  MessageCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
@@ -43,6 +44,11 @@ const workspaceNavItems = [
     icon: Bell,
     label: "Notifications",
     to: "/workspace/notifications",
+  },
+  {
+    icon: MessageCircle,
+    label: "Chat",
+    to: "/workspace/chat",
   },
 ];
 

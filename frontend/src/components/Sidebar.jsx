@@ -13,6 +13,7 @@ import {
   Sparkles,
   Bell,
   UserRound,
+  MessageCircle,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -77,6 +78,11 @@ const navItems = [
     icon: Settings,
     label: "Settings",
     to: "/dashboard/settings",
+  },
+  {
+    icon: MessageCircle,
+    label: "Chat",
+    to: "/dashboard/chat",
   },
 ];
 

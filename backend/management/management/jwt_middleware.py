@@ -63,7 +63,7 @@ class JWTAuthMiddleware(
         token = cookies.get(
             "access_token"
         )
-
+        print("JWT TOKEN is here:", token)
         scope["user"] = None
 
         if token:

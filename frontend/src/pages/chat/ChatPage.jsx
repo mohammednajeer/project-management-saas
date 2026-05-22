@@ -120,9 +120,9 @@ export default function ChatPage() {
     const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
     const wsBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-    const ws = new WebSocket(
-      `${wsProtocol}://${wsBaseUrl}/ws/chat/${conversation.id}/`
-    );
+  const ws = new WebSocket(
+  `ws://localhost:8000/ws/chat/${conversation.id}/`
+);
     ws.onopen = () => {
       console.log("WebSocket connected");
     };
@@ -513,3 +513,5 @@ console.log("socket result" ,socket);
     </div>
   );
 }
+
+

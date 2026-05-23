@@ -17,9 +17,16 @@ class Conversation(models.Model):
         related_name="conversations"
     )
 
-    participants = models.ManyToManyField(
+    sender = models.ForeignKey(
         "accounts.User",
-        related_name="conversations"
+        on_delete=models.CASCADE,
+        related_name="sent_conversations"
+    )
+
+    receiver = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="received_conversations"
     )
 
     created_at = models.DateTimeField(

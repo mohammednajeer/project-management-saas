@@ -30,11 +30,9 @@ class ConversationListView(
 
         conversations = (
             Conversation.objects.filter(
-                participants=request.user,
+                Q(sender=request.user) |
+                Q(receiver=request.user),
                 organization=request.user.organization
-            )
-            .prefetch_related(
-                "participants"
             )
             .order_by("-updated_at")
         )
@@ -69,14 +67,18 @@ class ConversationMessagesView(
     ):
 
         try:
-
             conversation = (
                 Conversation.objects.get(
                     id=conversation_id,
-                    organization=request.user.organization,
-                    participants=request.user
+                    organization=request.user.organization
                 )
             )
+
+            if (
+                conversation.sender != request.user
+                and conversation.receiver != request.user
+            ):
+                raise Conversation.DoesNotExist
 
         except Conversation.DoesNotExist:
 
@@ -164,13 +166,12 @@ class StartConversationView(
 
         existing_conversation = (
             Conversation.objects.filter(
-                organization=request.user.organization,
-                participants=request.user
+                organization=request.user.organization
             )
             .filter(
-                participants=other_user
+                Q(sender=request.user, receiver=other_user) |
+                Q(sender=other_user, receiver=request.user)
             )
-            .distinct()
             .first()
         )
 
@@ -189,17 +190,11 @@ class StartConversationView(
                 serializer.data
             )
 
-        conversation = (
-            Conversation.objects.create(
-                organization=request.user.organization
-            )
-        )
-
-        conversation.participants.add(
-            request.user,
-            other_user
-        )
-
+        conversation = Conversation.objects.create(
+                        organization=request.user.organization,
+                        sender=request.user,
+                        receiver=other_user
+                    )
         serializer = (
             ConversationSerializer(
                 conversation,
@@ -248,10 +243,15 @@ class SendMessageView(
             conversation = (
                 Conversation.objects.get(
                     id=conversation_id,
-                    organization=request.user.organization,
-                    participants=request.user
+                    organization=request.user.organization
                 )
             )
+
+            if (
+                conversation.sender != request.user
+                and conversation.receiver != request.user
+            ):
+                raise Conversation.DoesNotExist
 
         except Conversation.DoesNotExist:
 

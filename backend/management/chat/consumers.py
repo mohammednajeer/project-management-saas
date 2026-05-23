@@ -12,7 +12,7 @@ from .models import (
     Conversation,
     Message,
 )
-
+from django.db.models import Q
 
 class ChatConsumer(
     AsyncWebsocketConsumer
@@ -23,7 +23,7 @@ class ChatConsumer(
         self.user = self.scope["user"]
         print("WS USER:", self.scope["user"])
 
-        if not self.user:
+        if not self.user.is_authenticated:
 
             await self.close()
             return
@@ -46,6 +46,7 @@ class ChatConsumer(
         self.room_group_name = (
             f"chat_{self.conversation_id}"
         )
+        print("WS GROUP:", self.room_group_name)
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -143,8 +144,10 @@ class ChatConsumer(
 
         return (
             Conversation.objects.filter(
-                id=self.conversation_id,
-                participants=self.user
+                id=self.conversation_id
+            ).filter(
+                Q(sender=self.user) |
+                Q(receiver=self.user)
             ).exists()
         )
 

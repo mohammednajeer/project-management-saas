@@ -1,0 +1,61 @@
+[33mf1f233a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m chat page redesign!
+[33m75f53e0[m the chat system fixed now it shows live notification
+[33mcb3966e[m safety commit
+[33mb250e41[m the subtaskdetail page added and routed sccffly
+[33mfc504aa[m the activity page and task pages fixed
+[33m0a67b8b[m the employee workspace my task page is completed successfully ,added comments , task attachment and somedetails
+[33me1858f5[m workspace ui fix step 1
+[33m3ed5f42[m notification page redesign
+[33maf0fd04[m fix of main.jsx
+[33m479c147[m live notification implemented finally with the backend websocket ,celery
+[33m9db71c7[m the login failing due to jwt_middleware for websocket and consumer notification is not working is fixed
+[33m20116ca[m  slight background redesign
+[33m80b0a39[m profile section added !
+[33m455d1e1[m the ui for issue is added and profile vieww is added now user can see his profile and can be updated
+[33mec24edd[m  the attachment add and delete endpont and db added  backend work for it completed for it
+[33maa66723[m task attachment added with s3 bucket for media storing !!!
+[33m63847a9[m the redis and celery were implemented and  containerized with docker !
+[33m1266a0c[m activity page redesigned with additional information added to the ui
+[33m59e309e[m added activty track for the whole things
+[33m2b14b67[m added activty timeline tracking on tasks section
+[33m21b02a5[m project and task page redesigned
+[33m5a68b3a[m the dashboard now shows real data in charts !
+[33mbdfc8c6[m updated workspace urls
+[33m896ebee[m demo
+[33m337f3be[m the dashboard redesigned and sub task creation activity track backend added
+[33m4d4e1f3[m  activtiy tracking for task and its sub task completed , and further dashboard implemenntation needed next
+[33m5cdc66b[m  fronend dashboard  got real data to show
+[33mff992b6[m home page again redesigned
+[33ma246544[m home page thme changed to misty violet and black outline over the graph issue fixed
+[33med695a5[m  workspace dashboard shows some graph and data
+[33m4418afb[m dashboard for the workspace is added successfully
+[33mac08e48[m  created and routed the dashboard and workspace of the users bassed on roles
+[33m12ba9e6[m RBACK appliee to the backend and proceed to front end implementation !!
+[33m6829b16[m access token and refresh token expiry period extended and routing when logged user  is fixed
+[33m0d08b67[m  live count implemented in notification
+[33md0c545c[m  the notification is added but need to add live count featur
+[33md791756[m  sub task relation implemented in comments
+[33m588b1f0[m  task commenting completed but needs more structural improveemnt for intreaction !!
+[33m318ddc0[m task edit section completed with due date extention feature !!
+[33m577a8cd[m the project members add and remove is completed
+[33m4d0a796[m sub task  and task section 80% completed
+[33mb494a82[m  the basic sub task is created:
+[33m97d026b[m  task section complete and sub task basic view set up complete !!
+[33m1c7e0b7[m project detail page complete:
+[33mf33f4cd[m project add section completed
+[33m62b7cbe[m project creation and simple ui built
+[33mbc703e4[m members invitation and management section complete
+[33m5d49f0b[m commit before the cancel and resend invitation
+[33m40cb79e[m dashboard and member ui fix
+[33m3df70f0[m invitation and smtp finished
+[33m54b8dad[m employee invitation backend completed
+[33m6f2fe50[m auth redesigned
+[33mced70af[m admin account and  workspace creation page completed
+[33mb96792b[m login finished
+[33m0a19fb1[m sign up and sign in ui completed with multi form registration
+[33m40c2049[m ui redesigned with additional rating section!
+[33m194cf15[m login complete
+[33mbfa6156[m CREATE Register api of organization
+[33m13d1b5f[m organization serializer added
+[33m64d3112[m company model add
+[33m8ed6e58[m Initial project setup with Django and PostgreSQL

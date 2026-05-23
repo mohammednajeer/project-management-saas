@@ -10,9 +10,7 @@ class ConversationSerializer(
     serializers.ModelSerializer
 ):
 
-    participants_data = (
-        serializers.SerializerMethodField()
-    )
+    other_user = serializers.SerializerMethodField()
 
     last_message = (
         serializers.SerializerMethodField()
@@ -24,38 +22,31 @@ class ConversationSerializer(
 
         fields = [
             "id",
-            "participants_data",
+            "other_user",
             "last_message",
             "updated_at",
         ]
 
-    def get_participants_data(
-        self,
-        obj
-    ):
+    def get_other_user(self, obj):
 
-        request = self.context.get(
-            "request"
-        )
+        request = self.context.get("request")
 
-        return [
+        if obj.sender == request.user:
+            other_user = obj.receiver
+        else:
+            other_user = obj.sender
 
-            {
-                "id": str(user.id),
-                "name": user.name,
-                "email": user.email,
-                "role": user.role,
-                "profile_picture": (
-                    user.profile_picture.url
-                    if user.profile_picture
-                    else None
-                ),
-            }
-
-            for user in obj.participants.all()
-
-            if request and user != request.user
-        ]
+        return {
+            "id": str(other_user.id),
+            "name": other_user.name,
+            "email": other_user.email,
+            "role": other_user.role,
+            "profile_picture": (
+                other_user.profile_picture.url
+                if other_user.profile_picture
+                else None
+            ),
+        }
 
     def get_last_message(
         self,

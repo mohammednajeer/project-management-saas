@@ -6,7 +6,6 @@ from channels.db import (
     database_sync_to_async
 )
 
-
 @database_sync_to_async
 def get_user(user_id):
 
@@ -64,7 +63,10 @@ class JWTAuthMiddleware(
             "access_token"
         )
         print("JWT TOKEN is here:", token)
-        scope["user"] = None
+        
+        from django.contrib.auth.models import AnonymousUser
+        
+        scope["user"] = AnonymousUser()
 
         if token:
 
@@ -82,7 +84,8 @@ class JWTAuthMiddleware(
                     access_token["user_id"]
                 )
 
-                scope["user"] = user
+                if user:
+                    scope["user"] = user
 
             except Exception as e:
 

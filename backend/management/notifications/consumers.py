@@ -11,7 +11,7 @@ class NotificationConsumer( AsyncWebsocketConsumer ):
 
         self.user = self.scope["user"]
 
-        if not self.user:
+        if not self.user.is_authenticated:
 
             await self.close()
             return

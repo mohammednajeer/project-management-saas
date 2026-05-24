@@ -10,7 +10,7 @@ def set_auth_cookies(response, refresh):
         value=access_token,
         httponly=True,
         secure=False,
-        samesite="Lax",
+        samesite="None",
         path="/",
         max_age=ACCESS_COOKIE_MAX_AGE,
     )
@@ -20,7 +20,7 @@ def set_auth_cookies(response, refresh):
         value=str(refresh),
         httponly=True,
         secure=False,
-        samesite="Lax",
+        samesite="None",
         path="/",
         max_age=REFRESH_COOKIE_MAX_AGE,
     )

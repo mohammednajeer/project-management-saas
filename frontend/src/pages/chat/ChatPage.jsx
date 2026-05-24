@@ -174,7 +174,12 @@ export default function ChatPage() {
     // Close old socket
     if (socket) socket.close();
 
-    const ws = new WebSocket(`ws://localhost:8000/ws/chat/${conv.id}/`);
+    const wsProtocol =
+        window.location.protocol === "https:" ? "wss" : "ws";
+
+      const ws = new WebSocket(
+        `${wsProtocol}://localhost:8000/ws/chat/${conv.id}/`
+      );
 
     ws.onmessage = (e) => {
       const data = JSON.parse(e.data);
@@ -226,11 +231,11 @@ export default function ChatPage() {
 
   /* ── Derived ── */
   const filteredConvs = conversations.filter((c) => {
-    const name = c.participants_data?.[0]?.name || "";
+    const name = c.other_user?.name || "";
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
-  const peer = selected?.participants_data?.[0];
+  const peer = selected?.other_user;
 
   /* ─────────────────────────────────────────────────────────────────────── */
   return (
@@ -280,7 +285,7 @@ export default function ChatPage() {
           )}
 
           {filteredConvs.map((conv, idx) => {
-            const p       = conv.participants_data?.[0];
+            const p = conv.other_user;
             const isActive = selected?.id === conv.id;
             const online   = idx % 3 !== 2; // demo presence
 

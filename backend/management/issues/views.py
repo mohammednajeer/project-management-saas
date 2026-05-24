@@ -220,19 +220,6 @@ class IssueListCreateView(APIView):
                 )
             )
 
-            send_realtime_notification(
-                manager.id,
-                {
-                    "id": str(notification.id),
-                    "title": notification.title,
-                    "message": notification.message,
-                    "created_at": str(
-                        notification.created_at
-                    ),
-                    "is_read": notification.is_read,
-                }
-            )
-
         response_serializer = IssueSerializer(
             issue
         )

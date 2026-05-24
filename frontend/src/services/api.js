@@ -32,6 +32,10 @@ const refreshAccessToken = () => {
   return refreshRequest;
 };
 
+const shouldRefreshRequest = (requestUrl) =>
+  !requestUrl.includes("/auth/me/") ||
+  isProtectedAppPath();
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -44,7 +48,8 @@ api.interceptors.response.use(
       !originalRequest._retry &&
       !requestUrl.includes("/auth/login/") &&
       !requestUrl.includes("/auth/refresh/") &&
-      !requestUrl.includes("/auth/logout/");
+      !requestUrl.includes("/auth/logout/") &&
+      shouldRefreshRequest(requestUrl);
 
     if (canRefresh) {
       originalRequest._retry = true;

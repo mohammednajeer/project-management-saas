@@ -10,7 +10,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny
 from accounts.models import User
-from accounts.auth_cookies import ACCESS_COOKIE_MAX_AGE, set_auth_cookies
+from accounts.auth_cookies import (
+    ACCESS_COOKIE_MAX_AGE,
+    AUTH_COOKIE_SAMESITE,
+    AUTH_COOKIE_SECURE,
+    set_auth_cookies,
+)
 from .serializers import UserSerializer, LoginSerializer
 
 
@@ -88,8 +93,8 @@ class RefreshView(APIView):
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=False,
-            samesite="Lax",
+            secure=AUTH_COOKIE_SECURE,
+            samesite=AUTH_COOKIE_SAMESITE,
             path="/",
             max_age=ACCESS_COOKIE_MAX_AGE,
         )

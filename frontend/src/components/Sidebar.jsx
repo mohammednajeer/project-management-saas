@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import {
   LayoutDashboard,
   FolderOpen,
@@ -10,261 +9,125 @@ import {
   BarChart2,
   Settings,
   LogOut,
-  Sparkles,
+  Zap,
   Bell,
   UserRound,
   MessageCircle,
 } from "lucide-react";
-
 import { NavLink } from "react-router-dom";
-
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import useNotifications from "../context/useNotifications";
-
 import "./Sidebar.css";
 
 const navItems = [
-  {
-    icon: LayoutDashboard,
-    label: "Dashboard",
-    to: "/dashboard",
-    end: true,
-  },
-
-  {
-    icon: FolderOpen,
-    label: "Projects",
-    to: "/dashboard/projects",
-  },
-
-  {
-    icon: CheckSquare,
-    label: "Tasks",
-    to: "/dashboard/tasks",
-  },
-
-  {
-    icon: Activity,
-    label: "Activity",
-    to: "/dashboard/activity",
-  },
-
-  {
-    icon: AlertCircle,
-    label: "Issues",
-    to: "/dashboard/issues",
-  },
-
-  {
-    icon: Users,
-    label: "Team",
-    to: "/dashboard/team",
-  },
-
-  {
-    icon: BarChart2,
-    label: "Reports",
-    to: "/dashboard/reports",
-  },
-
-  {
-    icon: Bell,
-    label: "Notifications",
-    to: "/dashboard/notifications",
-  },
-
-  {
-    icon: Settings,
-    label: "Settings",
-    to: "/dashboard/settings",
-  },
-  {
-    icon: MessageCircle,
-    label: "Chat",
-    to: "/dashboard/chat",
-  },
+  { icon: LayoutDashboard, label: "Dashboard",     to: "/dashboard",              end: true },
+  { icon: FolderOpen,      label: "Projects",      to: "/dashboard/projects"                },
+  { icon: CheckSquare,     label: "Tasks",         to: "/dashboard/tasks"                   },
+  { icon: Activity,        label: "Activity",      to: "/dashboard/activity"                },
+  { icon: AlertCircle,     label: "Issues",        to: "/dashboard/issues"                  },
+  { icon: Users,           label: "Team",          to: "/dashboard/team"                    },
+  { icon: BarChart2,       label: "Reports",       to: "/dashboard/reports"                 },
+  { icon: Bell,            label: "Notifications", to: "/dashboard/notifications"           },
+  { icon: Settings,        label: "Settings",      to: "/dashboard/settings"                },
+  { icon: MessageCircle,   label: "Chat",          to: "/dashboard/chat"                    },
 ];
 
 export default function Sidebar() {
-
-  const [hovered, setHovered] =
-    useState(false);
-
-  const { unreadCount } =
-    useNotifications();
+  const [expanded, setExpanded] = useState(false);
+  const { unreadCount } = useNotifications();
   const { user } = useAuth();
 
   const initials = (user?.name || user?.email || "U")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0])
+    .map((p) => p[0])
     .join("")
     .toUpperCase();
 
-  const handleLogout =
-    async () => {
-
-      try {
-
-        await api.post(
-          "/auth/logout/"
-        );
-
-      } catch (err) {
-
-        console.log(err);
-      }
-
-      window.location.href =
-        "/signin";
-    };
+  const handleLogout = async () => {
+    try { await api.post("/auth/logout/"); } catch {}
+    window.location.href = "/signin";
+  };
 
   return (
-
     <aside
-      className={`sidebar ${
-        hovered
-          ? "sidebar--expanded"
-          : "sidebar--collapsed"
-      }`}
-      onMouseEnter={() =>
-        setHovered(true)
-      }
-      onMouseLeave={() =>
-        setHovered(false)
-      }
+      className={`sb ${expanded ? "sb--open" : ""}`}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
     >
+      {/* Glow backdrop */}
+      <div className="sb-glow" />
 
       {/* Brand */}
-
-      <a
-        href="/dashboard"
-        className="sidebar-brand"
-      >
-
-        <span className="sidebar-brand-icon">
-
-          <Sparkles size={18} />
-
-        </span>
-
-        <span className="sidebar-brand-text">
-
-          ProjectFlow
-
-        </span>
-
-      </a>
+      <div className="sb-brand">
+        <div className="sb-brand-icon">
+          <Zap size={16} />
+        </div>
+        <span className="sb-brand-name">ProjectFlow</span>
+      </div>
 
       {/* Nav */}
-
-      <nav className="sidebar-nav">
-
-        {navItems.map(
-          ({
-            icon: Icon,
-            label,
-            to,
-            end,
-          }) => (
-
-            <NavLink
-              key={label}
-              to={to}
-              end={end}
-              data-label={label}
-              className={({
-                isActive,
-              }) =>
-                `sidebar-nav-item${
-                  isActive
-                    ? " is-active"
-                    : ""
-                }`
-              }
-            >
-
-              <span className="sidebar-nav-icon">
-
-                <Icon size={18} />
-
-                {label ===
-                  "Notifications" &&
-                  unreadCount > 0 && (
-
-                  <span className="notification-badge">
-
-                    {unreadCount > 99
-                      ? "99+"
-                      : unreadCount}
-
-                  </span>
-
-                )}
-
-              </span>
-
-              <span className="sidebar-nav-label">
-
-                {label}
-
-              </span>
-
-            </NavLink>
-          )
-        )}
-
+      <nav className="sb-nav">
+        {navItems.map(({ icon: Icon, label, to, end }) => (
+          <NavLink
+            key={label}
+            to={to}
+            end={end}
+            data-label={label}
+            className={({ isActive }) =>
+              `sb-item${isActive ? " sb-item--active" : ""}`
+            }
+          >
+            <span className="sb-item-icon">
+              <Icon size={17} />
+              {label === "Notifications" && unreadCount > 0 && (
+                <span className="sb-badge">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </span>
+            <span className="sb-item-label">{label}</span>
+            {label === "Notifications" && unreadCount > 0 && (
+              <span className="sb-item-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
+            )}
+          </NavLink>
+        ))}
       </nav>
 
       {/* Footer */}
+      <div className="sb-footer">
+        <div className="sb-divider" />
 
-      <div className="sidebar-footer">
         <NavLink
           to="/dashboard/profile"
-          data-label="Profile"
           className={({ isActive }) =>
-            `sidebar-profile${
-              isActive
-                ? " is-active"
-                : ""
-            }`
+            `sb-item sb-item--profile${isActive ? " sb-item--active" : ""}`
           }
         >
-          <span className="sidebar-profile-avatar">
-            {user?.profile_picture ? (
-              <img src={user.profile_picture} alt="" />
-            ) : (
-              initials || <UserRound size={16} />
-            )}
+          <span className="sb-item-icon">
+            <div className="sb-avatar">
+              {user?.profile_picture ? (
+                <img src={user.profile_picture} alt="" />
+              ) : (
+                initials || <UserRound size={13} />
+              )}
+            </div>
           </span>
-          <span className="sidebar-nav-label">
-            Profile
-          </span>
+          <div className="sb-profile-info">
+            <span className="sb-profile-name">{user?.name || user?.email || "Profile"}</span>
+            <span className="sb-profile-role">{user?.role || "Member"}</span>
+          </div>
         </NavLink>
 
-        <button
-          className="sidebar-logout"
-          onClick={handleLogout}
-        >
-
-          <span className="sidebar-nav-icon">
-
-            <LogOut size={18} />
-
+        <button className="sb-item sb-item--logout" onClick={handleLogout}>
+          <span className="sb-item-icon">
+            <LogOut size={17} />
           </span>
-
-          <span className="sidebar-nav-label">
-
-            Logout
-
-          </span>
-
+          <span className="sb-item-label">Logout</span>
         </button>
-
       </div>
-
     </aside>
   );
 }

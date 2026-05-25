@@ -1,32 +1,30 @@
-/* AppLayout.css */
+/* AppLayout.css — updated for floating sidebar */
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background: #FAFAFE;
+  background: #f0f2fa;
   background-image:
-    radial-gradient(900px 400px at 10% -5%, rgba(108, 83, 179, 0.07), transparent 60%),
-    radial-gradient(600px 350px at 90% 10%, rgba(59, 130, 246, 0.05), transparent 60%);
+    radial-gradient(ellipse 900px 600px at 0% 0%, rgba(99, 84, 196, 0.06), transparent 65%),
+    radial-gradient(ellipse 700px 500px at 100% 100%, rgba(59, 130, 246, 0.05), transparent 65%),
+    radial-gradient(ellipse 500px 400px at 50% 50%, rgba(236, 72, 153, 0.03), transparent 65%);
   background-attachment: fixed;
 }
 
-/* 
-  The sidebar is fixed at 64px wide (collapsed).
-  The content area must be offset by 64px so it doesn't sit under the sidebar.
-  When the sidebar expands on hover it overlays on top — no layout shift.
+/*
+  Floating sidebar is 62px wide + 16px left offset = 78px total.
+  Give the content area left margin so nothing is hidden behind it.
 */
 .app-content {
-  margin-left: 64px;
+  margin-left: 94px; /* 62px sidebar + 16px gap + 16px breathing room */
   flex: 1;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  /* overflow: hidden; */
 }
 
 @media (max-width: 768px) {
   .app-content {
     margin-left: 0;
-    padding-top: 56px;
-    /* height of the mobile top bar sidebar */
+    padding-bottom: 84px; /* space for bottom nav bar */
   }
 }

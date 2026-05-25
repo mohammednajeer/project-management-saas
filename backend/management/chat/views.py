@@ -96,6 +96,14 @@ class ConversationMessagesView(
             .all()
         )
 
+        conversation.messages.filter(
+            is_seen=False
+        ).exclude(
+            sender=request.user
+        ).update(
+            is_seen=True
+        )
+
         serializer = (
             MessageSerializer(
                 messages,

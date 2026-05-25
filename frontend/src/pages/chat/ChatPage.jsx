@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  CheckCheck,
+  Clock3,
   MessageCircle,
+  MoreVertical,
   Paperclip,
   Phone,
   Plus,
@@ -8,17 +11,14 @@ import {
   Send,
   Smile,
   Video,
-  MoreVertical,
+  Wifi,
+  WifiOff,
   X,
-  Users,
-  Hash,
-  CheckCheck,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import "./ChatPage.css";
 
-/* ─── HELPERS ────────────────────────────────────────────────────────────── */
 const AVATAR_COLORS = [
   ["#C7D2FE", "#818CF8"],
   ["#FBCFE8", "#F472B6"],
@@ -28,6 +28,9 @@ const AVATAR_COLORS = [
   ["#DDD6FE", "#A78BFA"],
 ];
 
+const RECONNECT_DELAYS = [600, 1200, 2500, 5000, 8000];
+const MAX_MESSAGE_LENGTH = 4000;
+
 function avatarColor(name = "") {
   const idx = (name.charCodeAt(0) || 0) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
@@ -36,7 +39,7 @@ function avatarColor(name = "") {
 function fmtTime(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  if (isNaN(d)) return "";
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
@@ -48,41 +51,111 @@ function fmtDate(dateStr) {
     d.getDate() === now.getDate() &&
     d.getMonth() === now.getMonth() &&
     d.getFullYear() === now.getFullYear();
+
   if (isToday) return fmtTime(dateStr);
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-/* ─── AVATAR ─────────────────────────────────────────────────────────────── */
-function Avatar({ name = "", size = 38, className = "" }) {
-  const [c1, c2] = avatarColor(name);
-  return (
-    <div
-      className={`cp-avatar ${className}`}
-      style={{
-        width: size,
-        height: size,
-        background: `linear-gradient(135deg, ${c1}, ${c2})`,
-        fontSize: size * 0.37,
-      }}
-    >
-      {name?.[0]?.toUpperCase() || "?"}
-    </div>
-  );
+function sameUser(left, right) {
+  if (left == null || right == null) return false;
+  return String(left) === String(right);
 }
 
-/* ─── NEW CHAT MODAL ─────────────────────────────────────────────────────── */
+function isCurrentUserMessage(message, user) {
+  return sameUser(message?.sender_data?.id ?? message?.sender, user?.id);
+}
+
+function getWebSocketBaseUrl() {
+  const explicit = import.meta.env.VITE_WS_BASE_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL;
+  if (apiBase) {
+    try {
+      const url = new URL(apiBase);
+      url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+      url.pathname = url.pathname.replace(/\/api\/?$/, "");
+      return url.toString().replace(/\/$/, "");
+    } catch {
+      // Fall through to the current host.
+    }
+  }
+
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${protocol}://${window.location.hostname}:8000`;
+}
+
+function normalizeConversation(conversation) {
+  return {
+    ...conversation,
+    unread_count: Number(conversation?.unread_count || 0),
+  };
+}
+
+function sortConversations(conversations) {
+  return [...conversations].sort((a, b) => {
+    const aDate = new Date(a.last_message?.created_at || a.updated_at || 0);
+    const bDate = new Date(b.last_message?.created_at || b.updated_at || 0);
+    return bDate - aDate;
+  });
+}
+
+function Avatar({
+      name = "",
+      image = "",
+      size = 38,
+      className = "",
+    }) {
+
+      if (image) {
+
+        return (
+
+          <img
+            src={image}
+            alt={name}
+            className={`cp-avatar ${className}`}
+            style={{
+              width: size,
+              height: size,
+              objectFit: "cover",
+            }}
+          />
+
+        );
+      }
+
+      const [c1, c2] = avatarColor(name);
+
+      return (
+
+        <div
+          className={`cp-avatar ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: `linear-gradient(135deg, ${c1}, ${c2})`,
+            fontSize: size * 0.37,
+          }}
+        >
+          {name?.[0]?.toUpperCase() || "?"}
+        </div>
+
+      );
+    }
+
 function NewChatModal({ members, onStart, onClose }) {
   const [q, setQ] = useState("");
-  const filtered = members.filter((m) =>
-    `${m.name} ${m.email}`.toLowerCase().includes(q.toLowerCase())
+  const filtered = members.filter((member) =>
+    `${member.name} ${member.email}`.toLowerCase().includes(q.toLowerCase())
   );
 
   return (
     <div className="cp-modal-backdrop" onClick={onClose}>
-      <div className="cp-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="cp-modal" onClick={(event) => event.stopPropagation()}>
         <div className="cp-modal-head">
           <h2>New Conversation</h2>
-          <button className="cp-modal-close" onClick={onClose}>
+          <button className="cp-modal-close" onClick={onClose} type="button">
             <X size={16} />
           </button>
         </div>
@@ -91,9 +164,9 @@ function NewChatModal({ members, onStart, onClose }) {
           <Search size={14} className="cp-modal-search-icon" />
           <input
             autoFocus
-            placeholder="Search team members…"
+            placeholder="Search team members"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(event) => setQ(event.target.value)}
           />
         </div>
 
@@ -101,19 +174,24 @@ function NewChatModal({ members, onStart, onClose }) {
           {filtered.length === 0 && (
             <p className="cp-modal-empty">No members found.</p>
           )}
-          {filtered.map((m) => (
+
+          {filtered.map((member) => (
             <button
-              key={m.id}
+              key={member.id}
               type="button"
               className="cp-modal-member"
-              onClick={() => onStart(m.id)}
+              onClick={() => onStart(member.id)}
             >
-              <Avatar name={m.name} size={38} />
+              <Avatar
+                name={member.name}
+                image={member.profile_picture}
+                size={38}
+              />
               <div className="cp-modal-member-info">
-                <strong>{m.name}</strong>
-                <small>{m.email}</small>
+                <strong>{member.name}</strong>
+                <small>{member.email}</small>
               </div>
-              <span className="cp-modal-member-role">{m.role}</span>
+              <span className="cp-modal-member-role">{member.role}</span>
             </button>
           ))}
         </div>
@@ -122,140 +200,533 @@ function NewChatModal({ members, onStart, onClose }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MAIN COMPONENT
-   ═══════════════════════════════════════════════════════════════════════════ */
 export default function ChatPage() {
-  const { user }                            = useAuth();
-  const [conversations, setConversations]   = useState([]);
-  const [selected,      setSelected]        = useState(null);
-  const [messages,      setMessages]        = useState([]);
-  const [draft,         setDraft]           = useState("");
-  const [socket,        setSocket]          = useState(null);
-  const [search,        setSearch]          = useState("");
-  const [showModal,     setShowModal]       = useState(false);
-  const [members,       setMembers]         = useState([]);
+  const { user } = useAuth();
+  const [conversations, setConversations] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [draft, setDraft] = useState("");
+  const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [loadingConversations, setLoadingConversations] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [socketStatus, setSocketStatus] = useState("idle");
+  const [error, setError] = useState("");
+  const [typingUsers, setTypingUsers] = useState({});
+  const [presence, setPresence] = useState({});
 
+  const socketRef = useRef(null);
+  const connectSocketRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
+  const shouldReconnectRef = useRef(false);
+  const selectedIdRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const inputRef       = useRef(null);
+  const messagesPaneRef = useRef(null);
+  const inputRef = useRef(null);
+  const typingStopTimerRef = useRef(null);
+  const isTypingRef = useRef(false);
+  const pendingTimersRef = useRef(new Map());
 
-  /* ── Scroll messages to bottom — only inside the messages container ── */
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages]);
+  const peer = selected?.other_user;
+  const currentUserName = user?.name || user?.email || "Me";
+  const wsBaseUrl = useMemo(() => getWebSocketBaseUrl(), []);
 
-  /* ── Load conversations ── */
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get("/chat/");
-        setConversations(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-    })();
+  const sendSocketEvent = useCallback((payload) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify(payload));
+    return true;
   }, []);
 
-  /* ── Open a conversation ── */
-  const openConversation = async (conv) => {
-    // ── FIX: blur to prevent browser auto-scroll-to-focused-element ──
-    document.activeElement?.blur?.();
-
-    setSelected(conv);
-    setMessages([]);
-
-    try {
-      const res = await api.get(`/chat/${conv.id}/messages/`);
-      setMessages(res.data);
-    } catch (err) {
-      console.error(err);
+  const clearTyping = useCallback(() => {
+    if (typingStopTimerRef.current) {
+      window.clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
     }
 
-    // Close old socket
-    if (socket) socket.close();
+    if (isTypingRef.current) {
+      sendSocketEvent({ type: "typing", is_typing: false });
+      isTypingRef.current = false;
+    }
+  }, [sendSocketEvent]);
 
-    const wsProtocol =
-        window.location.protocol === "https:" ? "wss" : "ws";
+  const markPendingResolved = useCallback((clientId) => {
+    if (!clientId) return;
 
-      const ws = new WebSocket(
-        `${wsProtocol}://localhost:8000/ws/chat/${conv.id}/`
+    const timer = pendingTimersRef.current.get(clientId);
+    if (timer) {
+      window.clearTimeout(timer);
+      pendingTimersRef.current.delete(clientId);
+    }
+  }, []);
+
+  const applyConversationMessage = useCallback(
+    (message) => {
+      const conversationId = String(message.conversation || selectedIdRef.current || "");
+      const mine = isCurrentUserMessage(message, user);
+
+      setConversations((prev) =>
+        sortConversations(
+          prev.map((conversation) => {
+            if (String(conversation.id) !== conversationId) return conversation;
+
+            const isOpen = String(selectedIdRef.current) === conversationId;
+            const nextUnread = mine || isOpen
+              ? 0
+              : Number(conversation.unread_count || 0) + 1;
+
+            return {
+              ...conversation,
+              unread_count: nextUnread,
+              updated_at: message.created_at || new Date().toISOString(),
+              last_message: {
+                id: message.id,
+                content: message.content,
+                sender_id: message.sender_data?.id || message.sender,
+                sender_name: message.sender_data?.name || "",
+                created_at: message.created_at || new Date().toISOString(),
+                is_seen: Boolean(message.is_seen),
+              },
+            };
+          })
+        )
       );
+    },
+    [user]
+  );
 
-    ws.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      setMessages((prev) =>
-        prev.some((m) => m.id === data.id) ? prev : [...prev, data]
-      );
+  const handleIncomingMessage = useCallback(
+    (message) => {
+      const conversationId = String(message.conversation || "");
+      const activeConversation = String(selectedIdRef.current || "");
+
+      markPendingResolved(message.client_id);
+      applyConversationMessage(message);
+
+      if (conversationId && conversationId !== activeConversation) return;
+
+      setMessages((prev) => {
+        if (message.client_id) {
+          const optimisticIndex = prev.findIndex(
+            (item) => item.client_id === message.client_id
+          );
+
+          if (optimisticIndex >= 0) {
+            const next = [...prev];
+            next[optimisticIndex] = {
+              ...message,
+              delivery_status: "sent",
+            };
+            return next;
+          }
+        }
+
+        if (prev.some((item) => String(item.id) === String(message.id))) {
+          return prev;
+        }
+
+        return [...prev, message];
+      });
+
+      if (!isCurrentUserMessage(message, user)) {
+        sendSocketEvent({ type: "seen" });
+      }
+    },
+    [applyConversationMessage, markPendingResolved, sendSocketEvent, user]
+  );
+
+  const handleSocketPayload = useCallback(
+    (payload) => {
+      const payloadType = payload.type || "message";
+
+      if (payloadType === "message") {
+        handleIncomingMessage(payload.message || payload);
+        return;
+      }
+
+      if (payloadType === "typing") {
+        if (sameUser(payload.sender_id, user?.id)) return;
+
+        setTypingUsers((prev) => ({
+          ...prev,
+          [payload.sender_id]: Boolean(payload.is_typing),
+        }));
+        return;
+      }
+
+      if (payloadType === "presence") {
+        if (sameUser(payload.user_id, user?.id)) return;
+
+        setPresence((prev) => ({
+          ...prev,
+          [payload.user_id]: {
+            online: payload.status === "online",
+            last_seen: payload.last_seen || new Date().toISOString(),
+          },
+        }));
+        return;
+      }
+
+      if (payloadType === "seen") {
+        if (sameUser(payload.seen_by, user?.id)) return;
+
+        setMessages((prev) =>
+          prev.map((message) =>
+            isCurrentUserMessage(message, user)
+              ? { ...message, is_seen: true }
+              : message
+          )
+        );
+      }
+    },
+    [handleIncomingMessage, user]
+  );
+
+  const closeSocket = useCallback(() => {
+    shouldReconnectRef.current = false;
+
+    if (reconnectTimerRef.current) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+
+    if (socketRef.current) {
+      socketRef.current.onopen = null;
+      socketRef.current.onmessage = null;
+      socketRef.current.onerror = null;
+      socketRef.current.onclose = null;
+
+      if (
+        socketRef.current.readyState === WebSocket.OPEN ||
+        socketRef.current.readyState === WebSocket.CONNECTING
+      ) {
+        socketRef.current.close(1000, "Conversation changed");
+      }
+    }
+
+    socketRef.current = null;
+    setSocketStatus("idle");
+  }, []);
+
+  const connectSocket = useCallback(
+    (conversationId) => {
+      if (!conversationId) return;
+
+      const currentSocket = socketRef.current;
+      if (
+        currentSocket &&
+        currentSocket.conversationId === conversationId &&
+        (currentSocket.readyState === WebSocket.OPEN ||
+          currentSocket.readyState === WebSocket.CONNECTING)
+      ) {
+        return;
+      }
+
+      if (currentSocket) {
+        currentSocket.onclose = null;
+        currentSocket.close(1000, "Switching conversation");
+      }
+
+      shouldReconnectRef.current = true;
+      setSocketStatus("connecting");
+
+      const socket = new WebSocket(`${wsBaseUrl}/ws/chat/${conversationId}/`);
+      socket.conversationId = conversationId;
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        reconnectAttemptRef.current = 0;
+        setSocketStatus("open");
+        setError("");
+        sendSocketEvent({ type: "seen" });
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          handleSocketPayload(JSON.parse(event.data));
+        } catch (socketError) {
+          console.error("Invalid chat websocket payload", socketError);
+        }
+      };
+
+      socket.onerror = () => {
+        setSocketStatus("error");
+      };
+
+      socket.onclose = () => {
+        if (socketRef.current === socket) {
+          socketRef.current = null;
+        }
+
+        if (!shouldReconnectRef.current || selectedIdRef.current !== conversationId) {
+          setSocketStatus("idle");
+          return;
+        }
+
+        const attempt = reconnectAttemptRef.current;
+        const delay =
+          RECONNECT_DELAYS[Math.min(attempt, RECONNECT_DELAYS.length - 1)];
+        reconnectAttemptRef.current = attempt + 1;
+        setSocketStatus("reconnecting");
+
+        reconnectTimerRef.current = window.setTimeout(() => {
+          if (shouldReconnectRef.current && selectedIdRef.current === conversationId) {
+            connectSocketRef.current?.(conversationId);
+          }
+        }, delay);
+      };
+    },
+    [handleSocketPayload, sendSocketEvent, wsBaseUrl]
+  );
+
+  useEffect(() => {
+    connectSocketRef.current = connectSocket;
+  }, [connectSocket]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadConversations() {
+      setLoadingConversations(true);
+
+      try {
+        const response = await api.get("/chat/");
+        if (!active) return;
+        setConversations(sortConversations(response.data.map(normalizeConversation)));
+      } catch (loadError) {
+        console.error(loadError);
+        if (active) setError("Could not load conversations.");
+      } finally {
+        if (active) setLoadingConversations(false);
+      }
+    }
+
+    loadConversations();
+
+    return () => {
+      active = false;
     };
+  }, []);
 
-    setSocket(ws);
-    setTimeout(() => inputRef.current?.focus(), 120);
-  };
+  useEffect(() => {
+    selectedIdRef.current = selected?.id ? String(selected.id) : null;
+  }, [selected?.id]);
 
-  /* ── Send message ── */
-  const sendMessage = () => {
-    if (!draft.trim() || !socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ content: draft.trim() }));
+  useEffect(() => {
+    if (!selected?.id) {
+      const resetTimer = window.setTimeout(() => {
+        closeSocket();
+        setMessages([]);
+      }, 0);
+
+      return () => window.clearTimeout(resetTimer);
+    }
+
+    let active = true;
+    const conversationId = String(selected.id);
+
+    async function loadMessages() {
+      setLoadingMessages(true);
+      setError("");
+      setTypingUsers({});
+
+      try {
+        const response = await api.get(`/chat/${conversationId}/messages/`);
+        if (!active) return;
+        setMessages(response.data);
+        setConversations((prev) =>
+          prev.map((conversation) =>
+            String(conversation.id) === conversationId
+              ? { ...conversation, unread_count: 0 }
+              : conversation
+          )
+        );
+      } catch (loadError) {
+        console.error(loadError);
+        if (active) setError("Could not load messages.");
+      } finally {
+        if (active) setLoadingMessages(false);
+      }
+    }
+
+    document.activeElement?.blur?.();
+    loadMessages();
+    connectSocket(conversationId);
+    window.setTimeout(() => inputRef.current?.focus(), 120);
+
+    return () => {
+      active = false;
+      clearTyping();
+    };
+  }, [clearTyping, closeSocket, connectSocket, selected?.id]);
+
+  useEffect(() => {
+    const pendingTimers = pendingTimersRef.current;
+
+    return () => {
+      closeSocket();
+      pendingTimers.forEach((timer) => window.clearTimeout(timer));
+      pendingTimers.clear();
+    };
+  }, [closeSocket]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [messages, typingUsers]);
+
+  const openConversation = (conversation) => {
+    setSelected(normalizeConversation(conversation));
     setDraft("");
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  /* ── New chat modal ── */
   const openNewChat = async () => {
     try {
-      const res = await api.get("/chat/users/");
-      setMembers(res.data);
+      const response = await api.get("/chat/users/");
+      setMembers(response.data);
       setShowModal(true);
-    } catch (err) {
-      console.error(err);
+    } catch (modalError) {
+      console.error(modalError);
+      setError("Could not load team members.");
     }
   };
 
   const startConversation = async (memberId) => {
     try {
-      const res = await api.post("/chat/start/", { user_id: memberId });
+      const response = await api.post("/chat/start/", { user_id: memberId });
+      const conversation = normalizeConversation(response.data);
+
       setShowModal(false);
-      const fresh = await api.get("/chat/");
-      setConversations(fresh.data);
-      openConversation(res.data);
-    } catch (err) {
-      console.error(err);
+      setConversations((prev) =>
+        sortConversations([
+          conversation,
+          ...prev.filter((item) => String(item.id) !== String(conversation.id)),
+        ])
+      );
+      openConversation(conversation);
+    } catch (startError) {
+      console.error(startError);
+      setError("Could not start the conversation.");
     }
   };
 
-  /* ── Derived ── */
-  const filteredConvs = conversations.filter((c) => {
-    const name = c.other_user?.name || "";
+  const handleDraftChange = (event) => {
+    const nextValue = event.target.value.slice(0, MAX_MESSAGE_LENGTH);
+    setDraft(nextValue);
+
+    if (!selected?.id || socketStatus !== "open") return;
+
+    if (!isTypingRef.current) {
+      sendSocketEvent({ type: "typing", is_typing: true });
+      isTypingRef.current = true;
+    }
+
+    if (typingStopTimerRef.current) {
+      window.clearTimeout(typingStopTimerRef.current);
+    }
+
+    typingStopTimerRef.current = window.setTimeout(() => {
+      sendSocketEvent({ type: "typing", is_typing: false });
+      isTypingRef.current = false;
+    }, 900);
+  };
+
+  const sendMessage = () => {
+    const content = draft.trim();
+    if (!content || !selected?.id) return;
+
+    if (socketStatus !== "open") {
+      setError("Reconnecting to chat. Try again in a moment.");
+      return;
+    }
+
+    const clientId = `client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const now = new Date().toISOString();
+    const optimisticMessage = {
+      id: clientId,
+      client_id: clientId,
+      conversation: selected.id,
+      content,
+      created_at: now,
+      is_seen: false,
+      delivery_status: "sending",
+      sender_data: {
+        id: user?.id,
+        name: currentUserName,
+        email: user?.email,
+        role: user?.role,
+        profile_picture: user?.profile_picture,
+      },
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    applyConversationMessage(optimisticMessage);
+    setDraft("");
+    clearTyping();
+    setError("");
+
+    const sent = sendSocketEvent({
+      type: "message",
+      content,
+      client_id: clientId,
+    });
+
+    if (!sent) {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.client_id === clientId
+            ? { ...message, delivery_status: "failed" }
+            : message
+        )
+      );
+      return;
+    }
+
+    const failureTimer = window.setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.client_id === clientId
+            ? { ...message, delivery_status: "failed" }
+            : message
+        )
+      );
+      pendingTimersRef.current.delete(clientId);
+    }, 12000);
+
+    pendingTimersRef.current.set(clientId, failureTimer);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const filteredConversations = conversations.filter((conversation) => {
+    const name = conversation.other_user?.name || "";
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
-  const peer = selected?.other_user;
+  const isPeerTyping = peer?.id && typingUsers[peer.id];
+  const peerPresence = peer?.id ? presence[peer.id] : null;
+  const peerOnline = peerPresence?.online ?? false;
+  const canSend = draft.trim().length > 0 && socketStatus === "open";
 
-  /* ─────────────────────────────────────────────────────────────────────── */
   return (
     <div className="cp-root">
-      {/* Ambient blobs */}
-      <div className="cp-blob cp-blob--1" />
-      <div className="cp-blob cp-blob--2" />
-
-      {/* ══════════════════════════════
-          LEFT — Conversation list
-          ══════════════════════════════ */}
       <aside className="cp-sidebar">
-
-        {/* Header */}
         <div className="cp-sidebar-header">
           <div className="cp-sidebar-title">
             <MessageCircle size={16} className="cp-sidebar-title-icon" />
             <span>Messages</span>
             <span className="cp-conv-count">{conversations.length}</span>
           </div>
+
           <button
             type="button"
             className="cp-new-btn"
@@ -263,54 +734,74 @@ export default function ChatPage() {
             title="New conversation"
           >
             <Plus size={14} />
-            New
+            <span>New</span>
           </button>
         </div>
 
-        {/* Search */}
         <div className="cp-search-wrap">
           <Search size={13} className="cp-search-icon" />
           <input
             className="cp-search-input"
-            placeholder="Search conversations…"
+            placeholder="Search conversations"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
         </div>
 
-        {/* Conversation list */}
         <div className="cp-conv-list">
-          {filteredConvs.length === 0 && (
+          {loadingConversations && (
+            <div className="cp-list-state">Loading conversations...</div>
+          )}
+
+          {!loadingConversations && filteredConversations.length === 0 && (
             <div className="cp-conv-empty">No conversations yet</div>
           )}
 
-          {filteredConvs.map((conv, idx) => {
-            const p = conv.other_user;
-            const isActive = selected?.id === conv.id;
-            const online   = idx % 3 !== 2; // demo presence
+          {filteredConversations.map((conversation) => {
+            const otherUser = conversation.other_user;
+            const isActive = String(selected?.id) === String(conversation.id);
+            const unreadCount = Number(conversation.unread_count || 0);
+            const otherPresence = otherUser?.id ? presence[otherUser.id] : null;
+            const online = otherPresence?.online ?? false;
 
             return (
               <button
-                key={conv.id}
+                key={conversation.id}
                 type="button"
                 className={`cp-conv-item ${isActive ? "cp-conv-item--active" : ""}`}
-                onClick={() => openConversation(conv)}
+                onClick={() => openConversation(conversation)}
               >
                 <div className="cp-conv-avatar-wrap">
-                  <Avatar name={p?.name} size={42} />
+                 <Avatar
+                      name={otherUser?.name}
+                      image={otherUser?.profile_picture}
+                      size={42}
+                  />
                   {online && <span className="cp-online-dot" />}
                 </div>
+
                 <div className="cp-conv-body">
                   <div className="cp-conv-row">
-                    <span className="cp-conv-name">{p?.name || "Unknown"}</span>
+                    <span className="cp-conv-name">
+                      {otherUser?.name || "Unknown"}
+                    </span>
                     <span className="cp-conv-time">
-                      {fmtDate(conv.last_message?.created_at)}
+                      {fmtDate(conversation.last_message?.created_at)}
                     </span>
                   </div>
+
                   <div className="cp-conv-row">
                     <span className="cp-conv-preview">
-                      {conv.last_message?.content || "No messages yet"}
+                      {typingUsers[otherUser?.id]
+                        ? "Typing..."
+                        : conversation.last_message?.content || "No messages yet"}
                     </span>
+
+                    {unreadCount > 0 && (
+                      <span className="cp-unread-count">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
                   </div>
                 </div>
               </button>
@@ -319,26 +810,49 @@ export default function ChatPage() {
         </div>
       </aside>
 
-      {/* ══════════════════════════════
-          MAIN — Chat area
-          ══════════════════════════════ */}
       <main className="cp-main">
         {selected ? (
           <div className="cp-chat">
-
-            {/* ── Chat header ── */}
             <header className="cp-chat-header">
               <div className="cp-chat-header-left">
-                <Avatar name={peer?.name} size={40} />
+                <Avatar
+                  name={peer?.name}
+                  image={peer?.profile_picture}
+                  size={40}
+                />
                 <div className="cp-chat-peer-info">
-                  <span className="cp-chat-peer-name">{peer?.name || "Unknown"}</span>
-                  <span className="cp-chat-peer-status">
+                  <span className="cp-chat-peer-name">
+                    {peer?.name || "Unknown"}
+                  </span>
+                  <span
+                    className={`cp-chat-peer-status ${
+                      peerOnline ? "cp-chat-peer-status--online" : ""
+                    }`}
+                  >
                     <span className="cp-status-dot" />
-                    Online
+                    {isPeerTyping
+                      ? "Typing..."
+                      : peerOnline
+                        ? "Online"
+                        : peerPresence?.last_seen
+                          ? `Last seen ${fmtDate(peerPresence.last_seen)}`
+                          : "Offline"}
                   </span>
                 </div>
               </div>
+
               <div className="cp-chat-header-actions">
+                <span className={`cp-connection-pill cp-connection-pill--${socketStatus}`}>
+                  {socketStatus === "open" ? <Wifi size={13} /> : <WifiOff size={13} />}
+                  {socketStatus === "open"
+                    ? "Live"
+                    : socketStatus === "reconnecting"
+                      ? "Reconnecting"
+                      : socketStatus === "connecting"
+                        ? "Connecting"
+                        : "Offline"}
+                </span>
+
                 <button type="button" className="cp-header-btn" title="Voice call">
                   <Phone size={16} />
                 </button>
@@ -351,62 +865,123 @@ export default function ChatPage() {
               </div>
             </header>
 
-            {/* ── Messages ── */}
-            <div className="cp-messages">
+            <div className="cp-messages" ref={messagesPaneRef}>
               <div className="cp-messages-inner">
-                {messages.length === 0 && (
-                  <div className="cp-messages-empty">
-                    <div className="cp-messages-empty-icon">
-                      <MessageCircle size={36} />
-                    </div>
-                    <p>Start the conversation with {peer?.name}!</p>
+                {loadingMessages && (
+                  <div className="cp-messages-state">Loading messages...</div>
+                )}
+
+                {!loadingMessages && messages.length > 0 && (
+                  <div className="cp-load-more-row">
+                    <button type="button" className="cp-load-more-btn" disabled>
+                      Beginning of conversation
+                    </button>
                   </div>
                 )}
 
-                {messages.map((msg, idx) => {
-                  const isMine  = msg.sender_data?.id === user?.id;
-                  const sender  = msg.sender_data?.name || "User";
+                {!loadingMessages && messages.length === 0 && (
+                  <div className="cp-messages-empty">
+                    <div className="cp-messages-empty-icon">
+                      <MessageCircle size={34} />
+                    </div>
+                    <p>Start the conversation with {peer?.name}.</p>
+                  </div>
+                )}
+
+                {messages.map((message, index) => {
+                  const mine = isCurrentUserMessage(message, user);
+                  const sender = message.sender_data?.name || "User";
+                  const previous = messages[index - 1];
                   const showAvatar =
-                    !isMine &&
-                    (idx === 0 || messages[idx - 1]?.sender_data?.id !== msg.sender_data?.id);
+                    !mine &&
+                    (!previous ||
+                      !sameUser(previous.sender_data?.id, message.sender_data?.id));
 
                   return (
                     <div
-                      key={msg.id || idx}
-                      className={`cp-msg-row ${isMine ? "cp-msg-row--mine" : ""}`}
+                      key={message.client_id || message.id || index}
+                      className={`cp-msg-row ${mine ? "cp-msg-row--mine" : ""}`}
                     >
-                      {/* Spacer if same sender, avatar if new sender */}
-                      {!isMine && (
-                        showAvatar
-                          ? <Avatar name={sender} size={30} className="cp-msg-ava" />
-                          : <div className="cp-msg-ava-gap" />
-                      )}
+                      {!mine &&
+                        (showAvatar ? (
+                          <Avatar
+                            name={sender}
+                            image={message.sender_data?.profile_picture}
+                            size={30}
+                            className="cp-msg-ava"
+                          />
+                        ) : (
+                          <div className="cp-msg-ava-gap" />
+                        ))}
 
                       <div className="cp-msg-group">
-                        {!isMine && showAvatar && (
+                        {!mine && showAvatar && (
                           <span className="cp-msg-sender">{sender}</span>
                         )}
-                        <div className={`cp-bubble ${isMine ? "cp-bubble--mine" : ""}`}>
-                          <span className="cp-bubble-text">{msg.content}</span>
+
+                        <div className={`cp-bubble ${mine ? "cp-bubble--mine" : ""}`}>
+                          <span className="cp-bubble-text">{message.content}</span>
                         </div>
-                        <span className={`cp-msg-time ${isMine ? "cp-msg-time--mine" : ""}`}>
-                          {fmtTime(msg.created_at) || "Just now"}
-                          {isMine && <CheckCheck size={11} className="cp-read-icon" />}
+
+                        <span className={`cp-msg-time ${mine ? "cp-msg-time--mine" : ""}`}>
+                          {fmtTime(message.created_at) || "Just now"}
+                          {mine && message.delivery_status === "sending" && (
+                            <>
+                              <Clock3 size={11} className="cp-pending-icon" />
+                              Sending
+                            </>
+                          )}
+                          {mine && message.delivery_status === "failed" && (
+                            <span className="cp-failed-label">Failed</span>
+                          )}
+                          {mine && !message.delivery_status && (
+                            <CheckCheck
+                              size={12}
+                              className={`cp-read-icon ${
+                                message.is_seen ? "cp-read-icon--seen" : ""
+                              }`}
+                            />
+                          )}
+                          {mine && message.delivery_status === "sent" && (
+                            <CheckCheck size={12} className="cp-read-icon" />
+                          )}
                         </span>
                       </div>
 
-                      {isMine && (
-                        <Avatar name={user?.name || "Me"} size={30} className="cp-msg-ava" />
+                      {mine && (
+                        <Avatar
+                          name={currentUserName}
+                          image={user?.profile_picture}
+                          size={30}
+                          className="cp-msg-ava"
+                        />
                       )}
                     </div>
                   );
                 })}
 
+                {isPeerTyping && (
+                  <div className="cp-msg-row">
+                    <Avatar
+                      name={peer?.name}
+                      image={peer?.profile_picture}
+                      size={30}
+                      className="cp-msg-ava"
+                    />
+                    <div className="cp-typing-bubble" aria-label="Typing">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
             </div>
 
-            {/* ── Input ── */}
+            {error && <div className="cp-error-line">{error}</div>}
+
             <div className="cp-input-area">
               <button type="button" className="cp-input-side-btn" title="Attach">
                 <Paperclip size={17} />
@@ -416,10 +991,15 @@ export default function ChatPage() {
                 <input
                   ref={inputRef}
                   className="cp-input"
-                  placeholder="Type a message…"
+                  placeholder={
+                    socketStatus === "open"
+                      ? "Type a message"
+                      : "Connecting to chat..."
+                  }
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={handleDraftChange}
                   onKeyDown={handleKeyDown}
+                  disabled={socketStatus !== "open" && socketStatus !== "reconnecting"}
                 />
                 <button type="button" className="cp-emoji-btn" title="Emoji">
                   <Smile size={17} />
@@ -428,8 +1008,9 @@ export default function ChatPage() {
 
               <button
                 type="button"
-                className={`cp-send-btn ${draft.trim() ? "cp-send-btn--active" : ""}`}
+                className={`cp-send-btn ${canSend ? "cp-send-btn--active" : ""}`}
                 onClick={sendMessage}
+                disabled={!draft.trim()}
                 title="Send"
               >
                 <Send size={16} />
@@ -437,20 +1018,15 @@ export default function ChatPage() {
             </div>
           </div>
         ) : (
-          /* ── Welcome screen ── */
           <div className="cp-welcome">
             <div className="cp-welcome-icon-wrap">
               <MessageCircle size={32} />
             </div>
             <h2 className="cp-welcome-title">Your Messages</h2>
             <p className="cp-welcome-sub">
-              Select a conversation from the left or start a new one.
+              Select a conversation or start a new one.
             </p>
-            <button
-              type="button"
-              className="cp-welcome-btn"
-              onClick={openNewChat}
-            >
+            <button type="button" className="cp-welcome-btn" onClick={openNewChat}>
               <Plus size={14} />
               New Conversation
             </button>
@@ -458,7 +1034,6 @@ export default function ChatPage() {
         )}
       </main>
 
-      {/* ── New Chat Modal ── */}
       {showModal && (
         <NewChatModal
           members={members}

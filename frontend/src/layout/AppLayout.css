@@ -1,12 +1,16 @@
 /* AppLayout.css — updated for floating sidebar */
 .app-layout {
+  --admin-page-bg: #f0f2fa;
+  --admin-bg-wash-1: rgba(99, 84, 196, 0.06);
+  --admin-bg-wash-2: rgba(59, 130, 246, 0.05);
+  --admin-bg-wash-3: rgba(236, 72, 153, 0.03);
   display: flex;
   min-height: 100vh;
-  background: #f0f2fa;
+  background: var(--admin-page-bg);
   background-image:
-    radial-gradient(ellipse 900px 600px at 0% 0%, rgba(99, 84, 196, 0.06), transparent 65%),
-    radial-gradient(ellipse 700px 500px at 100% 100%, rgba(59, 130, 246, 0.05), transparent 65%),
-    radial-gradient(ellipse 500px 400px at 50% 50%, rgba(236, 72, 153, 0.03), transparent 65%);
+    radial-gradient(ellipse 900px 600px at 0% 0%, var(--admin-bg-wash-1), transparent 65%),
+    radial-gradient(ellipse 700px 500px at 100% 100%, var(--admin-bg-wash-2), transparent 65%),
+    radial-gradient(ellipse 500px 400px at 50% 50%, var(--admin-bg-wash-3), transparent 65%);
   background-attachment: fixed;
 }
 
@@ -20,6 +24,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: transparent;
 }
 
 @media (max-width: 768px) {

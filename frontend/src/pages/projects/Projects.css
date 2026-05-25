@@ -21,7 +21,7 @@
   --text-3:  #77748E;
   --text-4:  #B8B5CC;
 
-  --page-bg: #FAFAFE;
+  --page-bg: var(--admin-page-bg, #f0f2fa);
 
   --status-progress-bg:  rgba(59,130,246,0.12);
   --status-progress-c:   #2563EB;
@@ -59,8 +59,8 @@
   min-height: 100vh;
   background: var(--page-bg);
   background-image:
-    radial-gradient(900px 400px at 10% -5%, rgba(108, 83, 179, 0.07), transparent 60%),
-    radial-gradient(600px 350px at 90% 10%, rgba(59, 130, 246, 0.05), transparent 60%);
+    radial-gradient(900px 400px at 10% -5%, var(--admin-bg-wash-1, rgba(99, 84, 196, 0.06)), transparent 60%),
+    radial-gradient(600px 350px at 90% 10%, var(--admin-bg-wash-2, rgba(59, 130, 246, 0.05)), transparent 60%);
   background-attachment: fixed;
   padding: 36px 40px 60px;
   position: relative;

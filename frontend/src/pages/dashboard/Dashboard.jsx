@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   Sparkles,
   ArrowRight,
-  MoreHorizontal,
   Zap,
   Target,
 } from "lucide-react";
@@ -28,7 +27,6 @@ import {
   Cell,
   BarChart,
   Bar,
-  Legend,
 } from "recharts";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
@@ -65,8 +63,6 @@ const STATUS_STYLES = {
   done:        { label: "Done",        bg: "#dcfce7", color: "#15803d" },
   completed:   { label: "Done",        bg: "#dcfce7", color: "#15803d" },
 };
-
-const PIE_COLORS = ["#94a3b8", "#3b82f6", "#8b5cf6", "#22c55e"];
 
 const ACTIVITY_COLORS = {
   task_created:    "#22c55e",
@@ -184,6 +180,8 @@ function getGreeting() {
   return "Good evening";
 }
 
+const pluralize = (count, label) => `${count} ${label}${count === 1 ? "" : "s"}`;
+
 /* ═══════════════════════════════════════════════════════════════════════
    DASHBOARD
    ═══════════════════════════════════════════════════════════════════════ */
@@ -203,7 +201,9 @@ export default function Dashboard() {
       try {
         const res = await api.get("/dashboard/overview/");
         if (!ignore) setOverview(res.data);
-      } catch {}
+      } catch (err) {
+        console.error(err);
+      }
       finally { if (!ignore) setLoading(false); }
     })();
     return () => { ignore = true; };
@@ -216,7 +216,9 @@ export default function Dashboard() {
       try {
         const res = await api.get("/activities/");
         if (!ignore) setActivities(Array.isArray(res.data) ? res.data : []);
-      } catch {}
+      } catch (err) {
+        console.error(err);
+      }
       finally { if (!ignore) setActivitiesLoading(false); }
     })();
     return () => { ignore = true; };
@@ -289,6 +291,41 @@ export default function Dashboard() {
     return total > 0 ? Math.round((done / total) * 100) : 0;
   }, [overview]);
 
+  const openTasks = Math.max(
+    0,
+    Number(overview?.total_tasks || 0) - Number(overview?.completed_tasks || 0)
+  );
+
+  const focusItems = useMemo(() => [
+    {
+      label: "Overdue work",
+      value: overview?.overdue_tasks ?? 0,
+      copy: "Tasks that need a manager check-in",
+      tone: "danger",
+      to: "/dashboard/tasks",
+    },
+    {
+      label: "Pending queue",
+      value: overview?.pending_tasks ?? 0,
+      copy: "Planned work still waiting to move",
+      tone: "warning",
+      to: "/dashboard/tasks",
+    },
+    {
+      label: "Open workload",
+      value: openTasks,
+      copy: "Tasks not completed yet",
+      tone: "brand",
+      to: "/dashboard/tasks",
+    },
+  ], [openTasks, overview]);
+
+  const quickActions = [
+    { label: "Create project", copy: "Start a new workspace initiative", to: "/dashboard/projects" },
+    { label: "Invite member", copy: "Add teammates to the organization", to: "/dashboard/team" },
+    { label: "Review issues", copy: "Triage reported blockers", to: "/dashboard/issues" },
+  ];
+
   /* ── Render ── */
   return (
     <div className="db-page">
@@ -298,7 +335,7 @@ export default function Dashboard() {
         <div className="db-topbar-left">
           <div className="db-search-wrap">
             <Search size={14} className="db-search-icon" />
-            <input className="db-search-input" placeholder="Search projects, tasks, people…" />
+            <input className="db-search-input" placeholder="Search projects, tasks, people..." />
           </div>
         </div>
 
@@ -333,33 +370,33 @@ export default function Dashboard() {
               All systems operational
             </div>
             <h1 className="db-hero-title">
-              {getGreeting()}, {firstName} 👋
+              {getGreeting()}, {firstName}
             </h1>
             <p className="db-hero-sub">
               {overview?.overdue_tasks > 0
                 ? `You have ${overview.overdue_tasks} overdue task${overview.overdue_tasks > 1 ? "s" : ""} that need attention.`
-                : "Everything looks great — here's your workspace overview."}
+                : "Everything looks steady. Here is the latest workspace overview."}
             </p>
 
             {/* Quick stats strip */}
             <div className="db-hero-strip">
               <div className="db-hero-strip-item">
-                <span className="db-hero-strip-val">{loading ? "…" : (overview?.total_projects ?? 0)}</span>
+                <span className="db-hero-strip-val">{loading ? "..." : (overview?.total_projects ?? 0)}</span>
                 <span className="db-hero-strip-label">Projects</span>
               </div>
               <div className="db-hero-strip-div" />
               <div className="db-hero-strip-item">
-                <span className="db-hero-strip-val">{loading ? "…" : (overview?.total_tasks ?? 0)}</span>
+                <span className="db-hero-strip-val">{loading ? "..." : (overview?.total_tasks ?? 0)}</span>
                 <span className="db-hero-strip-label">Total Tasks</span>
               </div>
               <div className="db-hero-strip-div" />
               <div className="db-hero-strip-item">
-                <span className="db-hero-strip-val">{loading ? "…" : `${completionPct}%`}</span>
+                <span className="db-hero-strip-val">{loading ? "..." : `${completionPct}%`}</span>
                 <span className="db-hero-strip-label">Completion</span>
               </div>
               <div className="db-hero-strip-div" />
               <div className="db-hero-strip-item">
-                <span className="db-hero-strip-val">{loading ? "…" : (overview?.team_members ?? 0)}</span>
+                <span className="db-hero-strip-val">{loading ? "..." : (overview?.team_members ?? 0)}</span>
                 <span className="db-hero-strip-label">Members</span>
               </div>
             </div>
@@ -374,7 +411,7 @@ export default function Dashboard() {
                   <stop offset="100%" stopColor="#9b7ff4" />
                 </linearGradient>
               </defs>
-              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="8" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(99,84,196,0.12)" strokeWidth="8" />
               <circle
                 cx="60" cy="60" r="50"
                 fill="none"
@@ -408,12 +445,12 @@ export default function Dashboard() {
                   <Icon size={20} color="#fff" />
                 </div>
                 <div className="db-stat-body">
-                  <div className="db-stat-value">{loading ? "—" : card.value}</div>
+                  <div className="db-stat-value">{loading ? "-" : card.value}</div>
                   <div className="db-stat-label">{card.label}</div>
                   <div className={`db-stat-trend ${card.up === false ? "down" : card.up === null ? "neutral" : "up"}`}>
                     {card.up === true  && <TrendingUp  size={11} />}
                     {card.up === false && <TrendingDown size={11} />}
-                    {card.up === null  && <span style={{ fontSize: 10 }}>→</span>}
+                    {card.up === null  && <span style={{ fontSize: 10 }}>{"->"}</span>}
                     {card.trend}
                   </div>
                 </div>
@@ -423,6 +460,81 @@ export default function Dashboard() {
         </div>
 
         {/* ── MID ROW: Area Chart + Activity Feed ── */}
+        <div className="db-command-grid">
+          <section className="db-card db-focus-card">
+            <div className="db-card-header">
+              <div>
+                <h2 className="db-card-title">Today&apos;s Focus</h2>
+                <p className="db-card-sub">Highest signal items for admins</p>
+              </div>
+              <Target size={16} className="db-card-icon-accent" />
+            </div>
+
+            <div className="db-focus-list">
+              {focusItems.map((item) => (
+                <Link key={item.label} to={item.to} className={`db-focus-item db-focus-item--${item.tone}`}>
+                  <span className="db-focus-value">{loading ? "..." : item.value}</span>
+                  <span className="db-focus-copy">
+                    <strong>{item.label}</strong>
+                    <small>{item.copy}</small>
+                  </span>
+                  <ArrowRight size={14} />
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="db-card db-pulse-card">
+            <div className="db-card-header">
+              <div>
+                <h2 className="db-card-title">Team Pulse</h2>
+                <p className="db-card-sub">Capacity and completion at a glance</p>
+              </div>
+              <Sparkles size={15} className="db-card-icon-accent" />
+            </div>
+
+            <div className="db-pulse-stack">
+              <div className="db-pulse-row">
+                <span>Completion rate</span>
+                <strong>{loading ? "..." : `${completionPct}%`}</strong>
+              </div>
+              <div className="db-pulse-meter">
+                <span style={{ width: `${completionPct}%` }} />
+              </div>
+              <div className="db-pulse-meta">
+                <span>{pluralize(overview?.completed_tasks ?? 0, "task")} completed</span>
+                <span>{pluralize(openTasks, "task")} open</span>
+              </div>
+              <div className="db-pulse-foot">
+                <Users size={15} />
+                {loading ? "Loading members..." : `${overview?.team_members ?? 0} active team members`}
+              </div>
+            </div>
+          </section>
+
+          <section className="db-card db-actions-card">
+            <div className="db-card-header">
+              <div>
+                <h2 className="db-card-title">Quick Actions</h2>
+                <p className="db-card-sub">Common admin workflows</p>
+              </div>
+              <Zap size={15} className="db-card-icon-accent" />
+            </div>
+
+            <div className="db-action-list">
+              {quickActions.map((action) => (
+                <Link key={action.label} to={action.to} className="db-action-item">
+                  <span>
+                    <strong>{action.label}</strong>
+                    <small>{action.copy}</small>
+                  </span>
+                  <ArrowRight size={14} />
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>
+
         <div className="db-mid-row">
 
           {/* Area chart */}
@@ -499,7 +611,7 @@ export default function Dashboard() {
         {/* ── BOTTOM ROW: 3 charts ── */}
         <div className="db-bottom-row">
 
-          {/* Donut — Task Distribution */}
+          {/* Donut - Task Distribution */}
           <div className="db-card db-donut-card">
             <div className="db-card-header">
               <div>
@@ -530,7 +642,7 @@ export default function Dashboard() {
                   <div key={s.name} className="db-legend-row">
                     <span className="db-legend-dot" style={{ background: s.color }} />
                     <span className="db-legend-name">{s.name}</span>
-                    <span className="db-legend-val">{loading ? "…" : s.value}</span>
+                    <span className="db-legend-val">{loading ? "..." : s.value}</span>
                   </div>
                 ))}
               </div>

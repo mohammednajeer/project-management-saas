@@ -3,7 +3,7 @@
 .issues-page {
   --issue-brand: #6c53b3;
   --issue-brand-hover: #5c44a0;
-  --issue-bg: #FAFAFE;
+  --issue-bg: var(--admin-page-bg, #f0f2fa);
   --issue-glass: rgba(255,255,255,0.78);
   --issue-border: rgba(108,83,179,0.14);
   --issue-text-1: #0d0c1a;
@@ -13,8 +13,8 @@
   padding: 36px 40px 64px;
   background: var(--issue-bg);
   background-image:
-    radial-gradient(900px 400px at 10% -5%, rgba(108, 83, 179, 0.07), transparent 60%),
-    radial-gradient(600px 350px at 90% 10%, rgba(59, 130, 246, 0.05), transparent 60%);
+    radial-gradient(900px 400px at 10% -5%, var(--admin-bg-wash-1, rgba(99, 84, 196, 0.06)), transparent 60%),
+    radial-gradient(600px 350px at 90% 10%, var(--admin-bg-wash-2, rgba(59, 130, 246, 0.05)), transparent 60%);
   background-attachment: fixed;
   color: var(--issue-text-1);
   font-family: 'Manrope', sans-serif;

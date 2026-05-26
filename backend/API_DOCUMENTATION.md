@@ -121,7 +121,24 @@ Request body may include any of:
 - `work_status`
 - `profile_picture` (multipart file)
 
-Response example: updated user object in the same shape as `GET /api/auth/me/`.
+Response example:
+
+```json
+{
+  "id": "uuid-user-1",
+  "email": "alice@example.com",
+  "name": "Alice Updated",
+  "role": "manager",
+  "organization": "uuid-org-1",
+  "profile_picture": null,
+  "bio": "Updated bio",
+  "designation": "Product Manager",
+  "department": "Product",
+  "phone_number": "123-456-7890",
+  "work_status": "active",
+  "joined_at": "2026-05-01T12:00:00Z"
+}
+```
 
 ---
 

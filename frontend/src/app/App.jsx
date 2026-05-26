@@ -30,7 +30,7 @@ import WorkspaceLayout from "../layout/WorkspaceLayout";
 import { AuthProvider } from "../context/AuthContext";
 import MyTasks from "../pages/workspace/MyTasks";
 import ChatPage from "../pages/chat/ChatPage";
-
+import Reports from "../pages/Reports/Reports";
 
 
 function PlaceholderPage({ title }) {
@@ -93,7 +93,7 @@ function App() {
             <Route path="activity" element={<ActivityPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="team" element={<Members />} />
-            <Route path="reports" element={<PlaceholderPage title="Reports" />} />
+            <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<PlaceholderPage title="Settings" />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="chat" element={<ChatPage />} />

@@ -26,3 +26,6 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# Ignore API documentation (local only)
+backend/API_DOCUMENTATION.md

@@ -30,5 +30,5 @@ urlpatterns = [
     path("api/activities/", include("activities.urls")),
     path("api/issues/", include("issues.urls")),
     path("api/chat/", include("chat.urls")),
- 
+    path("api/reports/", include("reports.urls")),
 ]

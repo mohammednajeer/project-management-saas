@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import LeaveRequest
+from .models import LeaveRequest, LeaveBalance
 
 
 class LeaveRequestSerializer(serializers.ModelSerializer):
@@ -60,6 +60,34 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
                 "end_date": "End date must be after start date."
             })
 
+        # Validate leave balance
+        request = self.context.get("request")
+        if request and not self.instance:
+            employee = request.user
+            leave_type = attrs.get("leave_type")
+
+            if leave_type in ["annual", "sick", "casual", "personal", "vacation"]:
+                lookup_type = "annual" if leave_type == "vacation" else leave_type
+
+                # Auto-initialize balance if missing
+                balance, created = LeaveBalance.objects.get_or_create(
+                    employee=employee,
+                    leave_type=lookup_type,
+                    defaults={
+                        "organization": employee.organization,
+                        "allocated_days": 20 if lookup_type == "annual" else 10
+                    }
+                )
+
+                duration = (end_date - start_date).days + 1
+                if balance.remaining_days < duration:
+                    raise serializers.ValidationError({
+                        "end_date": (
+                            f"Insufficient leave balance. Requested {duration} days, "
+                            f"but only have {balance.remaining_days} days remaining."
+                        )
+                    })
+
         return attrs
 
     def get_employee_data(self, obj):
@@ -79,4 +107,35 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             "name": obj.approved_by.name,
             "email": obj.approved_by.email,
         }
+
+
+class LeaveBalanceSerializer(serializers.ModelSerializer):
+    employee_name = serializers.CharField(source="employee.name", read_only=True)
+    employee_email = serializers.CharField(source="employee.email", read_only=True)
+    leave_type_label = serializers.CharField(
+        source="get_leave_type_display",
+        read_only=True
+    )
+    used_days = serializers.IntegerField(read_only=True)
+    remaining_days = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = LeaveBalance
+        fields = [
+            "id",
+            "employee",
+            "employee_name",
+            "employee_email",
+            "leave_type",
+            "leave_type_label",
+            "allocated_days",
+            "used_days",
+            "remaining_days",
+        ]
+        read_only_fields = [
+            "id",
+            "employee",
+            "leave_type",
+        ]
+
 

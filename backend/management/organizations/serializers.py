@@ -11,6 +11,10 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
     active_projects = serializers.SerializerMethodField()
     active_tasks = serializers.SerializerMethodField()
     pending_leave_requests = serializers.SerializerMethodField()
+    holiday_count = serializers.SerializerMethodField()
+    upcoming_events_count = serializers.SerializerMethodField()
+    approved_leave_count = serializers.SerializerMethodField()
+    employees_on_leave_today = serializers.SerializerMethodField()
 
     class Meta:
         model = Organization
@@ -36,6 +40,10 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
             "active_projects",
             "active_tasks",
             "pending_leave_requests",
+            "holiday_count",
+            "upcoming_events_count",
+            "approved_leave_count",
+            "employees_on_leave_today",
             "created_at",
             "updated_at",
         ]
@@ -47,6 +55,10 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
             "active_projects",
             "active_tasks",
             "pending_leave_requests",
+            "holiday_count",
+            "upcoming_events_count",
+            "approved_leave_count",
+            "employees_on_leave_today",
             "created_at",
             "updated_at",
         ]
@@ -95,6 +107,44 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
 
     def get_pending_leave_requests(self, obj):
         return obj.leave_requests.filter(status="pending").count()
+
+    def get_holiday_count(self, obj):
+        from company_calendar.models import CalendarEvent
+        return CalendarEvent.objects.filter(
+            organization=obj,
+            event_type="holiday"
+        ).count()
+
+    def get_upcoming_events_count(self, obj):
+        import datetime
+        from company_calendar.models import CalendarEvent
+        return CalendarEvent.objects.filter(
+            organization=obj,
+            event_type="company_event",
+            start_date__gte=datetime.date.today()
+        ).count()
+
+    def get_approved_leave_count(self, obj):
+        return obj.leave_requests.filter(status="approved").count()
+
+    def get_employees_on_leave_today(self, obj):
+        import datetime
+        today = datetime.date.today()
+        leaves = obj.leave_requests.filter(
+            status="approved",
+            start_date__lte=today,
+            end_date__gte=today
+        ).select_related("employee")
+        return [
+            {
+                "id": str(leave.employee.id),
+                "name": leave.employee.name,
+                "email": leave.employee.email,
+                "leave_type": leave.get_leave_type_display(),
+                "duration": f"{leave.start_date} - {leave.end_date}"
+            }
+            for leave in leaves
+        ]
 
 
 class RegisterOrganizationSerializer(serializers.ModelSerializer):

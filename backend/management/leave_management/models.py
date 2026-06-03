@@ -5,10 +5,11 @@ from django.db import models
 
 class LeaveRequest(models.Model):
     LEAVE_TYPE_CHOICES = [
+        ("annual", "Annual Leave"),
         ("sick", "Sick Leave"),
         ("casual", "Casual Leave"),
-        ("vacation", "Vacation Leave"),
         ("personal", "Personal Leave"),
+        ("vacation", "Vacation Leave"),
         ("other", "Other"),
     ]
 
@@ -85,4 +86,65 @@ class LeaveRequest(models.Model):
             f"{self.get_leave_type_display()} "
             f"({self.status})"
         )
+
+
+class LeaveBalance(models.Model):
+    LEAVE_TYPE_CHOICES = [
+        ("annual", "Annual Leave"),
+        ("sick", "Sick Leave"),
+        ("casual", "Casual Leave"),
+        ("personal", "Personal Leave"),
+    ]
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    employee = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="leave_balances"
+    )
+
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="leave_balances"
+    )
+
+    leave_type = models.CharField(
+        max_length=20,
+        choices=LEAVE_TYPE_CHOICES
+    )
+
+    allocated_days = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ("employee", "leave_type")
+
+    @property
+    def used_days(self):
+        types_to_query = [self.leave_type]
+        if self.leave_type == "annual":
+            types_to_query.append("vacation")
+
+        requests = LeaveRequest.objects.filter(
+            employee=self.employee,
+            leave_type__in=types_to_query,
+            status="approved"
+        )
+        total_days = 0
+        for r in requests:
+            total_days += (r.end_date - r.start_date).days + 1
+        return total_days
+
+    @property
+    def remaining_days(self):
+        return max(0, self.allocated_days - self.used_days)
+
+    def __str__(self):
+        return f"{self.employee.name} - {self.get_leave_type_display()} ({self.remaining_days}/{self.allocated_days})"
+
 

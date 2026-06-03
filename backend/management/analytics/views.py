@@ -1,17 +1,14 @@
 from datetime import timedelta
-
 from django.db.models.functions import TruncDate
 from django.db.models import Count
 from django.utils import timezone
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from accounts.permissions import IsManagerOrAdmin
 from accounts.models import User
 from invitations.models import Invitation
-from leave_management.models import LeaveRequest
+from leave_management.models import LeaveRequest, LeaveBalance
 from company_calendar.models import CalendarEvent
 
 from projects.models import Project
@@ -20,17 +17,69 @@ from organizations.serializers import OrganizationProfileSerializer
 
 
 class DashboardOverviewView(APIView):
-
-    permission_classes = [
-        IsAuthenticated,
-        IsManagerOrAdmin,
-    ]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         organization = request.user.organization
-
         today = timezone.localdate()
+
+        if request.user.role == "employee":
+            from leave_management.views import ensure_balances_exist_for_user
+            ensure_balances_exist_for_user(request.user)
+
+            balances = LeaveBalance.objects.filter(
+                employee=request.user
+            ).select_related("employee")
+
+            my_upcoming_leaves = LeaveRequest.objects.filter(
+                employee=request.user,
+                status="approved",
+                end_date__gte=today
+            ).order_by("start_date")[:5]
+
+            next_holiday = CalendarEvent.objects.filter(
+                organization=organization,
+                event_type="holiday",
+                end_date__gte=today
+            ).order_by("start_date").first()
+
+            upcoming_company_events = CalendarEvent.objects.filter(
+                organization=organization,
+                event_type="company_event",
+                end_date__gte=today
+            ).order_by("start_date")[:5]
+
+            from leave_management.serializers import LeaveBalanceSerializer
+            return Response({
+                "company": OrganizationProfileSerializer(organization).data,
+                "role": "employee",
+                "my_leave_balances": LeaveBalanceSerializer(balances, many=True).data,
+                "my_upcoming_leave": [
+                    {
+                        "id": str(leave.id),
+                        "leave_type_label": leave.get_leave_type_display(),
+                        "start_date": leave.start_date,
+                        "end_date": leave.end_date,
+                        "status": leave.status,
+                    }
+                    for leave in my_upcoming_leaves
+                ],
+                "next_holiday": {
+                    "id": str(next_holiday.id),
+                    "title": next_holiday.title,
+                    "start_date": next_holiday.start_date,
+                    "end_date": next_holiday.end_date,
+                } if next_holiday else None,
+                "upcoming_company_events": [
+                    {
+                        "id": str(event.id),
+                        "title": event.title,
+                        "start_date": event.start_date,
+                        "end_date": event.end_date,
+                    }
+                    for event in upcoming_company_events
+                ]
+            })
 
         total_projects = Project.objects.filter(
             organization=organization
@@ -57,6 +106,7 @@ class DashboardOverviewView(APIView):
         ).exclude(
             status="done"
         ).count()
+
 
         team_members = User.objects.filter(
             organization=organization

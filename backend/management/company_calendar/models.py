@@ -10,6 +10,7 @@ class CalendarEvent(models.Model):
         ("meeting", "Meeting"),
         ("deadline", "Deadline"),
         ("milestone", "Milestone"),
+        ("announcement", "Announcement"),
     ]
 
     id = models.UUIDField(
@@ -31,6 +32,11 @@ class CalendarEvent(models.Model):
         default=""
     )
 
+    notes = models.TextField(
+        blank=True,
+        default=""
+    )
+
     event_type = models.CharField(
         max_length=30,
         choices=EVENT_TYPE_CHOICES
@@ -39,6 +45,32 @@ class CalendarEvent(models.Model):
     start_date = models.DateField()
 
     end_date = models.DateField()
+
+    visibility = models.CharField(
+        max_length=20,
+        choices=[
+            ("organization", "Organization"),
+            ("private", "Private"),
+        ],
+        default="organization"
+    )
+
+    is_recurring = models.BooleanField(
+        default=False
+    )
+
+    recurrence_pattern = models.CharField(
+        max_length=30,
+        choices=[
+            ("none", "None"),
+            ("daily", "Daily"),
+            ("weekly", "Weekly"),
+            ("biweekly", "Every Two Weeks"),
+            ("monthly", "Monthly"),
+            ("first_friday", "First Friday of Month"),
+        ],
+        default="none"
+    )
 
     created_by = models.ForeignKey(
         "accounts.User",
@@ -55,4 +87,5 @@ class CalendarEvent(models.Model):
 
     def __str__(self):
         return self.title
+
 

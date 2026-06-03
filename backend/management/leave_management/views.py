@@ -8,8 +8,8 @@ from rest_framework.views import APIView
 from accounts.models import User
 from notifications.models import Notification
 
-from .models import LeaveRequest
-from .serializers import LeaveRequestSerializer
+from .models import LeaveRequest, LeaveBalance
+from .serializers import LeaveRequestSerializer, LeaveBalanceSerializer
 
 
 def notify_user(user, title, message, notification_type):
@@ -19,6 +19,34 @@ def notify_user(user, title, message, notification_type):
         message=message,
         type=notification_type
     )
+
+
+def ensure_balances_exist_for_organization(organization):
+    users = User.objects.filter(organization=organization)
+    leave_types = ["annual", "sick", "casual", "personal"]
+    for u in users:
+        for lt in leave_types:
+            LeaveBalance.objects.get_or_create(
+                employee=u,
+                leave_type=lt,
+                defaults={
+                    "organization": organization,
+                    "allocated_days": 20 if lt == "annual" else 10
+                }
+            )
+
+
+def ensure_balances_exist_for_user(user):
+    leave_types = ["annual", "sick", "casual", "personal"]
+    for lt in leave_types:
+        LeaveBalance.objects.get_or_create(
+            employee=user,
+            leave_type=lt,
+            defaults={
+                "organization": user.organization,
+                "allocated_days": 20 if lt == "annual" else 10
+            }
+        )
 
 
 class LeaveRequestListCreateView(APIView):
@@ -33,7 +61,10 @@ class LeaveRequestListCreateView(APIView):
             "organization"
         )
 
-        if request.user.role == "employee":
+        if (
+            request.user.role == "employee" or
+            request.query_params.get("my_requests") == "true"
+        ):
             queryset = queryset.filter(employee=request.user)
 
         status_value = request.query_params.get("status")
@@ -61,13 +92,17 @@ class LeaveRequestListCreateView(APIView):
     def get(self, request):
         serializer = LeaveRequestSerializer(
             self.get_queryset(request),
-            many=True
+            many=True,
+            context={"request": request}
         )
 
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = LeaveRequestSerializer(data=request.data)
+        serializer = LeaveRequestSerializer(
+            data=request.data,
+            context={"request": request}
+        )
 
         if not serializer.is_valid():
             return Response(
@@ -101,7 +136,7 @@ class LeaveRequestListCreateView(APIView):
             )
 
         return Response(
-            LeaveRequestSerializer(leave_request).data,
+            LeaveRequestSerializer(leave_request, context={"request": request}).data,
             status=status.HTTP_201_CREATED
         )
 
@@ -135,6 +170,20 @@ class LeaveRequestActionView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
+            # Prevent approving own leave request
+            if leave_request.employee_id == request.user.id:
+                return Response(
+                    {"message": "You cannot approve or reject your own leave request"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Manager can only approve employee leave requests
+            if request.user.role == "manager" and leave_request.employee.role in ["manager", "admin"]:
+                return Response(
+                    {"message": "Managers can only approve employee leave requests"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
             if action == "approve":
                 return self.approve(request, leave_request)
 
@@ -161,7 +210,7 @@ class LeaveRequestActionView(APIView):
         leave_request.status = "cancelled"
         leave_request.save(update_fields=["status"])
 
-        return Response(LeaveRequestSerializer(leave_request).data)
+        return Response(LeaveRequestSerializer(leave_request, context={"request": request}).data)
 
     def approve(self, request, leave_request):
         if leave_request.status != "pending":
@@ -194,7 +243,7 @@ class LeaveRequestActionView(APIView):
             "leave_approved"
         )
 
-        return Response(LeaveRequestSerializer(leave_request).data)
+        return Response(LeaveRequestSerializer(leave_request, context={"request": request}).data)
 
     def reject(self, request, leave_request):
         if leave_request.status != "pending":
@@ -229,5 +278,65 @@ class LeaveRequestActionView(APIView):
             "leave_rejected"
         )
 
-        return Response(LeaveRequestSerializer(leave_request).data)
+        return Response(LeaveRequestSerializer(leave_request, context={"request": request}).data)
+
+
+class LeaveBalanceListUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role in ["admin", "manager"]:
+            ensure_balances_exist_for_organization(request.user.organization)
+            balances = LeaveBalance.objects.filter(
+                organization=request.user.organization
+            ).select_related("employee")
+        else:
+            ensure_balances_exist_for_user(request.user)
+            balances = LeaveBalance.objects.filter(
+                employee=request.user
+            ).select_related("employee")
+
+        serializer = LeaveBalanceSerializer(balances, many=True)
+        return Response(serializer.data)
+
+    def patch(self, request, balance_id):
+        if request.user.role != "admin":
+            return Response(
+                {"message": "Only admins can configure leave allocations"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            balance = LeaveBalance.objects.get(
+                id=balance_id,
+                organization=request.user.organization
+            )
+        except LeaveBalance.DoesNotExist:
+            return Response(
+                {"message": "Leave balance record not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        allocated_days = request.data.get("allocated_days")
+        if allocated_days is None:
+            return Response(
+                {"message": "allocated_days is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            allocated_days = int(allocated_days)
+            if allocated_days < 0:
+                raise ValueError()
+        except ValueError:
+            return Response(
+                {"message": "allocated_days must be a non-negative integer"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        balance.allocated_days = allocated_days
+        balance.save(update_fields=["allocated_days"])
+
+        return Response(LeaveBalanceSerializer(balance).data)
+
 

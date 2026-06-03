@@ -497,6 +497,111 @@
 
 .db-card:hover { box-shadow: var(--sh-md); }
 
+.db-company-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.78)),
+    linear-gradient(90deg, rgba(99,84,196,0.12), rgba(34,197,94,0.08));
+  box-shadow: var(--sh-sm);
+}
+
+.db-company-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.db-company-logo {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--brand), var(--blue));
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: 0 12px 28px rgba(99, 84, 196, 0.22);
+}
+
+.db-company-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.db-company-copy {
+  min-width: 0;
+}
+
+.db-company-kicker {
+  display: block;
+  color: var(--brand);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.db-company-copy h2 {
+  margin: 3px 0 4px;
+  color: var(--ink-1);
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.db-company-copy p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.db-company-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.db-company-meta a,
+.db-company-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,0.74);
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.db-company-meta a:not(.is-disabled):hover {
+  color: var(--brand);
+  border-color: var(--border-mid);
+  background: var(--brand-light);
+}
+
+.db-company-meta .is-disabled {
+  pointer-events: none;
+  color: var(--ink-4);
+}
+
 .db-card-header {
   display: flex;
   align-items: flex-start;
@@ -1048,6 +1153,8 @@
   .db-bottom-row { grid-template-columns: 1fr; }
   .db-hero { flex-direction: column; align-items: flex-start; }
   .db-hero-ring-wrap { flex-direction: row; }
+  .db-company-card { align-items: flex-start; flex-direction: column; }
+  .db-company-meta { justify-content: flex-start; }
 }
 
 @media (max-width: 680px) {

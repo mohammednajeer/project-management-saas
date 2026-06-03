@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../../utils/company";
 import "./InviteMemberModel.css";
 
 export default function InviteMemberModal({ open, onClose, onInviteSuccess }) {
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("employee");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const isAdmin = user?.role === "admin";
+  const company = getCompanyFromUser(user);
+  const companyName = getCompanyName(company, user?.organization || "your company");
 
   if (!open) return null;
 
@@ -37,6 +43,7 @@ export default function InviteMemberModal({ open, onClose, onInviteSuccess }) {
         } catch (err) {
         setError(
             err.response?.data?.message ||
+            err.response?.data?.detail ||
             "Failed to send invite"
         );
         } finally {
@@ -52,6 +59,20 @@ export default function InviteMemberModal({ open, onClose, onInviteSuccess }) {
           <button type="button" onClick={onClose} aria-label="Close invite modal">
             X
           </button>
+        </div>
+
+        <div className="invite-company-card">
+          <span className="invite-company-logo">
+            {company?.logo ? (
+              <img src={company.logo} alt="" />
+            ) : (
+              getCompanyInitials(company, "PF")
+            )}
+          </span>
+          <span>
+            <small>Joining company</small>
+            <strong>{companyName}</strong>
+          </span>
         </div>
 
         <form onSubmit={handleInvite} className="invite-form">
@@ -70,7 +91,8 @@ export default function InviteMemberModal({ open, onClose, onInviteSuccess }) {
             <label>Role</label>
             <select value={role} onChange={(e) => setRole(e.target.value)}>
               <option value="employee">Employee</option>
-              <option value="manager">Manager</option>
+              {isAdmin && <option value="manager">Manager</option>}
+              {isAdmin && <option value="admin">Admin</option>}
             </select>
           </div>
 

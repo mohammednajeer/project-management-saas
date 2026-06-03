@@ -10,9 +10,11 @@ from rest_framework.permissions import IsAuthenticated
 
 from accounts.permissions import IsManagerOrAdmin
 from accounts.models import User
+from invitations.models import Invitation
 
 from projects.models import Project
 from tasks.models import Task
+from organizations.serializers import OrganizationProfileSerializer
 
 
 class DashboardOverviewView(APIView):
@@ -56,6 +58,21 @@ class DashboardOverviewView(APIView):
 
         team_members = User.objects.filter(
             organization=organization
+        ).count()
+
+        managers = User.objects.filter(
+            organization=organization,
+            role="manager"
+        ).count()
+
+        employees = User.objects.filter(
+            organization=organization,
+            role="employee"
+        ).count()
+
+        pending_invitations = Invitation.objects.filter(
+            organization=organization,
+            is_used=False
         ).count()
 
         recent_tasks = Task.objects.filter(
@@ -164,12 +181,16 @@ class DashboardOverviewView(APIView):
             })
 
         return Response({
+            "company": OrganizationProfileSerializer(organization).data,
             "total_projects": total_projects,
             "total_tasks": total_tasks,
             "pending_tasks": pending_tasks,
             "completed_tasks": completed_tasks,
             "overdue_tasks": overdue_tasks,
             "team_members": team_members,
+            "managers": managers,
+            "employees": employees,
+            "pending_invitations": pending_invitations,
             "recent_tasks": recent_tasks_data,
             "weekly_task_activity": weekly_task_activity,
             "task_status_distribution": task_status_distribution,

@@ -15,6 +15,7 @@ import { NavLink } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import useNotifications from "../context/useNotifications";
+import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../utils/company";
 
 import "./WorkspaceSidebar.css";
 
@@ -56,6 +57,8 @@ export default function WorkspaceSidebar() {
   const [hovered, setHovered] = useState(false);
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
+  const company = getCompanyFromUser(user);
+  const companyName = getCompanyName(company, user?.organization || "ProjectFlow");
   const initials = (user?.name || user?.email || "U")
     .split(" ")
     .filter(Boolean)
@@ -89,10 +92,18 @@ export default function WorkspaceSidebar() {
         className="workspace-sidebar-brand"
       >
         <span className="workspace-sidebar-brand-icon">
-          <Sparkles size={18} />
+          {company?.logo ? (
+            <img src={company.logo} alt="" />
+          ) : (
+            getCompanyInitials(company, "PF")
+          )}
         </span>
-        <span>
-          ProjectFlow
+        <span className="workspace-sidebar-brand-copy">
+          <strong>{companyName}</strong>
+          <small>
+            <Sparkles size={12} />
+            ProjectFlow
+          </small>
         </span>
       </a>
 

@@ -2,13 +2,18 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, FileSpreadsheet, Upload, XCircle } from "lucide-react";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../../utils/company";
 import "./BulkInviteModal.css";
 
 export default function BulkInviteModal({ open, onClose, onSuccess }) {
+  const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const company = getCompanyFromUser(user);
+  const companyName = getCompanyName(company, user?.organization || "your company");
 
   if (!open) return null;
 
@@ -37,7 +42,11 @@ export default function BulkInviteModal({ open, onClose, onSuccess }) {
       await onSuccess();
       console.log("Bulk invite refresh completed");
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to upload CSV.");
+      setError(
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        "Failed to upload CSV."
+      );
     } finally {
       setLoading(false);
     }
@@ -58,6 +67,26 @@ export default function BulkInviteModal({ open, onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleUpload} className="bulk-form">
+          <div className="bulk-company-card">
+            <span className="bulk-company-logo">
+              {company?.logo ? (
+                <img src={company.logo} alt="" />
+              ) : (
+                getCompanyInitials(company, "PF")
+              )}
+            </span>
+            <span>
+              <small>Invitations for</small>
+              <strong>{companyName}</strong>
+            </span>
+          </div>
+
+          {user?.role === "manager" && (
+            <p className="bulk-note">
+              Managers can bulk invite employees only.
+            </p>
+          )}
+
           <label className={`bulk-dropzone ${file ? "bulk-dropzone--selected" : ""}`}>
             <span className="bulk-dropzone-icon">
               <FileSpreadsheet size={24} />
@@ -146,5 +175,3 @@ export default function BulkInviteModal({ open, onClose, onSuccess }) {
     document.body
   );
 }
-
-

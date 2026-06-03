@@ -9,6 +9,7 @@ import Homepage from "../pages/home/Homepage";
 import AuthPage from "../pages/auth/AuthPage";
 import Dashboard from "../pages/dashboard/Dashboard";
 import Members from "../pages/Members/Members";
+import MemberDetails from "../pages/team/MemberDetails";
 import Projects from "../pages/projects/Projects";
 import ProjectDetails from "../pages/projects/ProjectDetails";
 import Tasks from "../pages/tasks/Tasks";
@@ -16,6 +17,7 @@ import TaskDetails from "../pages/tasks/TaskDetails";
 import ActivityPage from "../pages/activity/ActivityPage";
 import IssuesPage from "../pages/issues/IssuesPage";
 import ProfilePage from "../pages/profile/ProfilePage";
+import SettingsPage from "../pages/settings/SettingsPage";
 import Notifications from "../pages/notifications/Notifications";
 import WorkspaceHome from "../pages/workspace/WorkspaceHome";
 import WorkspaceTasks from "../pages/workspace/WorkspaceTasks";
@@ -31,15 +33,6 @@ import { AuthProvider } from "../context/AuthContext";
 import MyTasks from "../pages/workspace/MyTasks";
 import ChatPage from "../pages/chat/ChatPage";
 import Reports from "../pages/Reports/Reports";
-
-
-function PlaceholderPage({ title }) {
-  return (
-    <div style={{ padding: "2rem" }}>
-      <h1>{title}</h1>
-    </div>
-  );
-}
 
 function App() {
   return (
@@ -93,8 +86,9 @@ function App() {
             <Route path="activity" element={<ActivityPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="team" element={<Members />} />
+            <Route path="team/:memberId" element={<MemberDetails />} />
             <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+            <Route path="settings" element={<SettingsPage />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

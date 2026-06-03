@@ -34,6 +34,73 @@ class Organization(models.Model):
         max_length=20
     )
 
+    logo = models.ImageField(
+        upload_to="organization_logos/",
+        null=True,
+        blank=True
+    )
+
+    industry = models.CharField(
+        max_length=255,
+        blank=True,
+        default=""
+    )
+
+    website = models.URLField(
+        blank=True,
+        default=""
+    )
+
+    address = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    city = models.CharField(
+        max_length=120,
+        blank=True,
+        default=""
+    )
+
+    state = models.CharField(
+        max_length=120,
+        blank=True,
+        default=""
+    )
+
+    country = models.CharField(
+        max_length=120,
+        blank=True,
+        default=""
+    )
+
+    timezone = models.CharField(
+        max_length=80,
+        blank=True,
+        default="UTC"
+    )
+
+    working_days = models.CharField(
+        max_length=120,
+        blank=True,
+        default="Monday-Friday"
+    )
+
+    working_hours_start = models.TimeField(
+        null=True,
+        blank=True
+    )
+
+    working_hours_end = models.TimeField(
+        null=True,
+        blank=True
+    )
+
+    description = models.TextField(
+        blank=True,
+        default=""
+    )
+
     is_active = models.BooleanField(
         default=True
     )

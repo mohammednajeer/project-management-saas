@@ -7,12 +7,16 @@ import {
   FolderOpen,
   CheckSquare,
   Users,
+  UserCheck,
+  Mail,
+  ShieldCheck,
   Clock,
   AlertTriangle,
   Sparkles,
   ArrowRight,
   Zap,
   Target,
+  Globe2,
 } from "lucide-react";
 import {
   AreaChart,
@@ -32,6 +36,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import useNotifications from "../../context/useNotifications";
+import { formatWebsite, getCompanyInitials, getCompanyName } from "../../utils/company";
 import "./Dashboard.css";
 
 /* ─── STATIC FALLBACK DATA ──────────────────────────────────────────── */
@@ -87,6 +92,9 @@ const CARD_GRADIENTS = [
   { from: "#22c55e", to: "#4ade80", icon: CheckSquare,   shadow: "rgba(34,197,94,0.35)"   },
   { from: "#06b6d4", to: "#22d3ee", icon: Users,         shadow: "rgba(6,182,212,0.35)"   },
   { from: "#ef4444", to: "#f87171", icon: AlertTriangle, shadow: "rgba(239,68,68,0.35)"   },
+  { from: "#4f6df5", to: "#818cf8", icon: ShieldCheck,   shadow: "rgba(79,109,245,0.35)"  },
+  { from: "#10b981", to: "#34d399", icon: UserCheck,     shadow: "rgba(16,185,129,0.35)"  },
+  { from: "#f59e0b", to: "#fbbf24", icon: Mail,          shadow: "rgba(245,158,11,0.35)"  },
 ];
 
 /* ─── HELPERS ─────────────────────────────────────────────────────────── */
@@ -169,6 +177,49 @@ function GlassTooltip({ active, payload, label }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function CompanyCard({ company, loading }) {
+  const companyName = getCompanyName(company, "Company profile");
+
+  return (
+    <section className="db-company-card">
+      <div className="db-company-main">
+        <div className="db-company-logo">
+          {company?.logo ? (
+            <img src={company.logo} alt="" />
+          ) : (
+            getCompanyInitials(company, "PF")
+          )}
+        </div>
+        <div className="db-company-copy">
+          <span className="db-company-kicker">Company</span>
+          <h2>{loading ? "Loading company..." : companyName}</h2>
+          <p>{company?.industry || "Industry not set"}</p>
+        </div>
+      </div>
+
+      <div className="db-company-meta">
+        <a
+          href={company?.website || undefined}
+          target="_blank"
+          rel="noreferrer"
+          className={!company?.website ? "is-disabled" : ""}
+        >
+          <Globe2 size={15} />
+          {formatWebsite(company?.website)}
+        </a>
+        <span>
+          <Users size={15} />
+          {loading ? "..." : `${company?.employee_count ?? 0} employees`}
+        </span>
+        <span>
+          <ShieldCheck size={15} />
+          {loading ? "..." : `${company?.manager_count ?? 0} managers`}
+        </span>
+      </div>
+    </section>
   );
 }
 
@@ -280,8 +331,11 @@ export default function Dashboard() {
     { value: overview?.total_tasks     ?? 0, label: "Total Tasks",      trend: "All tracked tasks",    up: true,  ...CARD_GRADIENTS[1] },
     { value: overview?.pending_tasks   ?? 0, label: "Pending",          trend: "Awaiting completion",  up: false, ...CARD_GRADIENTS[2] },
     { value: overview?.completed_tasks ?? 0, label: "Completed",        trend: "Finished tasks",       up: true,  ...CARD_GRADIENTS[3] },
-    { value: overview?.team_members    ?? 0, label: "Team Members",     trend: "Active members",       up: null,  ...CARD_GRADIENTS[4] },
+    { value: overview?.team_members    ?? 0, label: "Total Members",    trend: "Active members",       up: null,  ...CARD_GRADIENTS[4] },
     { value: overview?.overdue_tasks   ?? 0, label: "Overdue",          trend: "Need attention",       up: false, ...CARD_GRADIENTS[5] },
+    { value: overview?.managers        ?? 0, label: "Managers",         trend: "Team leads",           up: null,  ...CARD_GRADIENTS[6] },
+    { value: overview?.employees       ?? 0, label: "Employees",        trend: "Contributors",         up: null,  ...CARD_GRADIENTS[7] },
+    { value: overview?.pending_invitations ?? 0, label: "Pending Invitations", trend: "Awaiting signup", up: null, ...CARD_GRADIENTS[8] },
   ], [overview]);
 
   const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
@@ -320,11 +374,15 @@ export default function Dashboard() {
     },
   ], [openTasks, overview]);
 
-  const quickActions = [
+  const quickActions = useMemo(() => [
     { label: "Create project", copy: "Start a new workspace initiative", to: "/dashboard/projects" },
-    { label: "Invite member", copy: "Add teammates to the organization", to: "/dashboard/team" },
+    user?.role === "admin"
+      ? { label: "Invite member", copy: "Add teammates to the organization", to: "/dashboard/team" }
+      : null,
     { label: "Review issues", copy: "Triage reported blockers", to: "/dashboard/issues" },
-  ];
+  ].filter(Boolean), [user?.role]);
+
+  const company = overview?.company || user?.company_information;
 
   /* ── Render ── */
   return (
@@ -460,6 +518,8 @@ export default function Dashboard() {
         </div>
 
         {/* ── MID ROW: Area Chart + Activity Feed ── */}
+        <CompanyCard company={company} loading={loading} />
+
         <div className="db-command-grid">
           <section className="db-card db-focus-card">
             <div className="db-card-header">

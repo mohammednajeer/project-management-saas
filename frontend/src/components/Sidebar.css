@@ -83,23 +83,51 @@
   align-items: center;
   justify-content: center;
   color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
   box-shadow: 0 4px 12px rgba(99, 84, 196, 0.35);
+  overflow: hidden;
 }
 
-.sb-brand-name {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #1a1040;
-  letter-spacing: -0.3px;
+.sb-brand-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sb-brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
   opacity: 0;
   transform: translateX(-8px);
   transition: opacity 0.2s ease 0.08s, transform 0.2s ease 0.08s;
   pointer-events: none;
 }
 
-.sb--open .sb-brand-name {
+.sb--open .sb-brand-copy {
   opacity: 1;
   transform: translateX(0);
+}
+
+.sb-company-name {
+  max-width: 160px;
+  overflow: hidden;
+  color: #1a1040;
+  font-size: 0.85rem;
+  font-weight: 850;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+}
+
+.sb-product-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #9ca3af;
+  font-size: 0.68rem;
+  font-weight: 800;
 }
 
 /* ── NAV ────────────────────────────────────────────────────────────── */
@@ -386,7 +414,7 @@
 
   .sb-item::before { display: none; }
 
-  .sb--open .sb-brand-name,
+  .sb--open .sb-brand-copy,
   .sb--open .sb-item-label,
   .sb--open .sb-item-count,
   .sb--open .sb-profile-info {

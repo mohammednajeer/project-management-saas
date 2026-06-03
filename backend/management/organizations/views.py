@@ -6,7 +6,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User
 from accounts.auth_cookies import set_auth_cookies
 from accounts.permissions import IsManagerOrAdmin
-from .serializers import RegisterOrganizationSerializer
+from permissions.classes import IsAdmin
+from .serializers import (
+    OrganizationProfileSerializer,
+    RegisterOrganizationSerializer,
+)
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -72,3 +76,41 @@ class OrganizationTeamView(APIView):
         ]
 
         return Response(data)
+
+
+class OrganizationProfileView(APIView):
+    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+
+    def get(self, request):
+        serializer = OrganizationProfileSerializer(
+            request.user.organization
+        )
+
+        return Response(serializer.data)
+
+    def patch(self, request):
+        admin_permission = IsAdmin()
+
+        if not admin_permission.has_permission(request, self):
+            return Response(
+                {
+                    "message":
+                        "Only admins can update company profile"
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = OrganizationProfileSerializer(
+            request.user.organization,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )

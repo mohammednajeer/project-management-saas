@@ -1,5 +1,9 @@
 from django.urls import path
-from .views import RegisterOrganizationView,OrganizationTeamView
+from .views import (
+    OrganizationProfileView,
+    RegisterOrganizationView,
+    OrganizationTeamView,
+)
 
 urlpatterns = [
 
@@ -7,6 +11,10 @@ urlpatterns = [
     path(
         "team/",
         OrganizationTeamView.as_view()
+    ),
+    path(
+        "profile/",
+        OrganizationProfileView.as_view()
     ),
     
 ]

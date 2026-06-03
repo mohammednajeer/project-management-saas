@@ -2,8 +2,10 @@ from rest_framework import serializers
 from .models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from organizations.serializers import OrganizationProfileSerializer
 
 class UserSerializer(serializers.ModelSerializer):
+    company_information = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -21,7 +23,14 @@ class UserSerializer(serializers.ModelSerializer):
             "phone_number",
             "work_status",
             "joined_at",
+            "company_information",
         ]
+
+    def get_company_information(self, obj):
+        if not obj.organization:
+            return None
+
+        return OrganizationProfileSerializer(obj.organization).data
 
 class LoginSerializer(serializers.Serializer):
 

@@ -143,6 +143,70 @@
   margin-bottom: 4px;
 }
 
+.wh-company-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: min(100%, 460px);
+  margin: 4px 0 6px;
+  padding: 7px 10px 7px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,0.74);
+  color: var(--text-2);
+  box-shadow: var(--shadow-xs);
+}
+
+.wh-company-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), #3b82f6);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.wh-company-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wh-company-chip span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wh-company-chip small {
+  color: var(--text-3);
+  font-size: 0.58rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.wh-company-chip strong {
+  max-width: 300px;
+  overflow: hidden;
+  color: var(--text-1);
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wh-company-chip svg {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+
 .wh-hero-dot {
   width: 6px;
   height: 6px;

@@ -2,8 +2,11 @@ import { BriefcaseBusiness, Building2, CalendarDays, Mail } from "lucide-react";
 import WorkStatusBadge from "./WorkStatusBadge";
 import ProfileAvatarUpload from "./ProfileAvatarUpload";
 import { formatProfileDate, formatRole } from "./profileUtils";
+import { getCompanyName } from "../../utils/company";
 
 export default function ProfileHeader({ profile, onMessage }) {
+  const company = profile?.company_information;
+
   return (
     <section className="profile-hero">
       <ProfileAvatarUpload profile={profile} onMessage={onMessage} />
@@ -23,7 +26,7 @@ export default function ProfileHeader({ profile, onMessage }) {
           </span>
           <span>
             <Building2 size={15} />
-            {profile?.department || profile?.organization || "Add department"}
+            {profile?.department || getCompanyName(company, profile?.organization || "Add department")}
           </span>
           <span>
             <Mail size={15} />

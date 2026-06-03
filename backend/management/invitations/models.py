@@ -7,6 +7,7 @@ from datetime import timedelta
 class Invitation(models.Model):
 
     ROLE_CHOICES = [
+        ("admin", "Admin"),
         ("manager", "Manager"),
         ("employee", "Employee"),
     ]

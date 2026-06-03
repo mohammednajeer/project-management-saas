@@ -18,6 +18,7 @@ import { NavLink } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import useNotifications from "../context/useNotifications";
+import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../utils/company";
 import "./Sidebar.css";
 
 const navItems = [
@@ -37,6 +38,8 @@ export default function Sidebar() {
   const [expanded, setExpanded] = useState(false);
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
+  const company = getCompanyFromUser(user);
+  const companyName = getCompanyName(company, user?.organization || "ProjectFlow");
 
   const initials = (user?.name || user?.email || "U")
     .split(" ")
@@ -63,9 +66,19 @@ export default function Sidebar() {
       {/* Brand */}
       <div className="sb-brand">
         <div className="sb-brand-icon">
-          <Zap size={16} />
+          {company?.logo ? (
+            <img src={company.logo} alt="" />
+          ) : (
+            getCompanyInitials(company, "PF")
+          )}
         </div>
-        <span className="sb-brand-name">ProjectFlow</span>
+        <div className="sb-brand-copy">
+          <span className="sb-company-name">{companyName}</span>
+          <span className="sb-product-name">
+            <Zap size={12} />
+            ProjectFlow
+          </span>
+        </div>
       </div>
 
       {/* Nav */}

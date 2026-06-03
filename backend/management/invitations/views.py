@@ -1,29 +1,30 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 import csv
 from io import TextIOWrapper
-from .tasks import send_invitation_email
+
+from django.db.models import Q
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from accounts.models import User
-from accounts.permissions import IsManagerOrAdmin
+from activities.models import Activity
+from activities.serializers import ActivitySerializer
+from issues.models import Issue
+from permissions.classes import IsAdmin, IsAdminOrManager
+from projects.models import Project
+from tasks.models import Task
+from organizations.serializers import OrganizationProfileSerializer
+
 from .models import Invitation
 from .serializers import CreateInvitationSerializer
-
+from .tasks import send_invitation_email
 
 
 class CreateInvitationView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAdminOrManager]
 
     def post(self, request):
-
-        if request.user.role != "admin":
-            return Response(
-                {"message": "Only admin can invite users"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         serializer = CreateInvitationSerializer(
             data=request.data,
             context={"request": request}
@@ -31,23 +32,20 @@ class CreateInvitationView(APIView):
 
         if serializer.is_valid():
             invitation = serializer.save()
+            company_name = request.user.organization.name
 
-            
             invite_link = f"http://localhost:5173/signup?token={invitation.token}"
 
-            
             send_invitation_email.delay(
-                subject="You're invited to join ProjectFlow",
-
+                subject=f"You're invited to join {company_name} on ProjectFlow",
                 message=f"""
-                You have been invited to join a workspace.
+                You have been invited to join {company_name} on ProjectFlow.
 
                 Click the link below to join:
                 {invite_link}
 
                 This link will expire in 2 days.
                 """,
-
                 recipient=invitation.email,
             )
 
@@ -59,13 +57,9 @@ class CreateInvitationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-
 class ValidateInvitationView(APIView):
 
     def get(self, request):
-
         token = request.query_params.get("token")
 
         try:
@@ -76,14 +70,12 @@ class ValidateInvitationView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # check used
         if invitation.is_used:
             return Response(
                 {"message": "Invite already used"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # check expired
         if invitation.expires_at < timezone.now():
             return Response(
                 {"message": "Invite expired"},
@@ -93,22 +85,17 @@ class ValidateInvitationView(APIView):
         return Response({
             "valid": True,
             "email": invitation.email,
-            "role": invitation.role
+            "role": invitation.role,
+            "company": OrganizationProfileSerializer(
+                invitation.organization
+            ).data,
         })
- 
- 
+
 
 class BulkInviteView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAdminOrManager]
 
     def post(self, request):
-
-        if request.user.role != "admin":
-            return Response(
-                {"message": "Only admin can invite users"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         file = request.FILES.get("file")
 
         if not file:
@@ -123,6 +110,7 @@ class BulkInviteView(APIView):
         success_count = 0
         errors = []
         invite_links = []
+
         for row in reader:
             email = row.get("email")
             role = row.get("role", "employee")
@@ -130,44 +118,48 @@ class BulkInviteView(APIView):
             if not email:
                 errors.append(f"Row {reader.line_num}: Missing email")
                 continue
-            if role not in ["employee", "manager"]:
-                errors.append(
-                    f"Row {reader.line_num}: Invalid role"
-                )
+
+            if role not in ["admin", "employee", "manager"]:
+                errors.append(f"Row {reader.line_num}: Invalid role")
                 continue
+
+            if request.user.role == "manager" and role != "employee":
+                return Response(
+                    {
+                        "message":
+                            "Managers can invite employees only."
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
             invitation = Invitation.objects.create(
                 email=email,
                 role=role,
                 organization=request.user.organization
             )
+
             invite_link = f"http://localhost:5173/signup?token={invitation.token}"
+            company_name = request.user.organization.name
             invite_links.append({
                 "email": email,
                 "link": invite_link
             })
 
-            
-            print(f"\nINVITE URL FOR {email}")
-            print(invite_link)
-            print("--------------------------------")
-
             try:
-
                 send_invitation_email.delay(
-                    subject="You're invited to ProjectFlow",
-
+                    subject=f"You're invited to join {company_name} on ProjectFlow",
                     message=f"""
+                    You have been invited to join {company_name} on ProjectFlow.
+
                     Join using this link:
                     {invite_link}
                     """,
-
                     recipient=email,
                 )
 
                 success_count += 1
 
             except Exception as e:
-
                 errors.append(f"{email}: {str(e)}")
 
         return Response({
@@ -176,16 +168,20 @@ class BulkInviteView(APIView):
             "errors": errors,
             "invite_links": invite_links,
         })
-        
+
 
 class TeamListView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAdminOrManager]
 
     def get(self, request):
         org = request.user.organization
 
-        # ✅ ACTIVE USERS
-        users = User.objects.filter(organization=org)
+        users = User.objects.filter(
+            organization=org
+        ).order_by(
+            "name",
+            "email"
+        )
 
         user_data = [
             {
@@ -195,15 +191,21 @@ class TeamListView(APIView):
                 "role": user.role,
                 "status": "active",
                 "created_at": user.created_at,
-                "joined_at": user.created_at,
+                "joined_at": user.joined_at,
+                "profile_picture": (
+                    user.profile_picture.url
+                    if user.profile_picture
+                    else None
+                ),
             }
             for user in users
         ]
 
-        # ✅ INVITED USERS
         invites = Invitation.objects.filter(
             organization=org,
             is_used=False
+        ).order_by(
+            "-created_at"
         )
 
         invite_data = [
@@ -215,24 +217,107 @@ class TeamListView(APIView):
                 "status": "invited",
                 "created_at": inv.created_at,
                 "joined_at": None,
+                "profile_picture": None,
             }
             for inv in invites
         ]
 
         return Response(user_data + invite_data)
-    
 
-class ResendInvitationView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
-    def post(self, request, invitation_id):
+class TeamMemberDetailView(APIView):
+    permission_classes = [IsAdminOrManager]
 
-        if request.user.role != "admin":
+    def get(self, request, user_id):
+        organization = request.user.organization
+
+        try:
+            member = User.objects.get(
+                id=user_id,
+                organization=organization
+            )
+        except User.DoesNotExist:
             return Response(
-                {"message": "Only admin allowed"},
-                status=status.HTTP_403_FORBIDDEN
+                {"message": "Member not found"},
+                status=status.HTTP_404_NOT_FOUND
             )
 
+        today = timezone.localdate()
+
+        assigned_tasks = Task.objects.filter(
+            project__organization=organization,
+            assigned_to=member
+        ).distinct()
+
+        active_tasks = assigned_tasks.exclude(
+            status="done"
+        ).count()
+
+        completed_tasks = assigned_tasks.filter(
+            status="done"
+        ).count()
+
+        overdue_tasks = assigned_tasks.filter(
+            due_date__lt=today
+        ).exclude(
+            status="done"
+        ).count()
+
+        issues_assigned = Issue.objects.filter(
+            project__organization=organization,
+            assigned_to=member
+        ).count()
+
+        projects_involved = Project.objects.filter(
+            organization=organization
+        ).filter(
+            Q(members=member) |
+            Q(created_by=member) |
+            Q(tasks__assigned_to=member) |
+            Q(tasks__subtasks__assigned_to=member) |
+            Q(issues__assigned_to=member) |
+            Q(issues__raised_by=member)
+        ).distinct().count()
+
+        activities = Activity.objects.filter(
+            organization=organization,
+            user=member
+        ).select_related(
+            "user",
+            "project",
+            "task",
+            "subtask"
+        )[:10]
+
+        serializer = ActivitySerializer(
+            activities,
+            many=True
+        )
+
+        return Response({
+            "id": str(member.id),
+            "name": member.name,
+            "email": member.email,
+            "role": member.role,
+            "profile_picture": (
+                member.profile_picture.url
+                if member.profile_picture
+                else None
+            ),
+            "joined_at": member.joined_at,
+            "active_tasks": active_tasks,
+            "completed_tasks": completed_tasks,
+            "overdue_tasks": overdue_tasks,
+            "issues_assigned": issues_assigned,
+            "projects_involved": projects_involved,
+            "recent_activity": serializer.data,
+        })
+
+
+class ResendInvitationView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, invitation_id):
         try:
             invitation = Invitation.objects.get(
                 id=invitation_id,
@@ -251,37 +336,25 @@ class ResendInvitationView(APIView):
         )
 
         send_invitation_email.delay(
-            subject="Reminder: Join ProjectFlow",
-
+            subject=f"Reminder: Join {request.user.organization.name} on ProjectFlow",
             message=f"""
-            You were invited to join ProjectFlow.
+            You were invited to join {request.user.organization.name} on ProjectFlow.
 
             Join here:
             {invite_link}
             """,
-
             recipient=invitation.email,
         )
-
-        print("\nRESENT INVITE")
-        print(invite_link)
 
         return Response({
             "message": "Invitation resent successfully"
         })
-    
+
 
 class CancelInvitationView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAdmin]
 
     def delete(self, request, invitation_id):
-
-        if request.user.role != "admin":
-            return Response(
-                {"message": "Only admin allowed"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         try:
             invitation = Invitation.objects.get(
                 id=invitation_id,
@@ -299,21 +372,12 @@ class CancelInvitationView(APIView):
         return Response({
             "message": "Invitation cancelled"
         })
-    
-
 
 
 class RemoveMemberView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAdmin]
 
     def delete(self, request, user_id):
-
-        if request.user.role != "admin":
-            return Response(
-                {"message": "Only admin allowed"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         try:
             member = User.objects.get(
                 id=user_id,
@@ -325,14 +389,12 @@ class RemoveMemberView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        
         if member.id == request.user.id:
             return Response(
                 {"message": "You cannot remove yourself"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        
         if member.role == "admin":
             return Response(
                 {"message": "Cannot remove another admin"},
@@ -344,18 +406,12 @@ class RemoveMemberView(APIView):
         return Response({
             "message": "Member removed successfully"
         })
-    
+
+
 class ChangeRoleView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAdmin]
 
     def patch(self, request, user_id):
-
-        if request.user.role != "admin":
-            return Response(
-                {"message": "Only admin allowed"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         role = request.data.get("role")
 
         if role not in ["manager", "employee"]:
@@ -375,14 +431,12 @@ class ChangeRoleView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # ❌ prevent changing self
         if member.id == request.user.id:
             return Response(
                 {"message": "You cannot change your own role"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # ❌ prevent changing admin
         if member.role == "admin":
             return Response(
                 {"message": "Cannot change admin role"},
@@ -395,4 +449,3 @@ class ChangeRoleView(APIView):
         return Response({
             "message": "Role updated successfully"
         })
-    

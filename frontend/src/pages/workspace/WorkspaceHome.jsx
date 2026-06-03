@@ -16,9 +16,12 @@ import {
   LayoutList,
   MessageSquarePlus,
   Sparkles,
+  Building2,
 } from "lucide-react";
 
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../../utils/company";
 import "./WorkspaceHome.css";
 
 /* ─── CONSTANTS ──────────────────────────────────────────────────────────── */
@@ -186,6 +189,7 @@ function ActionBtn({ icon: Icon, iconBg, iconColor, label, onClick }) {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function WorkspaceHome() {
+  const { user } = useAuth();
   const [dashboard, setDashboard] = useState(initialDashboard);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
@@ -295,6 +299,8 @@ export default function WorkspaceHome() {
   /* Focus summary for hero */
   const overdueCount  = dashboard.overdue_subtasks;
   const pendingCount  = dashboard.pending_subtasks;
+  const company = getCompanyFromUser(user);
+  const companyName = getCompanyName(company, user?.organization || "Your company");
 
   /* ── Guards ───────────────────────────────────────────────────────────── */
   if (loading) return <LoadingSkeleton />;
@@ -325,6 +331,20 @@ export default function WorkspaceHome() {
           <div className="wh-hero-eyebrow">
             <span className="wh-hero-dot" />
             Workspace — Productivity OS
+          </div>
+          <div className="wh-company-chip">
+            <span className="wh-company-logo">
+              {company?.logo ? (
+                <img src={company.logo} alt="" />
+              ) : (
+                getCompanyInitials(company, "PF")
+              )}
+            </span>
+            <span>
+              <small>Organization</small>
+              <strong>{companyName}</strong>
+            </span>
+            <Building2 size={15} />
           </div>
           <h1 className="wh-hero-greeting">
             {greeting()}, let's get to work 👋

@@ -4,7 +4,9 @@ import {
   Home,
   Activity,
   AlertCircle,
+  CalendarDays,
   LogOut,
+  PlaneTakeoff,
   Sparkles,
   UserRound,
   MessageCircle,
@@ -35,6 +37,16 @@ const workspaceNavItems = [
     icon: AlertCircle,
     label: "Issues",
     to: "/workspace/issues",
+  },
+  {
+    icon: PlaneTakeoff,
+    label: "Leave",
+    to: "/workspace/leave",
+  },
+  {
+    icon: CalendarDays,
+    label: "Calendar",
+    to: "/workspace/calendar",
   },
   {
     icon: Activity,

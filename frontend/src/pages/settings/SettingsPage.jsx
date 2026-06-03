@@ -2,14 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Building2,
+  CheckSquare,
   CheckCircle2,
   Clock3,
+  FolderOpen,
   Globe2,
   ImagePlus,
   Loader2,
   MapPin,
+  PlaneTakeoff,
   Phone,
   Save,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -86,6 +91,45 @@ export default function SettingsPage() {
   const addressSummary = useMemo(() => (
     [profile.city, profile.state, profile.country].filter(Boolean).join(", ") || "Location not set"
   ), [profile.city, profile.country, profile.state]);
+
+  const companyStats = useMemo(() => [
+    {
+      label: "Total Members",
+      value: profile.total_members ?? 0,
+      icon: Users,
+      tone: "blue",
+    },
+    {
+      label: "Managers",
+      value: profile.manager_count ?? 0,
+      icon: ShieldCheck,
+      tone: "purple",
+    },
+    {
+      label: "Employees",
+      value: profile.employee_count ?? 0,
+      icon: Users,
+      tone: "green",
+    },
+    {
+      label: "Active Projects",
+      value: profile.active_projects ?? 0,
+      icon: FolderOpen,
+      tone: "orange",
+    },
+    {
+      label: "Active Tasks",
+      value: profile.active_tasks ?? 0,
+      icon: CheckSquare,
+      tone: "cyan",
+    },
+    {
+      label: "Pending Leave Requests",
+      value: profile.pending_leave_requests ?? 0,
+      icon: PlaneTakeoff,
+      tone: "red",
+    },
+  ], [profile]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -208,15 +252,19 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="settings-counts">
-              <div>
-                <strong>{profile.employee_count || 0}</strong>
-                <span>Employees</span>
-              </div>
-              <div>
-                <strong>{profile.manager_count || 0}</strong>
-                <span>Managers</span>
-              </div>
+            <div className="settings-org-stats">
+              {companyStats.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <div key={stat.label} className={`settings-org-stat settings-org-stat--${stat.tone}`}>
+                    <span className="settings-org-stat-icon">
+                      <Icon size={16} />
+                    </span>
+                    <strong>{stat.value}</strong>
+                    <span>{stat.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </section>
 

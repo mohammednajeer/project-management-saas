@@ -233,12 +233,23 @@
   color: #7c3aed;
 }
 
+.md-metric--cyan .md-metric-icon {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.md-metric--teal .md-metric-icon {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
 .md-metric-value {
-  font-size: 1.75rem;
+  font-size: clamp(1rem, 2.1vw, 1.75rem);
   line-height: 1;
   font-weight: 850;
   color: #111827;
   margin-bottom: 0.25rem;
+  overflow-wrap: anywhere;
 }
 
 .md-metric-label {

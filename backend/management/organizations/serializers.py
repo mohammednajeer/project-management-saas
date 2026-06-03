@@ -7,6 +7,10 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source="name")
     employee_count = serializers.SerializerMethodField()
     manager_count = serializers.SerializerMethodField()
+    total_members = serializers.SerializerMethodField()
+    active_projects = serializers.SerializerMethodField()
+    active_tasks = serializers.SerializerMethodField()
+    pending_leave_requests = serializers.SerializerMethodField()
 
     class Meta:
         model = Organization
@@ -28,6 +32,10 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
             "description",
             "employee_count",
             "manager_count",
+            "total_members",
+            "active_projects",
+            "active_tasks",
+            "pending_leave_requests",
             "created_at",
             "updated_at",
         ]
@@ -35,6 +43,10 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
             "id",
             "employee_count",
             "manager_count",
+            "total_members",
+            "active_projects",
+            "active_tasks",
+            "pending_leave_requests",
             "created_at",
             "updated_at",
         ]
@@ -62,6 +74,27 @@ class OrganizationProfileSerializer(serializers.ModelSerializer):
 
     def get_manager_count(self, obj):
         return obj.users.filter(role="manager").count()
+
+    def get_total_members(self, obj):
+        return obj.users.count()
+
+    def get_active_projects(self, obj):
+        return obj.projects.filter(status="active").count()
+
+    def get_active_tasks(self, obj):
+        from tasks.models import Task
+
+        return Task.objects.filter(
+            project__organization=obj,
+            status__in=[
+                "todo",
+                "in_progress",
+                "review",
+            ]
+        ).count()
+
+    def get_pending_leave_requests(self, obj):
+        return obj.leave_requests.filter(status="pending").count()
 
 
 class RegisterOrganizationSerializer(serializers.ModelSerializer):

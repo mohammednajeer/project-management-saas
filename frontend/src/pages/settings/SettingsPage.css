@@ -161,32 +161,76 @@
   color: var(--settings-brand);
 }
 
-.settings-counts {
+.settings-org-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   width: 100%;
   margin-top: 4px;
 }
 
-.settings-counts div {
+.settings-org-stat {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
   padding: 12px;
   border: 1px solid rgba(108, 83, 179, 0.1);
   border-radius: 14px;
-  background: rgba(108, 83, 179, 0.06);
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
 }
 
-.settings-counts strong {
+.settings-org-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+}
+
+.settings-org-stat--blue .settings-org-stat-icon {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.settings-org-stat--purple .settings-org-stat-icon {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.settings-org-stat--green .settings-org-stat-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.settings-org-stat--orange .settings-org-stat-icon {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.settings-org-stat--cyan .settings-org-stat-icon {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.settings-org-stat--red .settings-org-stat-icon {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.settings-org-stat strong {
   display: block;
   font-size: 1.35rem;
   line-height: 1;
 }
 
-.settings-counts span {
+.settings-org-stat > span:last-child {
   color: var(--settings-text-3);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
+  line-height: 1.3;
 }
 
 .settings-form-card {
@@ -357,7 +401,7 @@
   }
 
   .settings-form-grid,
-  .settings-counts {
+  .settings-org-stats {
     grid-template-columns: 1fr;
   }
 

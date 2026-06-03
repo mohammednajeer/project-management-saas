@@ -64,6 +64,8 @@ INSTALLED_APPS = [
     "chat",
     "reports",
     "permissions",
+    "leave_management",
+    "company_calendar",
     
 ]
 

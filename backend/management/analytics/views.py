@@ -11,6 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import IsManagerOrAdmin
 from accounts.models import User
 from invitations.models import Invitation
+from leave_management.models import LeaveRequest
+from company_calendar.models import CalendarEvent
 
 from projects.models import Project
 from tasks.models import Task
@@ -74,6 +76,43 @@ class DashboardOverviewView(APIView):
             organization=organization,
             is_used=False
         ).count()
+
+        pending_leave_requests = LeaveRequest.objects.filter(
+            organization=organization,
+            status="pending"
+        ).count()
+
+        upcoming_holidays = CalendarEvent.objects.filter(
+            organization=organization,
+            event_type="holiday",
+            end_date__gte=today
+        ).order_by("start_date")[:5]
+
+        upcoming_company_events = CalendarEvent.objects.filter(
+            organization=organization,
+            event_type="company_event",
+            end_date__gte=today
+        ).order_by("start_date")[:5]
+
+        people_currently_on_leave = LeaveRequest.objects.filter(
+            organization=organization,
+            status="approved",
+            start_date__lte=today,
+            end_date__gte=today
+        ).select_related("employee").order_by("end_date")[:8]
+
+        task_deadlines = Task.objects.filter(
+            project__organization=organization,
+            due_date__gte=today
+        ).exclude(
+            status="done"
+        ).select_related("project").order_by("due_date")[:5]
+
+        calendar_deadlines = CalendarEvent.objects.filter(
+            organization=organization,
+            event_type__in=["deadline", "milestone"],
+            end_date__gte=today
+        ).order_by("start_date")[:5]
 
         recent_tasks = Task.objects.filter(
             project__organization=organization
@@ -191,8 +230,61 @@ class DashboardOverviewView(APIView):
             "managers": managers,
             "employees": employees,
             "pending_invitations": pending_invitations,
+            "pending_leave_requests": pending_leave_requests,
             "recent_tasks": recent_tasks_data,
             "weekly_task_activity": weekly_task_activity,
             "task_status_distribution": task_status_distribution,
             "team_workload": team_workload,
+            "upcoming_holidays": [
+                {
+                    "id": str(event.id),
+                    "title": event.title,
+                    "start_date": event.start_date,
+                    "end_date": event.end_date,
+                }
+                for event in upcoming_holidays
+            ],
+            "upcoming_company_events": [
+                {
+                    "id": str(event.id),
+                    "title": event.title,
+                    "start_date": event.start_date,
+                    "end_date": event.end_date,
+                }
+                for event in upcoming_company_events
+            ],
+            "people_currently_on_leave": [
+                {
+                    "id": str(leave.id),
+                    "employee": {
+                        "id": str(leave.employee.id),
+                        "name": leave.employee.name,
+                        "email": leave.employee.email,
+                    },
+                    "leave_type": leave.leave_type,
+                    "leave_type_label": leave.get_leave_type_display(),
+                    "start_date": leave.start_date,
+                    "end_date": leave.end_date,
+                }
+                for leave in people_currently_on_leave
+            ],
+            "upcoming_deadlines": [
+                {
+                    "id": str(task.id),
+                    "title": task.title,
+                    "source": "task",
+                    "project": task.project.name,
+                    "date": task.due_date,
+                }
+                for task in task_deadlines
+            ] + [
+                {
+                    "id": str(event.id),
+                    "title": event.title,
+                    "source": event.event_type,
+                    "project": None,
+                    "date": event.start_date,
+                }
+                for event in calendar_deadlines
+            ],
         })

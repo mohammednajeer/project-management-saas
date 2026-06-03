@@ -11,6 +11,10 @@ class Notification(models.Model):
         ("task_assigned", "Task Assigned"),
         ("subtask_assigned", "Subtask Assigned"),
         ("comment_added", "Comment Added"),
+        ("leave_requested", "Leave Requested"),
+        ("leave_approved", "Leave Approved"),
+        ("leave_rejected", "Leave Rejected"),
+        ("company_event_created", "Company Event Created"),
     ]
 
     id = models.UUIDField(

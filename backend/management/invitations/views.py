@@ -15,6 +15,7 @@ from permissions.classes import IsAdmin, IsAdminOrManager
 from projects.models import Project
 from tasks.models import Task
 from organizations.serializers import OrganizationProfileSerializer
+from leave_management.models import LeaveRequest
 
 from .models import Invitation
 from .serializers import CreateInvitationSerializer
@@ -279,6 +280,24 @@ class TeamMemberDetailView(APIView):
             Q(issues__raised_by=member)
         ).distinct().count()
 
+        leave_requests_taken = LeaveRequest.objects.filter(
+            organization=organization,
+            employee=member
+        ).count()
+
+        approved_leaves = LeaveRequest.objects.filter(
+            organization=organization,
+            employee=member,
+            status="approved"
+        ).count()
+
+        upcoming_leave = LeaveRequest.objects.filter(
+            organization=organization,
+            employee=member,
+            status="approved",
+            end_date__gte=today
+        ).order_by("start_date").first()
+
         activities = Activity.objects.filter(
             organization=organization,
             user=member
@@ -310,6 +329,19 @@ class TeamMemberDetailView(APIView):
             "overdue_tasks": overdue_tasks,
             "issues_assigned": issues_assigned,
             "projects_involved": projects_involved,
+            "leave_requests_taken": leave_requests_taken,
+            "approved_leaves": approved_leaves,
+            "upcoming_leave": (
+                {
+                    "id": str(upcoming_leave.id),
+                    "leave_type": upcoming_leave.leave_type,
+                    "leave_type_label": upcoming_leave.get_leave_type_display(),
+                    "start_date": upcoming_leave.start_date,
+                    "end_date": upcoming_leave.end_date,
+                }
+                if upcoming_leave
+                else None
+            ),
             "recent_activity": serializer.data,
         })
 

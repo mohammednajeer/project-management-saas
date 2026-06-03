@@ -7,8 +7,10 @@ import {
   AlertCircle,
   Users,
   BarChart2,
-  Settings,
+  Building2,
+  CalendarDays,
   LogOut,
+  PlaneTakeoff,
   Zap,
   Bell,
   UserRound,
@@ -29,8 +31,10 @@ const navItems = [
   { icon: AlertCircle,     label: "Issues",        to: "/dashboard/issues"                  },
   { icon: Users,           label: "Team",          to: "/dashboard/team"                    },
   { icon: BarChart2,       label: "Reports",       to: "/dashboard/reports"                 },
+  { icon: PlaneTakeoff,    label: "Leave",         to: "/dashboard/leave"                   },
+  { icon: CalendarDays,    label: "Calendar",      to: "/dashboard/calendar"                },
   { icon: Bell,            label: "Notifications", to: "/dashboard/notifications"           },
-  { icon: Settings,        label: "Settings",      to: "/dashboard/settings"                },
+  { icon: Building2,       label: "Organization",  to: "/dashboard/organization"            },
   { icon: MessageCircle,   label: "Chat",          to: "/dashboard/chat"                    },
 ];
 

@@ -17,6 +17,10 @@ import {
   Zap,
   Target,
   Globe2,
+  CalendarDays,
+  PlaneTakeoff,
+  Flag,
+  ClipboardList,
 } from "lucide-react";
 import {
   AreaChart,
@@ -100,6 +104,11 @@ const CARD_GRADIENTS = [
 /* ─── HELPERS ─────────────────────────────────────────────────────────── */
 const formatLabel  = (v) => !v ? "None" : String(v).replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 const formatDueDate = (v) => { if (!v) return "No date"; const d = new Date(v); return isNaN(d) ? v : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+const formatDashboardDateRange = (startValue, endValue) => {
+  const start = formatDueDate(startValue);
+  const end = formatDueDate(endValue || startValue);
+  return start === end ? start : `${start} - ${end}`;
+};
 const formatRelativeTime = (v) => {
   if (!v) return "";
   const diff = Date.now() - new Date(v).getTime();
@@ -218,6 +227,49 @@ function CompanyCard({ company, loading }) {
           <ShieldCheck size={15} />
           {loading ? "..." : `${company?.manager_count ?? 0} managers`}
         </span>
+      </div>
+    </section>
+  );
+}
+
+function DashboardWidget({ title, subtitle, icon: Icon, items, emptyText, to, loading, tone, count }) {
+  return (
+    <section className={`db-card db-calendar-widget db-calendar-widget--${tone}`}>
+      <div className="db-card-header">
+        <div>
+          <h2 className="db-card-title">{title}</h2>
+          <p className="db-card-sub">{subtitle}</p>
+        </div>
+        <div className="db-widget-icon">
+          <Icon size={16} />
+        </div>
+      </div>
+
+      {typeof count === "number" && (
+        <div className="db-widget-count">
+          <strong>{loading ? "..." : count}</strong>
+          <span>{title}</span>
+        </div>
+      )}
+
+      <div className="db-widget-list">
+        {loading ? (
+          [1, 2, 3].map((item) => <div key={item} className="db-widget-skeleton" />)
+        ) : items.length === 0 ? (
+          <div className="db-widget-empty">{emptyText}</div>
+        ) : (
+          items.map((item) => (
+            <Link key={item.id} to={item.to || to} className="db-widget-item">
+              <span className="db-widget-dot" />
+              <span className="db-widget-copy">
+                <strong>{item.title}</strong>
+                <small>{item.meta}</small>
+                {item.extra && <em>{item.extra}</em>}
+              </span>
+              <ArrowRight size={13} />
+            </Link>
+          ))
+        )}
       </div>
     </section>
   );
@@ -383,6 +435,113 @@ export default function Dashboard() {
   ].filter(Boolean), [user?.role]);
 
   const company = overview?.company || user?.company_information;
+  const canReviewLeave = ["admin", "manager"].includes(user?.role);
+
+  const upcomingHolidays = useMemo(() => (
+    Array.isArray(overview?.upcoming_holidays) ? overview.upcoming_holidays : []
+  ), [overview]);
+
+  const upcomingCompanyEvents = useMemo(() => (
+    Array.isArray(overview?.upcoming_company_events) ? overview.upcoming_company_events : []
+  ), [overview]);
+
+  const peopleOnLeave = useMemo(() => (
+    Array.isArray(overview?.people_currently_on_leave) ? overview.people_currently_on_leave : []
+  ), [overview]);
+
+  const upcomingDeadlines = useMemo(() => (
+    Array.isArray(overview?.upcoming_deadlines)
+      ? [...overview.upcoming_deadlines].sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5)
+      : []
+  ), [overview]);
+
+  const calendarWidgets = useMemo(() => {
+    const widgets = [
+      {
+        title: "Upcoming Holidays",
+        subtitle: "Company holidays",
+        icon: CalendarDays,
+        tone: "blue",
+        to: "/dashboard/calendar",
+        emptyText: "No upcoming holidays.",
+        items: upcomingHolidays.map((event) => ({
+          id: `holiday-${event.id}`,
+          title: event.title,
+          meta: formatDashboardDateRange(event.start_date, event.end_date),
+        })),
+      },
+      {
+        title: "Upcoming Company Events",
+        subtitle: "Shared organization events",
+        icon: Sparkles,
+        tone: "purple",
+        to: "/dashboard/calendar",
+        emptyText: "No upcoming company events.",
+        items: upcomingCompanyEvents.map((event) => ({
+          id: `event-${event.id}`,
+          title: event.title,
+          meta: formatDashboardDateRange(event.start_date, event.end_date),
+        })),
+      },
+      {
+        title: "People On Leave",
+        subtitle: "Approved leave today",
+        icon: PlaneTakeoff,
+        tone: "green",
+        to: "/dashboard/leave",
+        emptyText: "Nobody is on leave today.",
+        items: peopleOnLeave.map((leave) => ({
+          id: `leave-${leave.id}`,
+          title: leave.employee?.name || leave.employee?.email || "Team member",
+          meta: leave.leave_type_label || "Approved leave",
+          extra: formatDashboardDateRange(leave.start_date, leave.end_date),
+        })),
+      },
+      {
+        title: "Upcoming Deadlines",
+        subtitle: "Tasks, deadlines, and milestones",
+        icon: Flag,
+        tone: "orange",
+        to: "/dashboard/calendar",
+        emptyText: "No upcoming deadlines.",
+        items: upcomingDeadlines.map((item) => ({
+          id: `deadline-${item.source}-${item.id}`,
+          title: item.title,
+          meta: formatDueDate(item.date),
+          extra: item.project || formatLabel(item.source),
+          to: item.source === "task" ? "/dashboard/tasks" : "/dashboard/calendar",
+        })),
+      },
+    ];
+
+    if (canReviewLeave) {
+      widgets.push({
+        title: "Pending Leave Requests",
+        subtitle: "Awaiting review",
+        icon: ClipboardList,
+        tone: "red",
+        to: "/dashboard/leave",
+        count: overview?.pending_leave_requests ?? 0,
+        emptyText: "No pending leave requests.",
+        items: (overview?.pending_leave_requests ?? 0) > 0
+          ? [{
+              id: "pending-leave",
+              title: pluralize(overview.pending_leave_requests, "request"),
+              meta: "Review approval queue",
+            }]
+          : [],
+      });
+    }
+
+    return widgets;
+  }, [
+    canReviewLeave,
+    overview,
+    peopleOnLeave,
+    upcomingCompanyEvents,
+    upcomingDeadlines,
+    upcomingHolidays,
+  ]);
 
   /* ── Render ── */
   return (
@@ -519,6 +678,16 @@ export default function Dashboard() {
 
         {/* ── MID ROW: Area Chart + Activity Feed ── */}
         <CompanyCard company={company} loading={loading} />
+
+        <div className="db-calendar-widget-grid">
+          {calendarWidgets.map((widget) => (
+            <DashboardWidget
+              key={widget.title}
+              {...widget}
+              loading={loading}
+            />
+          ))}
+        </div>
 
         <div className="db-command-grid">
           <section className="db-card db-focus-card">

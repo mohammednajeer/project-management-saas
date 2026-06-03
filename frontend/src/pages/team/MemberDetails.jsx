@@ -4,11 +4,13 @@ import {
   AlertTriangle,
   ArrowLeft,
   Briefcase,
+  CalendarCheck,
   CheckCircle2,
   Clock3,
   FolderOpen,
   Globe2,
   Mail,
+  PlaneTakeoff,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
@@ -53,6 +55,12 @@ const formatDate = (value) => {
     day: "numeric",
     year: "numeric",
   });
+};
+
+const formatCompactRange = (startValue, endValue) => {
+  const start = formatDate(startValue);
+  const end = formatDate(endValue || startValue);
+  return start === end ? start : `${start} - ${end}`;
 };
 
 const formatRelativeTime = (value) => {
@@ -169,6 +177,29 @@ export default function MemberDetails() {
       label: "Projects involved",
       value: member?.projects_involved ?? 0,
       tone: "purple",
+    },
+    {
+      icon: PlaneTakeoff,
+      label: "Leave requests count",
+      value: member?.leave_requests_taken ?? 0,
+      tone: "cyan",
+    },
+    {
+      icon: CalendarCheck,
+      label: "Approved leaves",
+      value: member?.approved_leaves ?? 0,
+      tone: "green",
+    },
+    {
+      icon: Clock3,
+      label: "Upcoming leave",
+      value: member?.upcoming_leave
+        ? formatCompactRange(
+            member.upcoming_leave.start_date,
+            member.upcoming_leave.end_date
+          )
+        : "None",
+      tone: "teal",
     },
   ], [member]);
 

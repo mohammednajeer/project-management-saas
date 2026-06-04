@@ -535,3 +535,79 @@
   .nf-header-right { width: 100%; }
   .nf-mark-all-btn { flex: 1; justify-content: center; }
 }
+
+/* ─── CATEGORY PILLS BAR ─── */
+.nf-category-bar {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 2rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  animation: nf-fadeDown 0.4s 0.08s ease both;
+}
+
+.nf-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.8);
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.nf-category-pill:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-mid);
+}
+
+.nf-category-pill.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+  box-shadow: 0 2px 8px rgba(108,83,179,0.2);
+}
+
+.nf-pill-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: var(--r-full);
+  font-size: 9px;
+  font-weight: 800;
+  background: var(--bg-muted);
+  color: var(--text-3);
+  margin-left: 4px;
+}
+
+.nf-category-pill.active .nf-pill-count {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+/* ─── NEW CATEGORY COLORS ─── */
+/* calendar */
+.nf-icon--calendar   { background: rgba(245,158,11,0.09); color: #F59E0B; }
+.nf-tag--calendar    { background: rgba(245,158,11,0.07); color: #D97706; border-color: rgba(245,158,11,0.18); }
+/* leave */
+.nf-icon--leave      { background: rgba(16,185,129,0.09); color: #10B981; }
+.nf-tag--leave       { background: rgba(16,185,129,0.07); color: #059669; border-color: rgba(16,185,129,0.18); }
+/* milestone */
+.nf-icon--milestone  { background: rgba(139,92,246,0.09); color: #8B5CF6; }
+.nf-tag--milestone   { background: rgba(139,92,246,0.07); color: #7C3AED; border-color: rgba(139,92,246,0.18); }
+/* system */
+.nf-icon--system     { background: rgba(100,116,139,0.09); color: #64748B; }
+.nf-tag--system      { background: rgba(100,116,139,0.07); color: #475569; border-color: rgba(100,116,139,0.18); }
+/* chat */
+.nf-icon--chat       { background: rgba(99,102,241,0.09); color: #6366F1; }
+.nf-tag--chat        { background: rgba(99,102,241,0.07); color: #4F46E5; border-color: rgba(99,102,241,0.18); }

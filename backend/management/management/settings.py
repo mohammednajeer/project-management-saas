@@ -192,6 +192,23 @@ CELERY_ACCEPT_CONTENT = ["json"]
 
 CELERY_TASK_SERIALIZER = "json"
 
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "check-deadlines-daily": {
+        "task": "notifications.tasks.check_deadlines_and_remind",
+        "schedule": crontab(hour=7, minute=0),
+    },
+    "send-daily-digest": {
+        "task": "notifications.tasks.send_daily_digest",
+        "schedule": crontab(hour=8, minute=0),
+    },
+    "send-weekly-summary": {
+        "task": "notifications.tasks.send_weekly_summary",
+        "schedule": crontab(day_of_week="monday", hour=9, minute=0),
+    },
+}
+
 
 AWS_ACCESS_KEY_ID = os.getenv(
     "AWS_ACCESS_KEY_ID"

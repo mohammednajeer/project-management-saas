@@ -150,6 +150,22 @@ export default function NotificationProvider({  children,}) {
 
   }, [fetchNotifications]);
 
+  const markAllAsRead = useCallback(async () => {
+    setNotifications((prev) =>
+      prev.map((item) => ({
+        ...item,
+        is_read: true,
+      }))
+    );
+
+    try {
+      await api.post("/notifications/mark-all-read/");
+    } catch (err) {
+      console.log(err);
+      fetchNotifications();
+    }
+  }, [fetchNotifications]);
+
   const unreadCount =
     useMemo(
       () =>
@@ -168,11 +184,13 @@ export default function NotificationProvider({  children,}) {
         unreadCount,
         fetchNotifications,
         markAsRead,
+        markAllAsRead,
       }),
       [
         fetchNotifications,
         loading,
         markAsRead,
+        markAllAsRead,
         notifications,
         unreadCount,
       ]

@@ -13,12 +13,23 @@ class NotificationListView(APIView):
 
     def get(self, request):
 
-        notifications = Notification.objects.filter(
+        queryset = Notification.objects.filter(
             user=request.user
         ).order_by("-created_at")
 
+        category = request.query_params.get("category")
+        if category:
+            queryset = queryset.filter(category__iexact=category)
+
+        unread = request.query_params.get("unread")
+        if unread is not None:
+            if unread.lower() == "true":
+                queryset = queryset.filter(is_read=False)
+            elif unread.lower() == "false":
+                queryset = queryset.filter(is_read=True)
+
         serializer = NotificationSerializer(
-            notifications,
+            queryset,
             many=True
         )
 
@@ -53,5 +64,23 @@ class NotificationReadView(APIView):
         return Response(
             {
                 "message": "Notification marked as read"
+            }
+        )
+
+
+class NotificationMarkAllReadView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        Notification.objects.filter(
+            user=request.user,
+            is_read=False
+        ).update(is_read=True)
+
+        return Response(
+            {
+                "message": "All notifications marked as read"
             }
         )

@@ -17,6 +17,7 @@ def send_notification_on_create(sender, instance, created, **kwargs):
             "title": instance.title,
             "message": instance.message,
             "type": instance.type,
+            "category": instance.category,
             "created_at": instance.created_at.isoformat(),
             "is_read": instance.is_read,
         },

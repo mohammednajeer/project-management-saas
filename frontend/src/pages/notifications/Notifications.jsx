@@ -11,11 +11,40 @@ import {
   AlertTriangle,
   Sparkles,
   Inbox,
+  Calendar,
+  Plane,
+  Flag,
+  Settings,
 } from "lucide-react";
 import useNotifications from "../../context/useNotifications";
 import "./Notifications.css";
 
-/* ─── TYPE INFERENCE ─────────────────────────────────────────────────────── */
+/* ─── CATEGORY CONSTANTS & META ─────────────────────────────────────────── */
+const CATEGORIES = [
+  { id: "all", label: "All Categories", icon: <Inbox size={12} /> },
+  { id: "task", label: "Task", icon: <ListTodo size={12} /> },
+  { id: "project", label: "Project", icon: <FolderOpen size={12} /> },
+  { id: "issue", label: "Issue", icon: <AlertTriangle size={12} /> },
+  { id: "calendar", label: "Calendar", icon: <Calendar size={12} /> },
+  { id: "leave", label: "Leave", icon: <Plane size={12} /> },
+  { id: "milestone", label: "Milestone", icon: <Flag size={12} /> },
+  { id: "system", label: "System", icon: <Settings size={12} /> },
+  { id: "chat", label: "Chat", icon: <MessageSquare size={12} /> },
+];
+
+const CATEGORY_META = {
+  task:      { icon: <ListTodo size={15} />,      label: "Task",      iconClass: "nf-icon--task",    tagClass: "nf-tag--task" },
+  project:   { icon: <FolderOpen size={15} />,    label: "Project",   iconClass: "nf-icon--project", tagClass: "nf-tag--project" },
+  issue:     { icon: <AlertTriangle size={15} />, label: "Issue",     iconClass: "nf-icon--warning", tagClass: "nf-tag--warning" },
+  calendar:  { icon: <Calendar size={15} />,     label: "Calendar",  iconClass: "nf-icon--calendar", tagClass: "nf-tag--calendar" },
+  leave:     { icon: <Plane size={15} />,         label: "Leave",     iconClass: "nf-icon--leave",   tagClass: "nf-tag--leave" },
+  milestone: { icon: <Flag size={15} />,          label: "Milestone", iconClass: "nf-icon--milestone", tagClass: "nf-tag--milestone" },
+  system:    { icon: <Settings size={15} />,      label: "System",    iconClass: "nf-icon--system",  tagClass: "nf-tag--system" },
+  chat:      { icon: <MessageSquare size={15} />, label: "Chat",      iconClass: "nf-icon--chat",    tagClass: "nf-tag--chat" },
+  default:   { icon: <Bell size={15} />,          label: "Info",      iconClass: "nf-icon--default", tagClass: "nf-tag--default" },
+};
+
+/* ─── TYPE INFERENCE (LEGACY SUPPORT) ────────────────────────────────────── */
 function inferType(notification) {
   const text = `${notification.title || ""} ${notification.message || ""}`.toLowerCase();
   if (text.includes("comment"))                                   return "comment";
@@ -89,6 +118,7 @@ function Skeleton() {
 export default function Notifications() {
   const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
   const [activeTab, setActiveTab] = useState("all");
+  const [activeCategory, setActiveCategory] = useState("all");
 
   /* Counts */
   const unreadCount = useMemo(
@@ -98,10 +128,15 @@ export default function Notifications() {
 
   /* Filtered list */
   const filtered = useMemo(() => {
-    if (activeTab === "all")    return notifications;
-    if (activeTab === "unread") return notifications.filter(n => !n.is_read);
-    return notifications;
-  }, [notifications, activeTab]);
+    let result = notifications;
+    if (activeTab === "unread") {
+      result = result.filter(n => !n.is_read);
+    }
+    if (activeCategory !== "all") {
+      result = result.filter(n => (n.category || "").toLowerCase() === activeCategory.toLowerCase());
+    }
+    return result;
+  }, [notifications, activeTab, activeCategory]);
 
   /* Grouped by date */
   const grouped = useMemo(() => {
@@ -193,6 +228,28 @@ export default function Notifications() {
         </div>
       </div>
 
+      {/* ── CATEGORY PILLS ────────────────────────────────────────────── */}
+      <div className="nf-category-bar">
+        {CATEGORIES.map((cat) => {
+          const count = cat.id === "all"
+            ? notifications.length
+            : notifications.filter(n => (n.category || "").toLowerCase() === cat.id).length;
+
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              className={`nf-category-pill ${activeCategory === cat.id ? "active" : ""}`}
+              onClick={() => setActiveCategory(cat.id)}
+            >
+              {cat.icon}
+              {cat.label}
+              {count > 0 && <span className="nf-pill-count">{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── NOTIFICATION LIST ──────────────────────────────────────────── */}
       <div className="nf-list">
         {filtered.length === 0 ? (
@@ -201,8 +258,8 @@ export default function Notifications() {
             <h3>{activeTab === "unread" ? "All caught up!" : "No notifications yet"}</h3>
             <p>
               {activeTab === "unread"
-                ? "You have no unread notifications. Check back later."
-                : "New activity across your projects will appear here."}
+                ? "You have no unread notifications in this category. Check back later."
+                : "New activity in this category will appear here."}
             </p>
           </div>
         ) : (
@@ -216,8 +273,7 @@ export default function Notifications() {
               {/* Cards grouped in one panel */}
               <div className="nf-group-cards">
                 {items.map(notification => {
-                  const type = inferType(notification);
-                  const meta = TYPE_META[type] || TYPE_META.default;
+                  const meta = (notification.category && CATEGORY_META[notification.category.toLowerCase()]) || TYPE_META[inferType(notification)] || TYPE_META.default;
 
                   return (
                     <div
@@ -244,7 +300,9 @@ export default function Notifications() {
                           </time>
                         </div>
 
-                        <p className="nf-card-message">{notification.message}</p>
+                        <p className="nf-card-message" style={{ whiteSpace: "pre-line" }}>
+                          {notification.message}
+                        </p>
 
                         <div className="nf-card-footer">
                           <span className={`nf-type-tag ${meta.tagClass}`}>

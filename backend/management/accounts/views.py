@@ -183,7 +183,16 @@ class InviteRegisterView(APIView):
             organization=invitation.organization
         )
 
-        
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=user,
+            title="Welcome to the organization",
+            message="Welcome to the organization. Please complete your profile details under settings, view your assigned tasks on the tasks board, and explore the calendar for upcoming team events.",
+            type="welcome_employee",
+            category="system"
+        )
+
+        # 
         invitation.is_used = True
         invitation.save()
 

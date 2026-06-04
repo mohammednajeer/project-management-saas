@@ -42,6 +42,8 @@ class Project(models.Model):
 
     due_date = models.DateField(null=True, blank=True)
 
+    is_overdue = models.BooleanField(default=False)
+
     organization = models.ForeignKey(
         "organizations.Organization",
         on_delete=models.CASCADE,
@@ -113,6 +115,8 @@ class ProjectMilestone(models.Model):
     description = models.TextField(blank=True, null=True)
 
     target_date = models.DateField()
+
+    is_overdue = models.BooleanField(default=False)
 
     status = models.CharField(
         max_length=20,

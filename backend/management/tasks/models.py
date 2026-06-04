@@ -67,6 +67,10 @@ class Task(models.Model):
         blank=True
     )
 
+    is_overdue = models.BooleanField(
+        default=False
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )
@@ -131,8 +135,12 @@ class SubTask(models.Model):
     )
 
     due_date = models.DateField(
-        null=True,
-        blank=True
+         null=True,
+         blank=True
+     )
+
+    is_overdue = models.BooleanField(
+        default=False
     )
 
     created_at = models.DateTimeField(

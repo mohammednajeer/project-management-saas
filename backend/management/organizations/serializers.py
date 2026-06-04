@@ -182,12 +182,21 @@ class RegisterOrganizationSerializer(serializers.ModelSerializer):
         )
 
         
-        User.objects.create_user(
+        user = User.objects.create_user(
             email=validated_data["email"],
             password=password,
             name=admin_name,
             role="admin",
             organization=organization
+        )
+
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=user,
+            title="Welcome to ProjectFlow",
+            message="Welcome to ProjectFlow. Get started by creating a new project or inviting team members.",
+            type="welcome_organization_creator",
+            category="system"
         )
 
         return organization

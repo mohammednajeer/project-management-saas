@@ -2,220 +2,349 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+
 from accounts.models import User
 from accounts.permissions import IsManagerOrAdmin
-from .models import Project
-from .serializers import ProjectSerializer
+
+from .health import refresh_project_health
+from .models import Project, ProjectMilestone
+from .permissions import (
+    IsAuthenticatedOrgMember,
+    user_can_access_project,
+    user_can_manage_projects,
+)
+from analytics.workload import get_project_team_workload, get_thresholds
+
+from .serializers import ProjectMilestoneSerializer, ProjectSerializer
+
+
+def get_org_projects_queryset(user):
+    queryset = Project.objects.filter(
+        organization=user.organization
+    ).select_related(
+        "project_lead",
+        "created_by",
+    ).prefetch_related(
+        "members",
+        "milestones",
+    )
+    if not user_can_manage_projects(user):
+        queryset = queryset.filter(members=user).distinct()
+    return queryset
+
+
+def get_project_or_404(user, project_id):
+    try:
+        project = get_org_projects_queryset(user).get(id=project_id)
+    except Project.DoesNotExist:
+        return None
+    if not user_can_access_project(user, project):
+        return None
+    return project
 
 
 class ProjectListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def get(self, request):
-
-        projects = Project.objects.filter(
-            organization=request.user.organization
-        )
+        projects = get_org_projects_queryset(request.user)
+        for project in projects:
+            refresh_project_health(project)
 
         serializer = ProjectSerializer(
             projects,
-            many=True
+            many=True,
+            context={"request": request},
         )
-
         return Response(serializer.data)
 
     def post(self, request):
+        if not user_can_manage_projects(request.user):
+            return Response(
+                {"message": "Only admins and managers can create projects."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         serializer = ProjectSerializer(
-            data=request.data
+            data=request.data,
+            context={"request": request},
         )
 
         if serializer.is_valid():
-
             project = serializer.save(
                 organization=request.user.organization,
-                created_by=request.user
+                created_by=request.user,
             )
-
             project.members.add(request.user)
-
+            if not project.project_lead:
+                project.project_lead = request.user
+                project.save(update_fields=["project_lead"])
+            refresh_project_health(project)
             return Response(
-                ProjectSerializer(project).data,
-                status=status.HTTP_201_CREATED
+                ProjectSerializer(project, context={"request": request}).data,
+                status=status.HTTP_201_CREATED,
             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# 
 
 class ProjectDetailView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
-
-    def get_object(self, project_id, user):
-
-        try:
-
-            return Project.objects.get(
-                id=project_id,
-                organization=user.organization
-            )
-
-        except Project.DoesNotExist:
-
-            return None
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def get(self, request, project_id):
-
-        project = self.get_object(
-            project_id,
-            request.user
-        )
-
+        project = get_project_or_404(request.user, project_id)
         if not project:
-
             return Response(
                 {"message": "Project not found"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
+        refresh_project_health(project)
         serializer = ProjectSerializer(
-            project
+            project,
+            context={
+                "request": request,
+                "include_milestones": True,
+            },
         )
-
         return Response(serializer.data)
 
     def patch(self, request, project_id):
-
-        project = self.get_object(
-            project_id,
-            request.user
-        )
-
+        project = get_project_or_404(request.user, project_id)
         if not project:
-
             return Response(
                 {"message": "Project not found"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not user_can_manage_projects(request.user):
+            return Response(
+                {"message": "Only admins and managers can update projects."},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         serializer = ProjectSerializer(
             project,
             data=request.data,
-            partial=True
+            partial=True,
+            context={"request": request},
         )
 
         if serializer.is_valid():
-
             serializer.save()
-
+            refresh_project_health(project)
             return Response(
-                serializer.data
+                ProjectSerializer(
+                    project,
+                    context={
+                        "request": request,
+                        "include_milestones": True,
+                    },
+                ).data
             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, project_id):
+        if not user_can_manage_projects(request.user):
+            return Response(
+                {"message": "Only admins and managers can delete projects."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
-        project = self.get_object(
-            project_id,
-            request.user
-        )
-
+        project = get_project_or_404(request.user, project_id)
         if not project:
-
             return Response(
                 {"message": "Project not found"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         project.delete()
+        return Response({"message": "Project deleted"})
 
-        return Response(
-            {
-                "message":
-                "Project deleted"
-            }
-        )
-    
 
 class ProjectMembersView(APIView):
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def post(self, request, project_id):
-
         try:
-
             project = Project.objects.get(
                 id=project_id,
-                organization=request.user.organization
+                organization=request.user.organization,
             )
-
         except Project.DoesNotExist:
-
             return Response(
                 {"message": "Project not found"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        user_ids = request.data.get(
-            "members",
-            []
-        )
-
+        user_ids = request.data.get("members", [])
         users = User.objects.filter(
             id__in=user_ids,
-            organization=request.user.organization
+            organization=request.user.organization,
         )
-
         project.members.add(*users)
-
+        refresh_project_health(project)
         return Response(
-            ProjectSerializer(project).data
+            ProjectSerializer(project, context={"request": request}).data
         )
 
     def delete(self, request, project_id):
-
         try:
-
             project = Project.objects.get(
                 id=project_id,
-                organization=request.user.organization
+                organization=request.user.organization,
             )
-
         except Project.DoesNotExist:
-
             return Response(
                 {"message": "Project not found"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        user_id = request.data.get(
-            "user_id"
-        )
-
+        user_id = request.data.get("user_id")
         try:
-
             user = User.objects.get(
                 id=user_id,
-                organization=request.user.organization
+                organization=request.user.organization,
             )
-
         except User.DoesNotExist:
-
             return Response(
                 {"message": "User not found"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         project.members.remove(user)
+        refresh_project_health(project)
+        return Response(
+            ProjectSerializer(project, context={"request": request}).data
+        )
+
+
+class ProjectMilestoneListCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
+
+    def get(self, request, project_id):
+        project = get_project_or_404(request.user, project_id)
+        if not project:
+            return Response(
+                {"message": "Project not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        milestones = project.milestones.all()
+        serializer = ProjectMilestoneSerializer(milestones, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, project_id):
+        if not user_can_manage_projects(request.user):
+            return Response(
+                {"message": "Only admins and managers can create milestones."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        project = get_project_or_404(request.user, project_id)
+        if not project:
+            return Response(
+                {"message": "Project not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = ProjectMilestoneSerializer(data=request.data)
+        if serializer.is_valid():
+            milestone = serializer.save(project=project)
+            refresh_project_health(project)
+            return Response(
+                ProjectMilestoneSerializer(milestone).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProjectMilestoneDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
+
+    def get_milestone(self, request, project_id, milestone_id):
+        project = get_project_or_404(request.user, project_id)
+        if not project:
+            return None, None
+        try:
+            milestone = project.milestones.get(id=milestone_id)
+        except ProjectMilestone.DoesNotExist:
+            return project, None
+        return project, milestone
+
+    def patch(self, request, project_id, milestone_id):
+        if not user_can_manage_projects(request.user):
+            return Response(
+                {"message": "Only admins and managers can update milestones."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        project, milestone = self.get_milestone(request, project_id, milestone_id)
+        if not project:
+            return Response(
+                {"message": "Project not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if not milestone:
+            return Response(
+                {"message": "Milestone not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = ProjectMilestoneSerializer(
+            milestone,
+            data=request.data,
+            partial=True,
+        )
+        if serializer.is_valid():
+            serializer.save()
+            refresh_project_health(project)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, project_id, milestone_id):
+        if not user_can_manage_projects(request.user):
+            return Response(
+                {"message": "Only admins and managers can delete milestones."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        project, milestone = self.get_milestone(request, project_id, milestone_id)
+        if not project:
+            return Response(
+                {"message": "Project not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if not milestone:
+            return Response(
+                {"message": "Milestone not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        milestone.delete()
+        refresh_project_health(project)
+        return Response({"message": "Milestone deleted"})
+
+
+class ProjectTeamWorkloadView(APIView):
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
+
+    def get(self, request, project_id):
+        project = get_project_or_404(request.user, project_id)
+        if not project:
+            return Response(
+                {"message": "Project not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        members = get_project_team_workload(project)
+        if request.user.role == "employee":
+            members = [row for row in members if row["id"] == str(request.user.id)]
 
         return Response(
-            ProjectSerializer(project).data
+            {
+                "thresholds": get_thresholds(),
+                "members": members,
+            }
         )

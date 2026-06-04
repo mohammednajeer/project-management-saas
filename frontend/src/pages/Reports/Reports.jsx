@@ -146,6 +146,23 @@ const lineData =
 const barData =
   data?.project_breakdown || [];
 
+const taskDistribution =
+  data?.task_distribution || [];
+
+const workloadDistribution =
+  data?.workload_distribution || [];
+
+const overloadedEmployees =
+  data?.overloaded_employees || [];
+
+const workloadBarData = overloadedEmployees.map((row) => ({
+  name: row.name?.split(" ")[0] || row.name,
+  active: row.active_tasks ?? 0,
+  overdue: row.overdue_tasks ?? 0,
+}));
+
+const WORKLOAD_CHART_COLORS = ["#3b82f6", "#22c55e", "#ef4444", "#8b5cf6"];
+
 const cr =
   data?.completion_rate ?? 0; // Fallback representation default
 
@@ -196,6 +213,100 @@ const cr =
         <MetricCard loading={loading} icon={TrendingUp} label="Discovered Exceptions" value={fmt(data?.total_issues || 0)} trend="flat" trendValue="0.0%" accent="rose" />
         <MetricCard loading={loading} icon={Users} label="Authenticated Operatives" value={fmt(data?.active_members || 0)} trend="up" trendValue="+2 New" accent="teal" />
         <MetricCard loading={loading} icon={Sliders} label="SLA Attainment" value={pct(cr)} trend="up" trendValue="Target Max" accent="indigo" />
+      </section>
+
+      {/* ── WORKLOAD ANALYTICS ── */}
+      <section className="an-metrics-layout-grid an-workload-charts-grid">
+        <div className="an-card-panel">
+          <div className="an-panel-header">
+            <div>
+              <h3 className="an-panel-title">Task Distribution</h3>
+              <p className="an-panel-desc">Active, completed, overdue, and open issues</p>
+            </div>
+          </div>
+          <div className="an-chart-container an-chart-container--compact">
+            {loading ? (
+              <Skeleton className="an-sk-chart" />
+            ) : taskDistribution.length === 0 ? (
+              <div className="an-chart-empty-fallback">No task distribution data.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={taskDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                  >
+                    {taskDistribution.map((_, i) => (
+                      <Cell key={i} fill={WORKLOAD_CHART_COLORS[i % WORKLOAD_CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="an-card-panel">
+          <div className="an-panel-header">
+            <div>
+              <h3 className="an-panel-title">Workload Distribution</h3>
+              <p className="an-panel-desc">Underutilized, balanced, and overloaded employees</p>
+            </div>
+          </div>
+          <div className="an-chart-container an-chart-container--compact">
+            {loading ? (
+              <Skeleton className="an-sk-chart" />
+            ) : workloadDistribution.length === 0 ? (
+              <div className="an-chart-empty-fallback">No workload distribution data.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={workloadDistribution} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,16,64,0.06)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar dataKey="value" name="Employees" fill="#6354c4" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="an-card-panel">
+          <div className="an-panel-header">
+            <div>
+              <h3 className="an-panel-title">Overloaded Employees</h3>
+              <p className="an-panel-desc">Team members above workload threshold</p>
+            </div>
+          </div>
+          <div className="an-chart-container an-chart-container--compact">
+            {loading ? (
+              <Skeleton className="an-sk-chart" />
+            ) : workloadBarData.length === 0 ? (
+              <div className="an-chart-empty-fallback">No overloaded employees.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={workloadBarData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,16,64,0.06)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar dataKey="active" name="Active" fill="#6354c4" radius={[4, 4, 0, 0]} maxBarSize={22} />
+                  <Bar dataKey="overdue" name="Overdue" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={22} />
+                  <Legend />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* ── CORE DATASCAPE VISUALIZATION REGION ── */}

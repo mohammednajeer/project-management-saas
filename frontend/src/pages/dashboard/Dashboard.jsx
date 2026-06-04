@@ -21,7 +21,10 @@ import {
   PlaneTakeoff,
   Flag,
   ClipboardList,
+  CheckCircle2,
 } from "lucide-react";
+import { getHealthStyle } from "../projects/projectUtils";
+import { getWorkloadStyle } from "../projects/workloadUtils";
 import {
   AreaChart,
   Area,
@@ -350,10 +353,30 @@ export default function Dashboard() {
     return STATUS_DISTRIBUTION_CONFIG.map(item => ({ name: item.name, value: counts[item.key], color: item.color }));
   }, [overview, rawRecentTasks]);
 
+  const teamWorkloadMembers = useMemo(() => {
+    if (Array.isArray(overview?.team_workload_members)) {
+      return overview.team_workload_members;
+    }
+    if (Array.isArray(overview?.team_workload) && overview.team_workload[0]?.workload_status) {
+      return overview.team_workload;
+    }
+    if (overview?.my_workload) {
+      return [overview.my_workload];
+    }
+    return [];
+  }, [overview]);
+
   const teamWorkload = useMemo(() => {
+    if (teamWorkloadMembers.length) {
+      return teamWorkloadMembers.map((item, i) => ({
+        name: item.name || "Member",
+        tasks: Number(item.active_tasks ?? item.tasks ?? 0),
+        color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+      }));
+    }
     if (Array.isArray(overview?.team_workload)) {
       return overview.team_workload.map((item, i) => ({
-        name:  item.name || "Unassigned",
+        name: item.name || "Unassigned",
         tasks: Number(item.tasks ?? item.count ?? 0),
         color: AVATAR_COLORS[i % AVATAR_COLORS.length],
       }));
@@ -361,9 +384,24 @@ export default function Dashboard() {
     const acc = {};
     rawRecentTasks.forEach(t => { const n = getAssigneeName(t); acc[n] = (acc[n] || 0) + 1; });
     return Object.entries(acc).map(([name, tasks], i) => ({ name, tasks, color: AVATAR_COLORS[i % AVATAR_COLORS.length] }));
-  }, [overview, rawRecentTasks]);
+  }, [overview, rawRecentTasks, teamWorkloadMembers]);
+
+  const projectSummaries = useMemo(
+    () => (Array.isArray(overview?.project_summaries) ? overview.project_summaries : []),
+    [overview]
+  );
 
   const projectProgress = useMemo(() => {
+    if (projectSummaries.length) {
+      return projectSummaries.map((p, i) => ({
+        id: p.id,
+        name: p.name,
+        pct: p.milestone_progress ?? 0,
+        health: p.health_label,
+        lead: p.project_lead?.name,
+        color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+      }));
+    }
     const projects = {};
     rawRecentTasks.forEach(t => {
       const name = getProjectName(t);
@@ -373,10 +411,63 @@ export default function Dashboard() {
     });
     return Object.entries(projects).map(([name, d], i) => ({
       name,
-      pct:   d.total > 0 ? Math.round((d.done / d.total) * 100) : 0,
+      pct: d.total > 0 ? Math.round((d.done / d.total) * 100) : 0,
       color: AVATAR_COLORS[i % AVATAR_COLORS.length],
     }));
-  }, [rawRecentTasks]);
+  }, [projectSummaries, rawRecentTasks]);
+
+  const canViewProjectWidgets = user?.role === "admin" || user?.role === "manager";
+
+  const projectWidgets = useMemo(() => {
+    if (!canViewProjectWidgets) return [];
+    return [
+      {
+        title: "Projects At Risk",
+        subtitle: "Needs immediate attention",
+        icon: AlertTriangle,
+        tone: "red",
+        to: "/dashboard/projects",
+        emptyText: "No projects at risk.",
+        items: (overview?.projects_at_risk || []).map((p) => ({
+          id: p.id,
+          title: p.name,
+          meta: p.health_label || "At Risk",
+          extra: p.project_lead?.name ? `Lead: ${p.project_lead.name}` : "No lead assigned",
+          to: `/dashboard/projects/${p.id}`,
+        })),
+      },
+      {
+        title: "Upcoming Milestones",
+        subtitle: "Next project milestones",
+        icon: Target,
+        tone: "purple",
+        to: "/dashboard/projects",
+        emptyText: "No upcoming milestones.",
+        items: (overview?.upcoming_milestones || []).map((m) => ({
+          id: m.id,
+          title: m.title,
+          meta: formatDueDate(m.target_date),
+          extra: m.project_name,
+          to: `/dashboard/projects/${m.project_id}`,
+        })),
+      },
+      {
+        title: "Completed Milestones",
+        subtitle: "Recently finished milestones",
+        icon: CheckCircle2,
+        tone: "green",
+        to: "/dashboard/projects",
+        emptyText: "No completed milestones yet.",
+        items: (overview?.completed_milestones || []).map((m) => ({
+          id: m.id,
+          title: m.title,
+          meta: formatDueDate(m.target_date),
+          extra: m.project_name,
+          to: `/dashboard/projects/${m.project_id}`,
+        })),
+      },
+    ];
+  }, [canViewProjectWidgets, overview]);
 
   const statCards = useMemo(() => [
     { value: overview?.total_projects  ?? 0, label: "Total Projects",  trend: "Workspace projects",   up: true,  ...CARD_GRADIENTS[0] },
@@ -689,6 +780,78 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {projectWidgets.length > 0 && (
+          <div className="db-calendar-widget-grid">
+            {projectWidgets.map((widget) => (
+              <DashboardWidget
+                key={widget.title}
+                {...widget}
+                loading={loading}
+              />
+            ))}
+          </div>
+        )}
+
+        <section className="db-card db-team-workload-widget">
+          <div className="db-card-header">
+            <div>
+              <h2 className="db-card-title">Team Workload</h2>
+              <p className="db-card-sub">
+                {user?.role === "employee"
+                  ? "Your current assignment load"
+                  : "Assignment distribution across the organization"}
+              </p>
+            </div>
+            <Users size={16} className="db-card-icon-accent" />
+          </div>
+          <div className="db-workload-table-wrap">
+            <table className="db-workload-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Assigned</th>
+                  <th>Completed</th>
+                  <th>Overdue</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  [1, 2, 3].map((i) => (
+                    <tr key={i}>
+                      <td colSpan={5}><div className="db-table-skeleton" /></td>
+                    </tr>
+                  ))
+                ) : teamWorkloadMembers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="db-table-empty">No workload data available</td>
+                  </tr>
+                ) : (
+                  teamWorkloadMembers.map((member) => {
+                    const ws = getWorkloadStyle(member.workload_status);
+                    return (
+                      <tr key={member.id || member.name}>
+                        <td className="db-workload-name">{member.name}</td>
+                        <td>{member.active_tasks ?? member.assigned_tasks ?? 0}</td>
+                        <td>{member.completed_tasks ?? 0}</td>
+                        <td>{member.overdue_tasks ?? 0}</td>
+                        <td>
+                          <span
+                            className="db-workload-status"
+                            style={{ background: ws.bg, color: ws.color }}
+                          >
+                            {member.workload_label || "Balanced"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <div className="db-command-grid">
           <section className="db-card db-focus-card">
             <div className="db-card-header">
@@ -891,20 +1054,41 @@ export default function Dashboard() {
               {projectProgress.length === 0 ? (
                 <div className="db-feed-empty"><p>No project data yet</p></div>
               ) : (
-                projectProgress.map(p => (
-                  <div key={p.name} className="db-progress-item">
-                    <div className="db-progress-meta">
-                      <span className="db-progress-name">{p.name}</span>
-                      <span className="db-progress-pct" style={{ color: p.color }}>{p.pct}%</span>
+                projectProgress.map(p => {
+                  const healthStyle = getHealthStyle(p.health);
+                  const row = (
+                    <div className="db-progress-item">
+                      <div className="db-progress-meta">
+                        <span className="db-progress-name">
+                          {p.name}
+                          {p.health && (
+                            <em
+                              className="db-progress-health"
+                              style={{ color: healthStyle.color, background: healthStyle.bg }}
+                            >
+                              {p.health}
+                            </em>
+                          )}
+                        </span>
+                        <span className="db-progress-pct" style={{ color: p.color }}>{p.pct}%</span>
+                      </div>
+                      {p.lead && <small className="db-progress-lead">Lead: {p.lead}</small>}
+                      <div className="db-progress-track">
+                        <div
+                          className="db-progress-fill"
+                          style={{ width: `${p.pct}%`, background: `linear-gradient(90deg, ${p.color}, ${p.color}cc)` }}
+                        />
+                      </div>
                     </div>
-                    <div className="db-progress-track">
-                      <div
-                        className="db-progress-fill"
-                        style={{ width: `${p.pct}%`, background: `linear-gradient(90deg, ${p.color}, ${p.color}cc)` }}
-                      />
-                    </div>
-                  </div>
-                ))
+                  );
+                  return p.id ? (
+                    <Link key={p.id} to={`/dashboard/projects/${p.id}`} className="db-progress-link">
+                      {row}
+                    </Link>
+                  ) : (
+                    <div key={p.name}>{row}</div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -913,8 +1097,8 @@ export default function Dashboard() {
           <div className="db-card db-workload-card">
             <div className="db-card-header">
               <div>
-                <h2 className="db-card-title">Team Workload</h2>
-                <p className="db-card-sub">Tasks per member</p>
+                <h2 className="db-card-title">Workload Chart</h2>
+                <p className="db-card-sub">Active assignments per member</p>
               </div>
               <Sparkles size={15} className="db-card-icon-accent" />
             </div>
@@ -924,7 +1108,7 @@ export default function Dashboard() {
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<GlassTooltip />} />
-                <Bar dataKey="tasks" name="Tasks" radius={[6, 6, 0, 0]} barSize={26}>
+                <Bar dataKey="tasks" name="Active" radius={[6, 6, 0, 0]} barSize={26}>
                   {teamWorkload.map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Bar>
               </BarChart>

@@ -1146,7 +1146,81 @@
 /* Progress bars */
 .db-progress-list { display: flex; flex-direction: column; gap: 14px; }
 
+.db-progress-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  border-radius: var(--r-md);
+  transition: background 0.15s;
+}
+
+.db-progress-link:hover {
+  background: var(--surface-3);
+}
+
 .db-progress-item { display: flex; flex-direction: column; gap: 5px; }
+
+.db-progress-health {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-style: normal;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+}
+
+.db-progress-lead {
+  font-size: 0.68rem;
+  color: var(--ink-4);
+  font-weight: 600;
+}
+
+/* Team workload widget table */
+.db-team-workload-widget {
+  margin-bottom: 20px;
+}
+
+.db-workload-table-wrap {
+  overflow-x: auto;
+}
+
+.db-workload-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.db-workload-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.db-workload-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.db-workload-name {
+  color: var(--ink-1);
+  font-weight: 700;
+}
+
+.db-workload-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
 
 .db-progress-meta {
   display: flex;

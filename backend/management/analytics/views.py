@@ -11,9 +11,17 @@ from invitations.models import Invitation
 from leave_management.models import LeaveRequest, LeaveBalance
 from company_calendar.models import CalendarEvent
 
-from projects.models import Project
+from projects.health import HEALTH_LABELS, refresh_project_health
+from projects.models import Project, ProjectMilestone
+from projects.serializers import serialize_user_brief
 from tasks.models import Task
 from organizations.serializers import OrganizationProfileSerializer
+
+from .workload import (
+    compute_member_workload,
+    get_organization_team_workload,
+    get_thresholds,
+)
 
 
 class DashboardOverviewView(APIView):
@@ -50,9 +58,16 @@ class DashboardOverviewView(APIView):
             ).order_by("start_date")[:5]
 
             from leave_management.serializers import LeaveBalanceSerializer
+
+            my_workload = compute_member_workload(
+                request.user,
+                organization=organization,
+            )
             return Response({
                 "company": OrganizationProfileSerializer(organization).data,
                 "role": "employee",
+                "my_workload": my_workload,
+                "workload_thresholds": get_thresholds(),
                 "my_leave_balances": LeaveBalanceSerializer(balances, many=True).data,
                 "my_upcoming_leave": [
                     {
@@ -210,35 +225,22 @@ class DashboardOverviewView(APIView):
             for item in status_queryset
         ]
 
-        assigned_queryset = Task.objects.filter(
-            project__organization=organization,
-            assigned_to__isnull=False
-        ).values(
-            "assigned_to__name"
-        ).annotate(
-            count=Count("id")
-        ).order_by(
-            "assigned_to__name"
-        )
-
-        unassigned_count = Task.objects.filter(
-            project__organization=organization,
-            assigned_to__isnull=True
-        ).count()
+        team_workload_members = get_organization_team_workload(organization)
 
         team_workload = [
             {
-                "name": item["assigned_to__name"] or "Unassigned",
-                "tasks": item["count"],
+                "id": row["id"],
+                "name": row["name"],
+                "tasks": row["assigned_tasks"],
+                "active_tasks": row["active_tasks"],
+                "completed_tasks": row["completed_tasks"],
+                "overdue_tasks": row["overdue_tasks"],
+                "open_issues": row["open_issues"],
+                "workload_status": row["workload_status"],
+                "workload_label": row["workload_label"],
             }
-            for item in assigned_queryset
+            for row in team_workload_members
         ]
-
-        if unassigned_count:
-            team_workload.append({
-                "name": "Unassigned",
-                "tasks": unassigned_count,
-            })
 
         start_date = today - timedelta(days=6)
 
@@ -269,6 +271,81 @@ class DashboardOverviewView(APIView):
                 "tasks": activity_map.get(current_day, 0),
             })
 
+        org_projects = Project.objects.filter(
+            organization=organization
+        ).select_related("project_lead").prefetch_related("milestones")
+
+        for project in org_projects:
+            refresh_project_health(project)
+
+        projects_at_risk = [
+            {
+                "id": str(project.id),
+                "name": project.name,
+                "health": project.health,
+                "health_label": HEALTH_LABELS.get(project.health, "Healthy"),
+                "project_lead": serialize_user_brief(project.project_lead),
+                "due_date": project.due_date,
+            }
+            for project in org_projects.filter(health="at_risk").order_by("due_date", "name")[:8]
+        ]
+
+        milestone_base = ProjectMilestone.objects.filter(
+            project__organization=organization
+        ).select_related("project")
+
+        upcoming_milestones = [
+            {
+                "id": str(milestone.id),
+                "title": milestone.title,
+                "target_date": milestone.target_date,
+                "status": milestone.status,
+                "project_id": str(milestone.project_id),
+                "project_name": milestone.project.name,
+            }
+            for milestone in milestone_base.filter(
+                target_date__gte=today
+            ).exclude(
+                status="completed"
+            ).order_by("target_date")[:8]
+        ]
+
+        completed_milestones = [
+            {
+                "id": str(milestone.id),
+                "title": milestone.title,
+                "target_date": milestone.target_date,
+                "status": milestone.status,
+                "project_id": str(milestone.project_id),
+                "project_name": milestone.project.name,
+            }
+            for milestone in milestone_base.filter(
+                status="completed"
+            ).order_by("-target_date")[:8]
+        ]
+
+        project_summaries = [
+            {
+                "id": str(project.id),
+                "name": project.name,
+                "health": project.health,
+                "health_label": HEALTH_LABELS.get(project.health, "Healthy"),
+                "status": project.status,
+                "project_lead": serialize_user_brief(project.project_lead),
+                "due_date": project.due_date,
+                "milestone_progress": (
+                    round(
+                        project.milestones.filter(status="completed").count()
+                        / project.milestones.count()
+                        * 100
+                    )
+                    if project.milestones.count()
+                    else 100
+                ),
+            }
+            for project in org_projects.order_by("-created_at")[:6]
+        ]
+
         return Response({
             "company": OrganizationProfileSerializer(organization).data,
             "total_projects": total_projects,
@@ -285,6 +362,8 @@ class DashboardOverviewView(APIView):
             "weekly_task_activity": weekly_task_activity,
             "task_status_distribution": task_status_distribution,
             "team_workload": team_workload,
+            "team_workload_members": team_workload_members,
+            "workload_thresholds": get_thresholds(),
             "upcoming_holidays": [
                 {
                     "id": str(event.id),
@@ -318,6 +397,10 @@ class DashboardOverviewView(APIView):
                 }
                 for leave in people_currently_on_leave
             ],
+            "projects_at_risk": projects_at_risk,
+            "upcoming_milestones": upcoming_milestones,
+            "completed_milestones": completed_milestones,
+            "project_summaries": project_summaries,
             "upcoming_deadlines": [
                 {
                     "id": str(task.id),

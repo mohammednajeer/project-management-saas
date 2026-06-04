@@ -166,6 +166,10 @@ REST_FRAMEWORK = {
     ),
 }
 
+# Workload classification thresholds (active assignments + open issues)
+WORKLOAD_UNDERUTILIZED_MAX = int(os.getenv("WORKLOAD_UNDERUTILIZED_MAX", "3"))
+WORKLOAD_OVERLOADED_MIN = int(os.getenv("WORKLOAD_OVERLOADED_MIN", "15"))
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),

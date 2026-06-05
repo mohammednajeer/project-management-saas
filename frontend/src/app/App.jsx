@@ -20,6 +20,7 @@ import ProfilePage from "../pages/profile/ProfilePage";
 import SettingsPage from "../pages/settings/SettingsPage";
 import LeavePage from "../pages/leave/LeavePage";
 import CalendarPage from "../pages/calendar/CalendarPage";
+import AIAssistantPage from "../pages/ai-assistant/AIAssistantPage";
 import Notifications from "../pages/notifications/Notifications";
 import WorkspaceHome from "../pages/workspace/WorkspaceHome";
 import WorkspaceTasks from "../pages/workspace/WorkspaceTasks";
@@ -92,6 +93,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="leave" element={<LeavePage />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="ai-assistant" element={<AIAssistantPage />} />
             <Route path="organization" element={<SettingsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="notifications" element={<Notifications />} />

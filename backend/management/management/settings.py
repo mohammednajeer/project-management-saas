@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "permissions",
     "leave_management",
     "company_calendar",
+    "ai_assistant",
     
 ]
 

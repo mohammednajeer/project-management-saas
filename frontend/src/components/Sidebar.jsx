@@ -15,6 +15,7 @@ import {
   Bell,
   UserRound,
   MessageCircle,
+  Bot,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import api from "../services/api";
@@ -33,6 +34,7 @@ const navItems = [
   { icon: BarChart2,       label: "Reports",       to: "/dashboard/reports"                 },
   { icon: PlaneTakeoff,    label: "Leave",         to: "/dashboard/leave"                   },
   { icon: CalendarDays,    label: "Calendar",      to: "/dashboard/calendar"                },
+  { icon: Bot,             label: "AI Assistant",  to: "/dashboard/ai-assistant"           },
   { icon: Bell,            label: "Notifications", to: "/dashboard/notifications"           },
   { icon: Building2,       label: "Organization",  to: "/dashboard/organization"            },
   { icon: MessageCircle,   label: "Chat",          to: "/dashboard/chat"                    },

@@ -43,11 +43,14 @@ export default function AuthPage() {
   return (
     <main className="ap-root">
       <div className="ap-shell">
-        {/* ── Left: Brand Panel ── */}
-        <aside className="ap-brand" aria-label="ProjectFlow">
+        {/* Sliding Brand Panel */}
+        <aside
+          className={`ap-brand ${isSignup ? "ap-brand-right" : "ap-brand-left"}`}
+          aria-label="ProjectFlow"
+        >
           <a href="/" className="ap-brand-logo">
             <span className="ap-logo-icon">
-              <Zap size={22} />
+              <Zap size={20} />
             </span>
             <span>ProjectFlow</span>
           </a>
@@ -74,38 +77,16 @@ export default function AuthPage() {
               <BenefitItem text="Analytics and reporting built in" />
             </ul>
           </div>
-
-          <figure className="ap-testimonial">
-            <blockquote>
-              "ProjectFlow transformed how our 50-person team collaborates.
-              We ship 30% faster now."
-            </blockquote>
-            <figcaption>
-              <span className="ap-avatar">AK</span>
-              <span>
-                <strong>Alex Kim</strong>
-                <small>VP Engineering, Streamline</small>
-              </span>
-            </figcaption>
-          </figure>
         </aside>
 
-        {/* ── Right: Sliding Forms ── */}
-        <div className="ap-forms-viewport">
-          <div
-            className="ap-forms-track"
-            style={{ transform: isSignup ? "translateX(-100%)" : "translateX(0)" }}
-          >
-            {/* Sign In */}
-            <div className="ap-form-panel" aria-hidden={isSignup}>
-              <SigninForm onSwitchToSignup={() => setIsSignup(true)} />
-            </div>
+        {/* Sign In Form Container */}
+        <div className={`ap-form-container ap-signin-container ${!isSignup ? "is-active" : ""}`} aria-hidden={isSignup}>
+          <SigninForm onSwitchToSignup={() => setIsSignup(true)} />
+        </div>
 
-            {/* Sign Up */}
-            <div className="ap-form-panel" aria-hidden={!isSignup}>
-              <SignupForm onSwitchToSignin={() => setIsSignup(false)} />
-            </div>
-          </div>
+        {/* Sign Up Form Container */}
+        <div className={`ap-form-container ap-signup-container ${isSignup ? "is-active" : ""}`} aria-hidden={!isSignup}>
+          <SignupForm onSwitchToSignin={() => setIsSignup(false)} />
         </div>
       </div>
     </main>
@@ -166,7 +147,7 @@ function SigninForm({ onSwitchToSignup }) {
         </button>
       </div>
 
-      <div className="ap-divider">
+      <div className="auth-divider">
         <span>or sign in with email</span>
       </div>
 
@@ -545,34 +526,46 @@ function BenefitItem({ text }) {
 function IllustrationSVG() {
   return (
     <svg viewBox="0 0 340 220" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect x="20" y="20" width="210" height="140" rx="12" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-      <rect x="20" y="20" width="210" height="32" rx="12" fill="rgba(255,255,255,0.08)" />
-      <rect x="20" y="40" width="210" height="12" fill="rgba(255,255,255,0.08)" />
-      <circle cx="40" cy="36" r="7" fill="rgba(255,255,255,0.25)" />
-      <rect x="54" y="32" width="60" height="8" rx="4" fill="rgba(255,255,255,0.2)" />
-      <rect x="36" y="66" width="160" height="6" rx="3" fill="rgba(255,255,255,0.1)" />
-      <rect x="36" y="66" width="110" height="6" rx="3" fill="rgba(255,255,255,0.55)" />
-      <rect x="36" y="82" width="160" height="6" rx="3" fill="rgba(255,255,255,0.1)" />
-      <rect x="36" y="82" width="70" height="6" rx="3" fill="rgba(255,255,255,0.35)" />
-      <rect x="36" y="98" width="160" height="6" rx="3" fill="rgba(255,255,255,0.1)" />
-      <rect x="36" y="98" width="130" height="6" rx="3" fill="rgba(255,255,255,0.45)" />
-      <rect x="36" y="118" width="52" height="20" rx="6" fill="rgba(255,255,255,0.18)" />
-      <rect x="96" y="118" width="52" height="20" rx="6" fill="rgba(255,255,255,0.1)" />
-      <rect x="156" y="118" width="52" height="20" rx="6" fill="rgba(255,255,255,0.14)" />
-      <rect x="200" y="10" width="130" height="72" rx="10" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
-      <circle cx="220" cy="30" r="8" fill="rgba(255,255,255,0.3)" />
-      <rect x="234" y="25" width="60" height="7" rx="3.5" fill="rgba(255,255,255,0.25)" />
+      {/* Base window frame */}
+      <rect x="20" y="20" width="210" height="140" rx="12" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+      {/* Header of frame */}
+      <rect x="20" y="20" width="210" height="32" rx="12" fill="rgba(255,255,255,0.04)" />
+      <rect x="20" y="40" width="210" height="12" fill="rgba(255,255,255,0.04)" />
+      {/* Chrome dots */}
+      <circle cx="40" cy="36" r="5" fill="rgba(255,255,255,0.2)" />
+      <rect x="54" y="32" width="60" height="8" rx="4" fill="rgba(255,255,255,0.12)" />
+      
+      {/* List items */}
+      <rect x="36" y="66" width="160" height="6" rx="3" fill="rgba(255,255,255,0.04)" />
+      <rect x="36" y="66" width="110" height="6" rx="3" fill="rgba(255,255,255,0.4)" />
+      <rect x="36" y="82" width="160" height="6" rx="3" fill="rgba(255,255,255,0.04)" />
+      <rect x="36" y="82" width="70" height="6" rx="3" fill="rgba(255,255,255,0.25)" />
+      <rect x="36" y="98" width="160" height="6" rx="3" fill="rgba(255,255,255,0.04)" />
+      <rect x="36" y="98" width="130" height="6" rx="3" fill="rgba(255,255,255,0.3)" />
+      
+      {/* Action buttons */}
+      <rect x="36" y="118" width="52" height="20" rx="6" fill="rgba(255,255,255,0.08)" />
+      <rect x="96" y="118" width="52" height="20" rx="6" fill="rgba(255,255,255,0.06)" />
+      
+      {/* Floating card 1 */}
+      <rect x="200" y="10" width="130" height="72" rx="10" fill="rgba(30,32,37,0.8)" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+      <circle cx="220" cy="30" r="8" fill="var(--apricot-mid)" />
+      <rect x="234" y="25" width="60" height="7" rx="3.5" fill="rgba(255,255,255,0.3)" />
       <rect x="234" y="36" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.15)" />
       <rect x="212" y="50" width="100" height="5" rx="2.5" fill="rgba(255,255,255,0.15)" />
-      <rect x="212" y="60" width="70" height="5" rx="2.5" fill="rgba(255,255,255,0.1)" />
-      <rect x="230" y="110" width="100" height="56" rx="10" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-      <rect x="246" y="124" width="30" height="5" rx="2.5" fill="rgba(255,255,255,0.2)" />
-      <rect x="246" y="134" width="50" height="10" rx="4" fill="rgba(255,255,255,0.35)" />
-      <rect x="246" y="150" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.15)" />
-      <circle cx="305" cy="30" r="3" fill="rgba(255,255,255,0.3)" />
-      <circle cx="315" cy="20" r="2" fill="rgba(255,255,255,0.2)" />
-      <circle cx="10" cy="180" r="3" fill="rgba(255,255,255,0.2)" />
-      <circle cx="22" cy="195" r="2" fill="rgba(255,255,255,0.15)" />
+      <rect x="212" y="60" width="70" height="5" rx="2.5" fill="rgba(255,255,255,0.08)" />
+      
+      {/* Floating card 2 */}
+      <rect x="230" y="105" width="100" height="56" rx="10" fill="rgba(30,32,37,0.8)" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+      <rect x="246" y="120" width="30" height="5" rx="2.5" fill="rgba(255,255,255,0.2)" />
+      <rect x="246" y="130" width="50" height="10" rx="4" fill="var(--sky-mid)" />
+      <rect x="246" y="146" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.12)" />
+      
+      {/* Subtle details */}
+      <circle cx="305" cy="30" r="3" fill="rgba(255,255,255,0.2)" />
+      <circle cx="315" cy="20" r="2" fill="rgba(255,255,255,0.1)" />
+      <circle cx="10" cy="180" r="3" fill="rgba(255,255,255,0.1)" />
+      <circle cx="22" cy="195" r="2" fill="rgba(255,255,255,0.05)" />
     </svg>
   );
 }

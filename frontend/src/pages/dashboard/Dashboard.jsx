@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Bell,
-  Search,
   TrendingUp,
   TrendingDown,
   FolderOpen,
@@ -44,6 +42,8 @@ import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import useNotifications from "../../context/useNotifications";
 import { formatWebsite, getCompanyInitials, getCompanyName } from "../../utils/company";
+import successIllustration from "../../assets/images/undraw_successful_rtc4.svg";
+import teamworkIllustration from "../../assets/images/undraw_teamwork_zplp.svg";
 import "./Dashboard.css";
 
 /* ─── STATIC FALLBACK DATA ──────────────────────────────────────────── */
@@ -68,9 +68,9 @@ const PRIORITY_COLORS = {
 const STATUS_STYLES = {
   backlog:     { label: "Backlog",     bg: "#F2F2F2", color: "#7A7A7A" },
   todo:        { label: "Backlog",     bg: "#F2F2F2", color: "#7A7A7A" },
-  pending:     { label: "Pending",     bg: "#F5E6DA", color: "#B55636" },
-  in_progress: { label: "In Progress", bg: "#D6E4F0", color: "#3D6E8E" },
-  inprogress:  { label: "In Progress", bg: "#D6E4F0", color: "#3D6E8E" },
+  pending:     { label: "Pending",     bg: "#fbe1d1", color: "#B55636" },
+  in_progress: { label: "In Progress", bg: "#d3e3fc", color: "#3D6E8E" },
+  inprogress:  { label: "In Progress", bg: "#d3e3fc", color: "#3D6E8E" },
   review:      { label: "Review",      bg: "#E8E0F0", color: "#6B5D8A" },
   done:        { label: "Done",        bg: "#E8F5ED", color: "#2D7A47" },
   completed:   { label: "Done",        bg: "#E8F5ED", color: "#2D7A47" },
@@ -82,36 +82,32 @@ const ACTIVITY_COLORS = {
   comment_added:   "#C96442",
   task_updated:    "#5B8CB8",
   subtask_updated: "#5B8CB8",
-  default:         "#9E9E9E",
+  default:         "#a3a6af",
 };
 
 const STATUS_DISTRIBUTION_CONFIG = [
-  { key: "backlog",     name: "Backlog",     color: "#C4C4C4" },
+  { key: "backlog",     name: "Backlog",     color: "#a3a6af" },
   { key: "in_progress", name: "In Progress", color: "#5B8CB8" },
   { key: "review",      name: "Review",      color: "#8B7BA8" },
   { key: "done",        name: "Done",        color: "#3D9A5F" },
 ];
 
-const CARD_GRADIENTS = [
-  { from: "#C96442", to: "#D4835E", icon: FolderOpen,    shadow: "rgba(201,100,66,0.22)" },
-  { from: "#5B8CB8", to: "#7BA8CC", icon: CheckSquare,   shadow: "rgba(91,140,184,0.22)" },
-  { from: "#D4835E", to: "#E0A07A", icon: Clock,         shadow: "rgba(212,131,94,0.22)"  },
-  { from: "#3D9A5F", to: "#5DB87A", icon: CheckSquare,   shadow: "rgba(61,154,95,0.22)"   },
-  { from: "#5C5C5C", to: "#7A7A7A", icon: Users,         shadow: "rgba(92,92,92,0.18)"   },
-  { from: "#A34A30", to: "#C96442", icon: AlertTriangle, shadow: "rgba(163,74,48,0.22)"   },
-  { from: "#4A7A9B", to: "#6BA3B8", icon: ShieldCheck,   shadow: "rgba(74,122,155,0.22)"  },
-  { from: "#3D9A5F", to: "#5DB87A", icon: UserCheck,     shadow: "rgba(61,154,95,0.22)"  },
-  { from: "#8B7BA8", to: "#A898C4", icon: Mail,          shadow: "rgba(139,123,168,0.22)"  },
+/* 6 stat cards exactly */
+const STAT_CARD_CONFIG = [
+  { key: "total_projects",  label: "Total Projects",  trend: "Workspace projects",   up: true,  icon: FolderOpen,    from: "#17191c", to: "#4c4c4c", shadow: "rgba(23,25,28,0.18)" },
+  { key: "total_tasks",     label: "Total Tasks",     trend: "All tracked tasks",    up: true,  icon: CheckSquare,   from: "#5B8CB8", to: "#7BA8CC", shadow: "rgba(91,140,184,0.22)" },
+  { key: "pending_tasks",   label: "Pending",         trend: "Awaiting completion",  up: false, icon: Clock,         from: "#D4835E", to: "#E0A07A", shadow: "rgba(212,131,94,0.22)" },
+  { key: "completed_tasks", label: "Completed",       trend: "Finished tasks",       up: true,  icon: CheckCircle2,  from: "#3D9A5F", to: "#5DB87A", shadow: "rgba(61,154,95,0.22)"  },
+  { key: "overdue_tasks",   label: "Overdue",         trend: "Need attention",       up: false, icon: AlertTriangle, from: "#A34A30", to: "#C96442", shadow: "rgba(163,74,48,0.22)"  },
+  { key: "team_members",    label: "Team Members",    trend: "Active members",       up: null,  icon: Users,         from: "#777b86", to: "#a3a6af", shadow: "rgba(92,92,92,0.16)"   },
 ];
 
+const AVATAR_COLORS = ["#C96442","#5B8CB8","#3D9A5F","#8B7BA8","#5C5C5C","#A34A30","#4A7A9B","#D4835E"];
+
 /* ─── HELPERS ─────────────────────────────────────────────────────────── */
-const formatLabel  = (v) => !v ? "None" : String(v).replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-const formatDueDate = (v) => { if (!v) return "No date"; const d = new Date(v); return isNaN(d) ? v : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
-const formatDashboardDateRange = (startValue, endValue) => {
-  const start = formatDueDate(startValue);
-  const end = formatDueDate(endValue || startValue);
-  return start === end ? start : `${start} - ${end}`;
-};
+const formatLabel    = (v) => !v ? "None" : String(v).replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+const formatDueDate  = (v) => { if (!v) return "No date"; const d = new Date(v); return isNaN(d) ? v : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+const formatDateRange = (s, e) => { const a = formatDueDate(s); const b = formatDueDate(e || s); return a === b ? a : `${a} – ${b}`; };
 const formatRelativeTime = (v) => {
   if (!v) return "";
   const diff = Date.now() - new Date(v).getTime();
@@ -129,7 +125,7 @@ const buildActivityText = (a) => {
   const who  = a.user_data?.name || "Someone";
   const name = extractQuoted(a.message);
   const q    = name ? ` "${name}"` : "";
-  const map  = { task_created: "created task", subtask_created: "created subtask", task_updated: "updated task", subtask_updated: "updated subtask", comment_added: "added a comment" };
+  const map  = { task_created:"created task", subtask_created:"created subtask", task_updated:"updated task", subtask_updated:"updated subtask", comment_added:"added a comment" };
   return map[a.action] ? `${who} ${map[a.action]}${q}` : (a.message ? `${who} ${a.message}` : `${who} recorded activity`);
 };
 
@@ -141,40 +137,25 @@ const getAssigneeName = (t) => {
   return typeof a === "string" ? a : (a.name || a.email || "Unassigned");
 };
 const normalizeStatus = (s) => { const k = String(s || "").toLowerCase().replace(/\s+/g, "_"); if (k === "backlog" || k === "todo") return "backlog"; if (k === "inprogress" || k === "in_progress") return "in_progress"; if (k === "completed" || k === "done") return "done"; return k || "backlog"; };
-const buildInitials = (t) => { const src = getAssigneeName(t) || getProjectName(t) || t.title || "?"; return src.split(" ").filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join(""); };
-
-const AVATAR_COLORS = ["#C96442", "#5B8CB8", "#3D9A5F", "#8B7BA8", "#5C5C5C", "#A34A30", "#4A7A9B", "#D4835E"];
+const buildInitials  = (t) => { const src = getAssigneeName(t) || getProjectName(t) || t.title || "?"; return src.split(" ").filter(Boolean).slice(0,2).map(w => w.charAt(0).toUpperCase()).join(""); };
 
 const mapRecentTask = (task, i) => {
-  const pk  = String(task.priority || "").toLowerCase();
-  const sk  = normalizeStatus(task.status);
-  const ss  = STATUS_STYLES[sk] || { label: formatLabel(task.status), bg: "#f1f5f9", color: "#64748b" };
-  return {
-    id:          task.id || `${task.title}-${i}`,
-    task:        task.title || task.task || "Untitled",
-    project:     getProjectName(task),
-    priority:    formatLabel(task.priority),
-    priorityColor: PRIORITY_COLORS[pk] || "#94a3b8",
-    status:      ss.label,
-    statusBg:    ss.bg,
-    statusColor: ss.color,
-    assignee:    buildInitials(task),
-    assigneeBg:  AVATAR_COLORS[i % AVATAR_COLORS.length],
-    due:         formatDueDate(task.due_date || task.due),
-  };
+  const pk = String(task.priority || "").toLowerCase();
+  const sk = normalizeStatus(task.status);
+  const ss = STATUS_STYLES[sk] || { label: formatLabel(task.status), bg: "#f1f5f9", color: "#64748b" };
+  return { id: task.id || `${task.title}-${i}`, task: task.title || task.task || "Untitled", project: getProjectName(task), priority: formatLabel(task.priority), priorityColor: PRIORITY_COLORS[pk] || "#94a3b8", status: ss.label, statusBg: ss.bg, statusColor: ss.color, assignee: buildInitials(task), assigneeBg: AVATAR_COLORS[i % AVATAR_COLORS.length], due: formatDueDate(task.due_date || task.due) };
 };
 
-const mapActivity = (a, i) => ({
-  id:    a.id || `${a.action}-${i}`,
-  text:  buildActivityText(a),
-  time:  formatRelativeTime(a.created_at),
-  color: ACTIVITY_COLORS[a.action] || ACTIVITY_COLORS.default,
-});
+const mapActivity = (a, i) => ({ id: a.id || `${a.action}-${i}`, text: buildActivityText(a), time: formatRelativeTime(a.created_at), color: ACTIVITY_COLORS[a.action] || ACTIVITY_COLORS.default });
+const normalizeChartPoint = (p, i) => ({ day: p.day || p.label || DEFAULT_CHART_DATA[i]?.day || "", tasks: Number(p.tasks ?? p.count ?? p.value ?? 0) });
+const pluralize = (count, label) => `${count} ${label}${count === 1 ? "" : "s"}`;
 
-const normalizeChartPoint = (p, i) => ({
-  day:   p.day || p.label || DEFAULT_CHART_DATA[i]?.day || "",
-  tasks: Number(p.tasks ?? p.count ?? p.value ?? 0),
-});
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 /* ─── CUSTOM TOOLTIP ─────────────────────────────────────────────────── */
 function GlassTooltip({ active, payload, label }) {
@@ -192,49 +173,7 @@ function GlassTooltip({ active, payload, label }) {
   );
 }
 
-function CompanyCard({ company, loading }) {
-  const companyName = getCompanyName(company, "Company profile");
-
-  return (
-    <section className="db-company-card">
-      <div className="db-company-main">
-        <div className="db-company-logo">
-          {company?.logo ? (
-            <img src={company.logo} alt="" />
-          ) : (
-            getCompanyInitials(company, "PF")
-          )}
-        </div>
-        <div className="db-company-copy">
-          <span className="db-company-kicker">Company</span>
-          <h2>{loading ? "Loading company..." : companyName}</h2>
-          <p>{company?.industry || "Industry not set"}</p>
-        </div>
-      </div>
-
-      <div className="db-company-meta">
-        <a
-          href={company?.website || undefined}
-          target="_blank"
-          rel="noreferrer"
-          className={!company?.website ? "is-disabled" : ""}
-        >
-          <Globe2 size={15} />
-          {formatWebsite(company?.website)}
-        </a>
-        <span>
-          <Users size={15} />
-          {loading ? "..." : `${company?.employee_count ?? 0} employees`}
-        </span>
-        <span>
-          <ShieldCheck size={15} />
-          {loading ? "..." : `${company?.manager_count ?? 0} managers`}
-        </span>
-      </div>
-    </section>
-  );
-}
-
+/* ─── WIDGET CARD ────────────────────────────────────────────────────── */
 function DashboardWidget({ title, subtitle, icon: Icon, items, emptyText, to, loading, tone, count }) {
   return (
     <section className={`db-card db-calendar-widget db-calendar-widget--${tone}`}>
@@ -243,9 +182,7 @@ function DashboardWidget({ title, subtitle, icon: Icon, items, emptyText, to, lo
           <h2 className="db-card-title">{title}</h2>
           <p className="db-card-sub">{subtitle}</p>
         </div>
-        <div className="db-widget-icon">
-          <Icon size={16} />
-        </div>
+        <div className="db-widget-icon"><Icon size={15} /></div>
       </div>
 
       {typeof count === "number" && (
@@ -257,11 +194,11 @@ function DashboardWidget({ title, subtitle, icon: Icon, items, emptyText, to, lo
 
       <div className="db-widget-list">
         {loading ? (
-          [1, 2, 3].map((item) => <div key={item} className="db-widget-skeleton" />)
+          [1,2,3].map(n => <div key={n} className="db-widget-skeleton" />)
         ) : items.length === 0 ? (
           <div className="db-widget-empty">{emptyText}</div>
         ) : (
-          items.map((item) => (
+          items.map(item => (
             <Link key={item.id} to={item.to || to} className="db-widget-item">
               <span className="db-widget-dot" />
               <span className="db-widget-copy">
@@ -269,7 +206,7 @@ function DashboardWidget({ title, subtitle, icon: Icon, items, emptyText, to, lo
                 <small>{item.meta}</small>
                 {item.extra && <em>{item.extra}</em>}
               </span>
-              <ArrowRight size={13} />
+              <ArrowRight size={12} />
             </Link>
           ))
         )}
@@ -278,53 +215,33 @@ function DashboardWidget({ title, subtitle, icon: Icon, items, emptyText, to, lo
   );
 }
 
-/* ─── GREETING ────────────────────────────────────────────────────────── */
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-const pluralize = (count, label) => `${count} ${label}${count === 1 ? "" : "s"}`;
-
 /* ═══════════════════════════════════════════════════════════════════════
    DASHBOARD
    ═══════════════════════════════════════════════════════════════════════ */
 export default function Dashboard() {
-  const { user }  = useAuth();
+  const { user }        = useAuth();
   const { unreadCount } = useNotifications();
 
-  const [overview,          setOverview]         = useState(null);
-  const [loading,           setLoading]          = useState(true);
+  const [overview,          setOverview]          = useState(null);
+  const [loading,           setLoading]           = useState(true);
   const [activities,        setActivities]        = useState([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
 
-  /* ── Fetch overview ── */
   useEffect(() => {
     let ignore = false;
     (async () => {
-      try {
-        const res = await api.get("/dashboard/overview/");
-        if (!ignore) setOverview(res.data);
-      } catch (err) {
-        console.error(err);
-      }
+      try { const res = await api.get("/dashboard/overview/"); if (!ignore) setOverview(res.data); }
+      catch (err) { console.error(err); }
       finally { if (!ignore) setLoading(false); }
     })();
     return () => { ignore = true; };
   }, []);
 
-  /* ── Fetch activities ── */
   useEffect(() => {
     let ignore = false;
     (async () => {
-      try {
-        const res = await api.get("/activities/");
-        if (!ignore) setActivities(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error(err);
-      }
+      try { const res = await api.get("/activities/"); if (!ignore) setActivities(Array.isArray(res.data) ? res.data : []); }
+      catch (err) { console.error(err); }
       finally { if (!ignore) setActivitiesLoading(false); }
     })();
     return () => { ignore = true; };
@@ -337,8 +254,8 @@ export default function Dashboard() {
     ? overview.weekly_task_activity.map(normalizeChartPoint)
     : DEFAULT_CHART_DATA;
 
-  const recentTasks = useMemo(() => rawRecentTasks.map(mapRecentTask), [rawRecentTasks]);
-  const activityFeed = useMemo(() => activities.slice(0, 6).map(mapActivity), [activities]);
+  const recentTasks  = useMemo(() => rawRecentTasks.map(mapRecentTask), [rawRecentTasks]);
+  const activityFeed = useMemo(() => activities.slice(0, 7).map(mapActivity), [activities]);
 
   const statusDistribution = useMemo(() => {
     const counts = { backlog: 0, in_progress: 0, review: 0, done: 0 };
@@ -354,54 +271,24 @@ export default function Dashboard() {
   }, [overview, rawRecentTasks]);
 
   const teamWorkloadMembers = useMemo(() => {
-    if (Array.isArray(overview?.team_workload_members)) {
-      return overview.team_workload_members;
-    }
-    if (Array.isArray(overview?.team_workload) && overview.team_workload[0]?.workload_status) {
-      return overview.team_workload;
-    }
-    if (overview?.my_workload) {
-      return [overview.my_workload];
-    }
+    if (Array.isArray(overview?.team_workload_members)) return overview.team_workload_members;
+    if (Array.isArray(overview?.team_workload) && overview.team_workload[0]?.workload_status) return overview.team_workload;
+    if (overview?.my_workload) return [overview.my_workload];
     return [];
   }, [overview]);
 
   const teamWorkload = useMemo(() => {
-    if (teamWorkloadMembers.length) {
-      return teamWorkloadMembers.map((item, i) => ({
-        name: item.name || "Member",
-        tasks: Number(item.active_tasks ?? item.tasks ?? 0),
-        color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-      }));
-    }
-    if (Array.isArray(overview?.team_workload)) {
-      return overview.team_workload.map((item, i) => ({
-        name: item.name || "Unassigned",
-        tasks: Number(item.tasks ?? item.count ?? 0),
-        color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-      }));
-    }
+    if (teamWorkloadMembers.length) return teamWorkloadMembers.map((item, i) => ({ name: item.name || "Member", tasks: Number(item.active_tasks ?? item.tasks ?? 0), color: AVATAR_COLORS[i % AVATAR_COLORS.length] }));
+    if (Array.isArray(overview?.team_workload)) return overview.team_workload.map((item, i) => ({ name: item.name || "Unassigned", tasks: Number(item.tasks ?? item.count ?? 0), color: AVATAR_COLORS[i % AVATAR_COLORS.length] }));
     const acc = {};
     rawRecentTasks.forEach(t => { const n = getAssigneeName(t); acc[n] = (acc[n] || 0) + 1; });
     return Object.entries(acc).map(([name, tasks], i) => ({ name, tasks, color: AVATAR_COLORS[i % AVATAR_COLORS.length] }));
   }, [overview, rawRecentTasks, teamWorkloadMembers]);
 
-  const projectSummaries = useMemo(
-    () => (Array.isArray(overview?.project_summaries) ? overview.project_summaries : []),
-    [overview]
-  );
+  const projectSummaries = useMemo(() => Array.isArray(overview?.project_summaries) ? overview.project_summaries : [], [overview]);
 
   const projectProgress = useMemo(() => {
-    if (projectSummaries.length) {
-      return projectSummaries.map((p, i) => ({
-        id: p.id,
-        name: p.name,
-        pct: p.milestone_progress ?? 0,
-        health: p.health_label,
-        lead: p.project_lead?.name,
-        color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-      }));
-    }
+    if (projectSummaries.length) return projectSummaries.map((p, i) => ({ id: p.id, name: p.name, pct: p.milestone_progress ?? 0, health: p.health_label, lead: p.project_lead?.name, color: AVATAR_COLORS[i % AVATAR_COLORS.length] }));
     const projects = {};
     rawRecentTasks.forEach(t => {
       const name = getProjectName(t);
@@ -409,622 +296,232 @@ export default function Dashboard() {
       projects[name].total++;
       if (normalizeStatus(t.status) === "done") projects[name].done++;
     });
-    return Object.entries(projects).map(([name, d], i) => ({
-      name,
-      pct: d.total > 0 ? Math.round((d.done / d.total) * 100) : 0,
-      color: AVATAR_COLORS[i % AVATAR_COLORS.length],
-    }));
+    return Object.entries(projects).map(([name, d], i) => ({ name, pct: d.total > 0 ? Math.round((d.done / d.total) * 100) : 0, color: AVATAR_COLORS[i % AVATAR_COLORS.length] }));
   }, [projectSummaries, rawRecentTasks]);
 
   const canViewProjectWidgets = user?.role === "admin" || user?.role === "manager";
+  const canReviewLeave        = ["admin","manager"].includes(user?.role);
 
-  const projectWidgets = useMemo(() => {
-    if (!canViewProjectWidgets) return [];
-    return [
-      {
-        title: "Projects At Risk",
-        subtitle: "Needs immediate attention",
-        icon: AlertTriangle,
-        tone: "red",
-        to: "/dashboard/projects",
-        emptyText: "No projects at risk.",
-        items: (overview?.projects_at_risk || []).map((p) => ({
-          id: p.id,
-          title: p.name,
-          meta: p.health_label || "At Risk",
-          extra: p.project_lead?.name ? `Lead: ${p.project_lead.name}` : "No lead assigned",
-          to: `/dashboard/projects/${p.id}`,
-        })),
-      },
-      {
-        title: "Upcoming Milestones",
-        subtitle: "Next project milestones",
-        icon: Target,
-        tone: "purple",
-        to: "/dashboard/projects",
-        emptyText: "No upcoming milestones.",
-        items: (overview?.upcoming_milestones || []).map((m) => ({
-          id: m.id,
-          title: m.title,
-          meta: formatDueDate(m.target_date),
-          extra: m.project_name,
-          to: `/dashboard/projects/${m.project_id}`,
-        })),
-      },
-      {
-        title: "Completed Milestones",
-        subtitle: "Recently finished milestones",
-        icon: CheckCircle2,
-        tone: "green",
-        to: "/dashboard/projects",
-        emptyText: "No completed milestones yet.",
-        items: (overview?.completed_milestones || []).map((m) => ({
-          id: m.id,
-          title: m.title,
-          meta: formatDueDate(m.target_date),
-          extra: m.project_name,
-          to: `/dashboard/projects/${m.project_id}`,
-        })),
-      },
-    ];
-  }, [canViewProjectWidgets, overview]);
-
-  const statCards = useMemo(() => [
-    { value: overview?.total_projects  ?? 0, label: "Total Projects",  trend: "Workspace projects",   up: true,  ...CARD_GRADIENTS[0] },
-    { value: overview?.total_tasks     ?? 0, label: "Total Tasks",      trend: "All tracked tasks",    up: true,  ...CARD_GRADIENTS[1] },
-    { value: overview?.pending_tasks   ?? 0, label: "Pending",          trend: "Awaiting completion",  up: false, ...CARD_GRADIENTS[2] },
-    { value: overview?.completed_tasks ?? 0, label: "Completed",        trend: "Finished tasks",       up: true,  ...CARD_GRADIENTS[3] },
-    { value: overview?.team_members    ?? 0, label: "Total Members",    trend: "Active members",       up: null,  ...CARD_GRADIENTS[4] },
-    { value: overview?.overdue_tasks   ?? 0, label: "Overdue",          trend: "Need attention",       up: false, ...CARD_GRADIENTS[5] },
-    { value: overview?.managers        ?? 0, label: "Managers",         trend: "Team leads",           up: null,  ...CARD_GRADIENTS[6] },
-    { value: overview?.employees       ?? 0, label: "Employees",        trend: "Contributors",         up: null,  ...CARD_GRADIENTS[7] },
-    { value: overview?.pending_invitations ?? 0, label: "Pending Invitations", trend: "Awaiting signup", up: null, ...CARD_GRADIENTS[8] },
-  ], [overview]);
-
-  const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
   const completionPct = useMemo(() => {
     const total = overview?.total_tasks || 0;
     const done  = overview?.completed_tasks || 0;
     return total > 0 ? Math.round((done / total) * 100) : 0;
   }, [overview]);
 
-  const openTasks = Math.max(
-    0,
-    Number(overview?.total_tasks || 0) - Number(overview?.completed_tasks || 0)
-  );
+  const openTasks = Math.max(0, Number(overview?.total_tasks || 0) - Number(overview?.completed_tasks || 0));
 
+  const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
+  const company   = overview?.company || user?.company_information;
+
+  /* ── Focus items ── */
   const focusItems = useMemo(() => [
-    {
-      label: "Overdue work",
-      value: overview?.overdue_tasks ?? 0,
-      copy: "Tasks that need a manager check-in",
-      tone: "danger",
-      to: "/dashboard/tasks",
-    },
-    {
-      label: "Pending queue",
-      value: overview?.pending_tasks ?? 0,
-      copy: "Planned work still waiting to move",
-      tone: "warning",
-      to: "/dashboard/tasks",
-    },
-    {
-      label: "Open workload",
-      value: openTasks,
-      copy: "Tasks not completed yet",
-      tone: "brand",
-      to: "/dashboard/tasks",
-    },
+    { label: "Overdue work",   value: overview?.overdue_tasks ?? 0, copy: "Tasks needing a check-in",        tone: "danger",  to: "/dashboard/tasks" },
+    { label: "Pending queue",  value: overview?.pending_tasks ?? 0, copy: "Planned work waiting to move",    tone: "warning", to: "/dashboard/tasks" },
+    { label: "Open workload",  value: openTasks,                    copy: "Tasks not yet completed",          tone: "brand",   to: "/dashboard/tasks" },
   ], [openTasks, overview]);
 
   const quickActions = useMemo(() => [
-    { label: "Create project", copy: "Start a new workspace initiative", to: "/dashboard/projects" },
-    user?.role === "admin"
-      ? { label: "Invite member", copy: "Add teammates to the organization", to: "/dashboard/team" }
-      : null,
-    { label: "Review issues", copy: "Triage reported blockers", to: "/dashboard/issues" },
+    { label: "Create project",  copy: "Start a new workspace initiative",   to: "/dashboard/projects" },
+    user?.role === "admin" ? { label: "Invite member", copy: "Add teammates to the organization", to: "/dashboard/team" } : null,
+    { label: "Review issues",   copy: "Triage reported blockers",           to: "/dashboard/issues" },
   ].filter(Boolean), [user?.role]);
 
-  const company = overview?.company || user?.company_information;
-  const canReviewLeave = ["admin", "manager"].includes(user?.role);
-
-  const upcomingHolidays = useMemo(() => (
-    Array.isArray(overview?.upcoming_holidays) ? overview.upcoming_holidays : []
-  ), [overview]);
-
-  const upcomingCompanyEvents = useMemo(() => (
-    Array.isArray(overview?.upcoming_company_events) ? overview.upcoming_company_events : []
-  ), [overview]);
-
-  const peopleOnLeave = useMemo(() => (
-    Array.isArray(overview?.people_currently_on_leave) ? overview.people_currently_on_leave : []
-  ), [overview]);
-
-  const upcomingDeadlines = useMemo(() => (
-    Array.isArray(overview?.upcoming_deadlines)
-      ? [...overview.upcoming_deadlines].sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5)
-      : []
-  ), [overview]);
-
-  const calendarWidgets = useMemo(() => {
-    const widgets = [
-      {
-        title: "Upcoming Holidays",
-        subtitle: "Company holidays",
-        icon: CalendarDays,
-        tone: "blue",
-        to: "/dashboard/calendar",
-        emptyText: "No upcoming holidays.",
-        items: upcomingHolidays.map((event) => ({
-          id: `holiday-${event.id}`,
-          title: event.title,
-          meta: formatDashboardDateRange(event.start_date, event.end_date),
-        })),
-      },
-      {
-        title: "Upcoming Company Events",
-        subtitle: "Shared organization events",
-        icon: Sparkles,
-        tone: "purple",
-        to: "/dashboard/calendar",
-        emptyText: "No upcoming company events.",
-        items: upcomingCompanyEvents.map((event) => ({
-          id: `event-${event.id}`,
-          title: event.title,
-          meta: formatDashboardDateRange(event.start_date, event.end_date),
-        })),
-      },
-      {
-        title: "People On Leave",
-        subtitle: "Approved leave today",
-        icon: PlaneTakeoff,
-        tone: "green",
-        to: "/dashboard/leave",
-        emptyText: "Nobody is on leave today.",
-        items: peopleOnLeave.map((leave) => ({
-          id: `leave-${leave.id}`,
-          title: leave.employee?.name || leave.employee?.email || "Team member",
-          meta: leave.leave_type_label || "Approved leave",
-          extra: formatDashboardDateRange(leave.start_date, leave.end_date),
-        })),
-      },
-      {
-        title: "Upcoming Deadlines",
-        subtitle: "Tasks, deadlines, and milestones",
-        icon: Flag,
-        tone: "orange",
-        to: "/dashboard/calendar",
-        emptyText: "No upcoming deadlines.",
-        items: upcomingDeadlines.map((item) => ({
-          id: `deadline-${item.source}-${item.id}`,
-          title: item.title,
-          meta: formatDueDate(item.date),
-          extra: item.project || formatLabel(item.source),
-          to: item.source === "task" ? "/dashboard/tasks" : "/dashboard/calendar",
-        })),
-      },
+  /* ── Project widgets ── */
+  const projectWidgets = useMemo(() => {
+    if (!canViewProjectWidgets) return [];
+    return [
+      { title: "Projects At Risk",      subtitle: "Needs immediate attention",   icon: AlertTriangle, tone: "red",    to: "/dashboard/projects", emptyText: "No projects at risk.",    items: (overview?.projects_at_risk       || []).map(p => ({ id: p.id, title: p.name, meta: p.health_label || "At Risk",   extra: p.project_lead?.name ? `Lead: ${p.project_lead.name}` : "No lead", to: `/dashboard/projects/${p.id}` })) },
+      { title: "Upcoming Milestones",   subtitle: "Next project milestones",     icon: Target,        tone: "purple", to: "/dashboard/projects", emptyText: "No upcoming milestones.", items: (overview?.upcoming_milestones    || []).map(m => ({ id: m.id, title: m.title, meta: formatDueDate(m.target_date), extra: m.project_name, to: `/dashboard/projects/${m.project_id}` })) },
+      { title: "Completed Milestones",  subtitle: "Recently finished milestones",icon: CheckCircle2,  tone: "green",  to: "/dashboard/projects", emptyText: "No completed milestones.", items: (overview?.completed_milestones  || []).map(m => ({ id: m.id, title: m.title, meta: formatDueDate(m.target_date), extra: m.project_name, to: `/dashboard/projects/${m.project_id}` })) },
     ];
+  }, [canViewProjectWidgets, overview]);
 
-    if (canReviewLeave) {
-      widgets.push({
-        title: "Pending Leave Requests",
-        subtitle: "Awaiting review",
-        icon: ClipboardList,
-        tone: "red",
-        to: "/dashboard/leave",
-        count: overview?.pending_leave_requests ?? 0,
-        emptyText: "No pending leave requests.",
-        items: (overview?.pending_leave_requests ?? 0) > 0
-          ? [{
-              id: "pending-leave",
-              title: pluralize(overview.pending_leave_requests, "request"),
-              meta: "Review approval queue",
-            }]
-          : [],
-      });
-    }
+  /* ── Calendar widgets ── */
+  const upcomingHolidays       = useMemo(() => Array.isArray(overview?.upcoming_holidays)       ? overview.upcoming_holidays       : [], [overview]);
+  const upcomingCompanyEvents  = useMemo(() => Array.isArray(overview?.upcoming_company_events) ? overview.upcoming_company_events : [], [overview]);
+  const peopleOnLeave          = useMemo(() => Array.isArray(overview?.people_currently_on_leave) ? overview.people_currently_on_leave : [], [overview]);
+  const upcomingDeadlines      = useMemo(() => Array.isArray(overview?.upcoming_deadlines) ? [...overview.upcoming_deadlines].sort((a,b) => new Date(a.date)-new Date(b.date)).slice(0,5) : [], [overview]);
 
-    return widgets;
-  }, [
-    canReviewLeave,
-    overview,
-    peopleOnLeave,
-    upcomingCompanyEvents,
-    upcomingDeadlines,
-    upcomingHolidays,
-  ]);
-
-  /* ── Render ── */
   return (
     <div className="db-page">
-
-      {/* ══ TOPBAR ══════════════════════════════════════════════════ */}
-      <header className="db-topbar">
-        <div className="db-topbar-left">
-          <div className="db-search-wrap">
-            <Search size={14} className="db-search-icon" />
-            <input className="db-search-input" placeholder="Search projects, tasks, people..." />
-          </div>
-        </div>
-
-        <div className="db-topbar-right">
-          <Link to="/dashboard/notifications" className="db-notif-btn">
-            <Bell size={18} />
-            {unreadCount > 0 && <span className="db-notif-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}
-          </Link>
-
-          <Link to="/dashboard/profile" className="db-user-chip">
-            <div className="db-user-avatar">
-              {user?.profile_picture
-                ? <img src={user.profile_picture} alt="" />
-                : (user?.name || user?.email || "U").charAt(0).toUpperCase()}
-            </div>
-            <div className="db-user-info">
-              <span className="db-user-name">{user?.name || user?.email || "User"}</span>
-              <span className="db-user-role">{user?.role || "Member"}</span>
-            </div>
-          </Link>
-        </div>
-      </header>
-
-      {/* ══ CONTENT ════════════════════════════════════════════════ */}
       <div className="db-content">
 
-        {/* ── WELCOME HERO ── */}
+        {/* ══ HERO ══════════════════════════════════════════════════ */}
         <div className="db-hero">
           <div className="db-hero-left">
             <div className="db-hero-eyebrow">
               <span className="db-pulse" />
               All systems operational
             </div>
+
             <h1 className="db-hero-title">
               {getGreeting()}, {firstName}
             </h1>
+
             <p className="db-hero-sub">
               {overview?.overdue_tasks > 0
                 ? `You have ${overview.overdue_tasks} overdue task${overview.overdue_tasks > 1 ? "s" : ""} that need attention.`
                 : "Everything looks steady. Here is the latest workspace overview."}
             </p>
 
-            {/* Quick stats strip */}
-            <div className="db-hero-strip">
-              <div className="db-hero-strip-item">
-                <span className="db-hero-strip-val">{loading ? "..." : (overview?.total_projects ?? 0)}</span>
-                <span className="db-hero-strip-label">Projects</span>
+            {/* Company strip embedded in hero */}
+            {(company || loading) && (
+              <div className="db-hero-company">
+                <div className="db-hero-company-logo">
+                  {company?.logo
+                    ? <img src={company.logo} alt="" />
+                    : getCompanyInitials(company, "PF")}
+                </div>
+                <div className="db-hero-company-info">
+                  <div className="db-hero-company-name">{loading ? "Loading..." : getCompanyName(company, "Company")}</div>
+                  <div className="db-hero-company-meta">{company?.industry || "Industry not set"} · {loading ? "..." : `${company?.employee_count ?? 0} employees`}</div>
+                </div>
+                {company?.website && (
+                  <>
+                    <div className="db-hero-company-divider" />
+                    <a href={company.website} target="_blank" rel="noreferrer" className="db-hero-company-link">
+                      <Globe2 size={12} />
+                      {formatWebsite(company.website)}
+                    </a>
+                  </>
+                )}
               </div>
-              <div className="db-hero-strip-div" />
-              <div className="db-hero-strip-item">
-                <span className="db-hero-strip-val">{loading ? "..." : (overview?.total_tasks ?? 0)}</span>
-                <span className="db-hero-strip-label">Total Tasks</span>
-              </div>
-              <div className="db-hero-strip-div" />
-              <div className="db-hero-strip-item">
-                <span className="db-hero-strip-val">{loading ? "..." : `${completionPct}%`}</span>
-                <span className="db-hero-strip-label">Completion</span>
-              </div>
-              <div className="db-hero-strip-div" />
-              <div className="db-hero-strip-item">
-                <span className="db-hero-strip-val">{loading ? "..." : (overview?.team_members ?? 0)}</span>
-                <span className="db-hero-strip-label">Members</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Completion ring */}
-          <div className="db-hero-ring-wrap">
-            <svg viewBox="0 0 120 120" className="db-ring-svg">
-              <defs>
-                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stopColor="#C96442" />
-                  <stop offset="100%" stopColor="#D4835E" />
-                </linearGradient>
-              </defs>
-              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(201,100,66,0.1)" strokeWidth="7" />
-              <circle
-                cx="60" cy="60" r="50"
-                fill="none"
-                stroke="url(#ringGrad)"
-                strokeWidth="7"
-                strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 50}`}
-                strokeDashoffset={`${2 * Math.PI * 50 * (1 - completionPct / 100)}`}
-                transform="rotate(-90 60 60)"
-                style={{ transition: "stroke-dashoffset 1.4s cubic-bezier(0.16,1,0.3,1)" }}
-              />
-            </svg>
-            <div className="db-ring-center">
-              <span className="db-ring-pct">{completionPct}</span>
-              <span className="db-ring-unit">%</span>
-            </div>
-            <p className="db-ring-caption">Tasks done</p>
+          <div className="db-hero-right-illustration">
+            <img src={successIllustration} alt="Success" className="db-hero-illustration" />
           </div>
         </div>
 
-        {/* ── STAT CARDS ── */}
+        {/* ══ STAT CARDS — 6 ════════════════════════════════════════ */}
         <div className="db-stat-grid" aria-busy={loading}>
-          {statCards.map((card) => {
+          {STAT_CARD_CONFIG.map(card => {
             const Icon = card.icon;
             return (
               <div key={card.label} className="db-stat-card">
-                <div
-                  className="db-stat-icon"
-                  style={{ background: `linear-gradient(135deg, ${card.from}, ${card.to})`, boxShadow: `0 8px 20px ${card.shadow}` }}
-                >
-                  <Icon size={20} color="#fff" />
+                <div className="db-stat-icon" style={{ background: `linear-gradient(135deg, ${card.from}, ${card.to})`, boxShadow: `0 6px 16px ${card.shadow}` }}>
+                  <Icon size={18} color="#fff" />
                 </div>
-                <div className="db-stat-body">
-                  <div className="db-stat-value">{loading ? "-" : card.value}</div>
+                <div>
+                  <div className="db-stat-value">{loading ? "–" : (overview?.[card.key] ?? 0)}</div>
                   <div className="db-stat-label">{card.label}</div>
-                  <div className={`db-stat-trend ${card.up === false ? "down" : card.up === null ? "neutral" : "up"}`}>
-                    {card.up === true  && <TrendingUp  size={11} />}
-                    {card.up === false && <TrendingDown size={11} />}
-                    {card.up === null  && <span style={{ fontSize: 10 }}>{"->"}</span>}
-                    {card.trend}
-                  </div>
+                </div>
+                <div className={`db-stat-trend ${card.up === false ? "down" : card.up === null ? "neutral" : "up"}`}>
+                  {card.up === true  && <TrendingUp  size={11} />}
+                  {card.up === false && <TrendingDown size={11} />}
+                  {card.up === null  && <span style={{ fontSize: 10 }}>→</span>}
+                  {card.trend}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* ── MID ROW: Area Chart + Activity Feed ── */}
-        <CompanyCard company={company} loading={loading} />
-
-        <div className="db-calendar-widget-grid">
-          {calendarWidgets.map((widget) => (
-            <DashboardWidget
-              key={widget.title}
-              {...widget}
-              loading={loading}
-            />
-          ))}
-        </div>
-
-        {projectWidgets.length > 0 && (
-          <div className="db-calendar-widget-grid">
-            {projectWidgets.map((widget) => (
-              <DashboardWidget
-                key={widget.title}
-                {...widget}
-                loading={loading}
-              />
-            ))}
-          </div>
-        )}
-
-        <section className="db-card db-team-workload-widget">
-          <div className="db-card-header">
-            <div>
-              <h2 className="db-card-title">Team Workload</h2>
-              <p className="db-card-sub">
-                {user?.role === "employee"
-                  ? "Your current assignment load"
-                  : "Assignment distribution across the organization"}
-              </p>
-            </div>
-            <Users size={16} className="db-card-icon-accent" />
-          </div>
-          <div className="db-workload-table-wrap">
-            <table className="db-workload-table">
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Assigned</th>
-                  <th>Completed</th>
-                  <th>Overdue</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  [1, 2, 3].map((i) => (
-                    <tr key={i}>
-                      <td colSpan={5}><div className="db-table-skeleton" /></td>
-                    </tr>
-                  ))
-                ) : teamWorkloadMembers.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="db-table-empty">No workload data available</td>
-                  </tr>
-                ) : (
-                  teamWorkloadMembers.map((member) => {
-                    const ws = getWorkloadStyle(member.workload_status);
-                    return (
-                      <tr key={member.id || member.name}>
-                        <td className="db-workload-name">{member.name}</td>
-                        <td>{member.active_tasks ?? member.assigned_tasks ?? 0}</td>
-                        <td>{member.completed_tasks ?? 0}</td>
-                        <td>{member.overdue_tasks ?? 0}</td>
-                        <td>
-                          <span
-                            className="db-workload-status"
-                            style={{ background: ws.bg, color: ws.color }}
-                          >
-                            {member.workload_label || "Balanced"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
+        {/* ══ COMMAND GRID ══════════════════════════════════════════ */}
         <div className="db-command-grid">
-          <section className="db-card db-focus-card">
+          {/* Focus */}
+          <section className="db-card">
             <div className="db-card-header">
-              <div>
-                <h2 className="db-card-title">Today&apos;s Focus</h2>
-                <p className="db-card-sub">Highest signal items for admins</p>
-              </div>
-              <Target size={16} className="db-card-icon-accent" />
+              <div><h2 className="db-card-title">Today's Focus</h2><p className="db-card-sub">Highest signal items right now</p></div>
+              <Target size={15} className="db-card-icon-accent" />
             </div>
-
             <div className="db-focus-list">
-              {focusItems.map((item) => (
+              {focusItems.map(item => (
                 <Link key={item.label} to={item.to} className={`db-focus-item db-focus-item--${item.tone}`}>
                   <span className="db-focus-value">{loading ? "..." : item.value}</span>
-                  <span className="db-focus-copy">
-                    <strong>{item.label}</strong>
-                    <small>{item.copy}</small>
-                  </span>
-                  <ArrowRight size={14} />
+                  <span className="db-focus-copy"><strong>{item.label}</strong><small>{item.copy}</small></span>
+                  <ArrowRight size={13} />
                 </Link>
               ))}
             </div>
           </section>
 
+          {/* Team Pulse */}
           <section className="db-card db-pulse-card">
             <div className="db-card-header">
-              <div>
-                <h2 className="db-card-title">Team Pulse</h2>
-                <p className="db-card-sub">Capacity and completion at a glance</p>
-              </div>
-              <Sparkles size={15} className="db-card-icon-accent" />
+              <div><h2 className="db-card-title">Team Pulse</h2><p className="db-card-sub">Capacity and completion</p></div>
+              <Sparkles size={14} className="db-card-icon-accent" />
             </div>
-
-            <div className="db-pulse-stack">
-              <div className="db-pulse-row">
-                <span>Completion rate</span>
-                <strong>{loading ? "..." : `${completionPct}%`}</strong>
+            <div className="db-pulse-body-layout">
+              <div className="db-pulse-stack">
+                <div className="db-pulse-row">
+                  <span>Completion rate</span>
+                  <strong>{loading ? "..." : `${completionPct}%`}</strong>
+                </div>
+                <div className="db-pulse-meter"><span style={{ width: `${completionPct}%` }} /></div>
+                <div className="db-pulse-meta">
+                  <span>{pluralize(overview?.completed_tasks ?? 0, "task")} completed</span>
+                  <span>{pluralize(openTasks, "task")} open</span>
+                </div>
+                <div className="db-pulse-foot">
+                  <Users size={13} />
+                  {loading ? "Loading..." : `${overview?.team_members ?? 0} active team members`}
+                </div>
               </div>
-              <div className="db-pulse-meter">
-                <span style={{ width: `${completionPct}%` }} />
-              </div>
-              <div className="db-pulse-meta">
-                <span>{pluralize(overview?.completed_tasks ?? 0, "task")} completed</span>
-                <span>{pluralize(openTasks, "task")} open</span>
-              </div>
-              <div className="db-pulse-foot">
-                <Users size={15} />
-                {loading ? "Loading members..." : `${overview?.team_members ?? 0} active team members`}
+              <div className="db-pulse-illustration-wrap">
+                <img src={teamworkIllustration} alt="Teamwork" className="db-pulse-illustration" />
               </div>
             </div>
           </section>
 
-          <section className="db-card db-actions-card">
+          {/* Quick Actions */}
+          <section className="db-card">
             <div className="db-card-header">
-              <div>
-                <h2 className="db-card-title">Quick Actions</h2>
-                <p className="db-card-sub">Common admin workflows</p>
-              </div>
-              <Zap size={15} className="db-card-icon-accent" />
+              <div><h2 className="db-card-title">Quick Actions</h2><p className="db-card-sub">Common workflows</p></div>
+              <Zap size={14} className="db-card-icon-accent" />
             </div>
-
             <div className="db-action-list">
-              {quickActions.map((action) => (
+              {quickActions.map(action => (
                 <Link key={action.label} to={action.to} className="db-action-item">
-                  <span>
-                    <strong>{action.label}</strong>
-                    <small>{action.copy}</small>
-                  </span>
-                  <ArrowRight size={14} />
+                  <span><strong>{action.label}</strong><small>{action.copy}</small></span>
+                  <ArrowRight size={13} />
                 </Link>
               ))}
             </div>
           </section>
         </div>
 
-        <div className="db-mid-row">
-
+        {/* ══ CHART ANALYTICS ROW ═══════════════════════════════════ */}
+        <div className="db-analytics-row">
           {/* Area chart */}
-          <div className="db-card db-chart-card">
+          <div className="db-card db-activity-chart">
             <div className="db-card-header">
-              <div>
-                <h2 className="db-card-title">Task Activity</h2>
-                <p className="db-card-sub">Tasks completed this week</p>
-              </div>
+              <div><h2 className="db-card-title">Task Activity</h2><p className="db-card-sub">Tasks completed this week</p></div>
               <span className="db-live-badge">
-                <span className="db-pulse db-pulse--green" />
+                <span className="db-pulse db-pulse--green" style={{ width:6, height:6, borderRadius:"50%", background:"#3D9A5F", flexShrink:0 }} />
                 Live
               </span>
             </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={chartData} margin={{ top: 8, right: 0, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#C96442" stopOpacity={0.18} />
-                    <stop offset="95%" stopColor="#C96442" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip content={<GlassTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="tasks"
-                  name="Tasks"
-                  stroke="#C96442"
-                  strokeWidth={2}
-                  fill="url(#areaGrad)"
-                  dot={{ r: 3, fill: "#C96442", strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: "#C96442", stroke: "#fff", strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Activity feed */}
-          <div className="db-card db-feed-card">
-            <div className="db-card-header">
-              <div>
-                <h2 className="db-card-title">Activity Feed</h2>
-                <p className="db-card-sub">Recent workspace updates</p>
-              </div>
-              <Link to="/dashboard/activity" className="db-link-btn">View all <ArrowRight size={12} /></Link>
-            </div>
-
-            <div className="db-feed-list">
-              {activitiesLoading ? (
-                [1, 2, 3].map(i => <div key={i} className="db-feed-skeleton" />)
-              ) : activityFeed.length === 0 ? (
-                <div className="db-feed-empty">
-                  <Zap size={22} />
-                  <p>No recent activity</p>
-                </div>
-              ) : (
-                activityFeed.map(item => (
-                  <div key={item.id} className="db-feed-item">
-                    <span className="db-feed-dot" style={{ background: item.color, boxShadow: `0 0 0 3px ${item.color}22` }} />
-                    <div className="db-feed-body">
-                      <p className="db-feed-text">{item.text}</p>
-                      <time className="db-feed-time">{item.time}</time>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="db-chart-wrapper">
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={chartData} margin={{ top:8, right:0, left:-20, bottom:0 }}>
+                  <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#17191c" stopOpacity={0.14} />
+                      <stop offset="95%" stopColor="#17191c" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(23,25,28,0.05)" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize:11, fill:"#a3a6af" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize:11, fill:"#a3a6af" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<GlassTooltip />} />
+                  <Area type="monotone" dataKey="tasks" name="Tasks" stroke="#17191c" strokeWidth={2} fill="url(#areaGrad)" dot={{ r:3, fill:"#17191c", strokeWidth:0 }} activeDot={{ r:5, fill:"#17191c", stroke:"#fff", strokeWidth:2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
-        </div>
 
-        {/* ── BOTTOM ROW: 3 charts ── */}
-        <div className="db-bottom-row">
-
-          {/* Donut - Task Distribution */}
-          <div className="db-card db-donut-card">
+          {/* Donut Chart */}
+          <div className="db-card db-donut-chart">
             <div className="db-card-header">
-              <div>
-                <h2 className="db-card-title">Task Distribution</h2>
-                <p className="db-card-sub">By status</p>
-              </div>
+              <div><h2 className="db-card-title">Task Distribution</h2><p className="db-card-sub">By current status</p></div>
             </div>
             <div className="db-donut-body">
-              <ResponsiveContainer width={150} height={150}>
+              <ResponsiveContainer width={120} height={120}>
                 <PieChart>
-                  <Pie
-                    data={statusDistribution}
-                    cx="50%" cy="50%"
-                    innerRadius={42} outerRadius={68}
-                    dataKey="value"
-                    strokeWidth={3}
-                    stroke="#FAFAFA"
-                  >
-                    {statusDistribution.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
+                  <Pie data={statusDistribution} cx="50%" cy="50%" innerRadius={32} outerRadius={52} dataKey="value" strokeWidth={3} stroke="#f7f7f8">
+                    {statusDistribution.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
                   <Tooltip content={<GlassTooltip />} />
                 </PieChart>
@@ -1034,150 +531,381 @@ export default function Dashboard() {
                   <div key={s.name} className="db-legend-row">
                     <span className="db-legend-dot" style={{ background: s.color }} />
                     <span className="db-legend-name">{s.name}</span>
-                    <span className="db-legend-val">{loading ? "..." : s.value}</span>
+                    <span className="db-legend-val">{loading ? "–" : s.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Project Progress */}
-          <div className="db-card db-progress-card">
+        {/* ══ CONSOLIDATED WIDGETS ROW ══════════════════════════════ */}
+        <div className="db-widget-columns-row">
+          {/* Column 1: Schedule & Deadlines */}
+          <div className="db-card db-column-widget-card">
             <div className="db-card-header">
               <div>
-                <h2 className="db-card-title">Project Progress</h2>
-                <p className="db-card-sub">Completion by project</p>
+                <h2 className="db-card-title">Schedule & Deadlines</h2>
+                <p className="db-card-sub">Holidays, events & task deadlines</p>
               </div>
-              <Target size={16} className="db-card-icon-accent" />
+              <CalendarDays size={15} className="db-card-icon-accent" />
             </div>
-            <div className="db-progress-list">
-              {projectProgress.length === 0 ? (
-                <div className="db-feed-empty"><p>No project data yet</p></div>
-              ) : (
-                projectProgress.map(p => {
-                  const healthStyle = getHealthStyle(p.health);
-                  const row = (
-                    <div className="db-progress-item">
-                      <div className="db-progress-meta">
-                        <span className="db-progress-name">
-                          {p.name}
-                          {p.health && (
-                            <em
-                              className="db-progress-health"
-                              style={{ color: healthStyle.color, background: healthStyle.bg }}
-                            >
-                              {p.health}
-                            </em>
-                          )}
-                        </span>
-                        <span className="db-progress-pct" style={{ color: p.color }}>{p.pct}%</span>
-                      </div>
-                      {p.lead && <small className="db-progress-lead">Lead: {p.lead}</small>}
-                      <div className="db-progress-track">
-                        <div
-                          className="db-progress-fill"
-                          style={{ width: `${p.pct}%`, background: `linear-gradient(90deg, ${p.color}, ${p.color}cc)` }}
-                        />
-                      </div>
+            <div className="db-column-widget-content">
+              {/* Holidays */}
+              <div className="db-widget-section">
+                <h3 className="db-widget-section-title">Holidays</h3>
+                {loading ? (
+                  <div className="db-widget-skeleton" />
+                ) : upcomingHolidays.length === 0 ? (
+                  <div className="db-widget-empty-text">No upcoming holidays</div>
+                ) : (
+                  upcomingHolidays.slice(0, 2).map(e => (
+                    <div key={`h-${e.id}`} className="db-widget-section-item">
+                      <span className="db-widget-section-dot blue" />
+                      <span className="db-widget-section-copy">
+                        <strong>{e.title}</strong>
+                        <small>{formatDateRange(e.start_date, e.end_date)}</small>
+                      </span>
                     </div>
-                  );
-                  return p.id ? (
-                    <Link key={p.id} to={`/dashboard/projects/${p.id}`} className="db-progress-link">
-                      {row}
+                  ))
+                )}
+              </div>
+
+              {/* Company Events */}
+              <div className="db-widget-section">
+                <h3 className="db-widget-section-title">Events</h3>
+                {loading ? (
+                  <div className="db-widget-skeleton" />
+                ) : upcomingCompanyEvents.length === 0 ? (
+                  <div className="db-widget-empty-text">No upcoming events</div>
+                ) : (
+                  upcomingCompanyEvents.slice(0, 2).map(e => (
+                    <div key={`ce-${e.id}`} className="db-widget-section-item">
+                      <span className="db-widget-section-dot purple" />
+                      <span className="db-widget-section-copy">
+                        <strong>{e.title}</strong>
+                        <small>{formatDateRange(e.start_date, e.end_date)}</small>
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Task Deadlines */}
+              <div className="db-widget-section">
+                <h3 className="db-widget-section-title">Task Deadlines</h3>
+                {loading ? (
+                  <div className="db-widget-skeleton" />
+                ) : upcomingDeadlines.length === 0 ? (
+                  <div className="db-widget-empty-text">No task deadlines</div>
+                ) : (
+                  upcomingDeadlines.slice(0, 3).map(d => (
+                    <Link key={`d-${d.source}-${d.id}`} to={d.source === "task" ? "/dashboard/tasks" : "/dashboard/calendar"} className="db-widget-section-item link">
+                      <span className="db-widget-section-dot orange" />
+                      <span className="db-widget-section-copy">
+                        <strong>{d.title}</strong>
+                        <small>{formatDueDate(d.date)} · {d.project || formatLabel(d.source)}</small>
+                      </span>
+                      <ArrowRight size={11} />
                     </Link>
-                  ) : (
-                    <div key={p.name}>{row}</div>
-                  );
-                })
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Team Workload Bar Chart */}
-          <div className="db-card db-workload-card">
+          {/* Column 2: Milestones & Risks */}
+          <div className="db-card db-column-widget-card">
             <div className="db-card-header">
               <div>
-                <h2 className="db-card-title">Workload Chart</h2>
-                <p className="db-card-sub">Active assignments per member</p>
+                <h2 className="db-card-title">Milestones & Risks</h2>
+                <p className="db-card-sub">Project warnings and achievements</p>
               </div>
-              <Sparkles size={15} className="db-card-icon-accent" />
+              <Target size={15} className="db-card-icon-accent" />
             </div>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={teamWorkload} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip content={<GlassTooltip />} />
-                <Bar dataKey="tasks" name="Active" radius={[6, 6, 0, 0]} barSize={26}>
-                  {teamWorkload.map((e, i) => <Cell key={i} fill={e.color} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="db-column-widget-content">
+              {/* Risks */}
+              <div className="db-widget-section">
+                <h3 className="db-widget-section-title">Projects at Risk</h3>
+                {loading ? (
+                  <div className="db-widget-skeleton" />
+                ) : (!overview?.projects_at_risk || overview.projects_at_risk.length === 0) ? (
+                  <div className="db-widget-empty-text text-green">All projects healthy</div>
+                ) : (
+                  overview.projects_at_risk.slice(0, 3).map(p => {
+                    const hs = getHealthStyle(p.health_label);
+                    return (
+                      <Link key={`risk-${p.id}`} to={`/dashboard/projects/${p.id}`} className="db-widget-section-item link">
+                        <span className="db-widget-section-dot red" />
+                        <span className="db-widget-section-copy">
+                          <strong>{p.name}</strong>
+                          <small style={{ color: hs.color }}>{p.health_label || "At Risk"}</small>
+                        </span>
+                        <ArrowRight size={11} />
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Upcoming Milestones */}
+              <div className="db-widget-section">
+                <h3 className="db-widget-section-title">Upcoming Milestones</h3>
+                {loading ? (
+                  <div className="db-widget-skeleton" />
+                ) : (!overview?.upcoming_milestones || overview.upcoming_milestones.length === 0) ? (
+                  <div className="db-widget-empty-text">No upcoming milestones</div>
+                ) : (
+                  overview.upcoming_milestones.slice(0, 3).map(m => (
+                    <Link key={`um-${m.id}`} to={`/dashboard/projects/${m.project_id}`} className="db-widget-section-item link">
+                      <span className="db-widget-section-dot purple" />
+                      <span className="db-widget-section-copy">
+                        <strong>{m.title}</strong>
+                        <small>{formatDueDate(m.target_date)} · {m.project_name}</small>
+                      </span>
+                      <ArrowRight size={11} />
+                    </Link>
+                  ))
+                )}
+              </div>
+
+              {/* Completed Milestones */}
+              <div className="db-widget-section">
+                <h3 className="db-widget-section-title">Completed Milestones</h3>
+                {loading ? (
+                  <div className="db-widget-skeleton" />
+                ) : (!overview?.completed_milestones || overview.completed_milestones.length === 0) ? (
+                  <div className="db-widget-empty-text">No milestones completed recently</div>
+                ) : (
+                  overview.completed_milestones.slice(0, 2).map(m => (
+                    <Link key={`cm-${m.id}`} to={`/dashboard/projects/${m.project_id}`} className="db-widget-section-item link">
+                      <span className="db-widget-section-dot green" />
+                      <span className="db-widget-section-copy">
+                        <strong>{m.title}</strong>
+                        <small>{formatDueDate(m.target_date)} · {m.project_name}</small>
+                      </span>
+                      <ArrowRight size={11} />
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Absence & Approvals */}
+          <div className="db-card db-column-widget-card">
+            <div className="db-card-header">
+              <div>
+                <h2 className="db-card-title">Absence & Approvals</h2>
+                <p className="db-card-sub">Leave tracking and approval queue</p>
+              </div>
+              <PlaneTakeoff size={15} className="db-card-icon-accent" />
+            </div>
+            <div className="db-column-widget-content">
+              {/* Approvals */}
+              {canReviewLeave && (
+                <div className="db-widget-section">
+                  <h3 className="db-widget-section-title">Approvals Queue</h3>
+                  {loading ? (
+                    <div className="db-widget-skeleton" />
+                  ) : (
+                    <Link to="/dashboard/leave" className="db-leave-approvals-banner">
+                      <div className="db-leave-banner-number">
+                        {overview?.pending_leave_requests ?? 0}
+                      </div>
+                      <div className="db-leave-banner-text">
+                        <strong>Pending Leave Requests</strong>
+                        <small>Review leave approval requests</small>
+                      </div>
+                      <ArrowRight size={14} />
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {/* People on Leave Today */}
+              <div className="db-widget-section">
+                <h3 className="db-widget-section-title">Out of Office Today</h3>
+                {loading ? (
+                  <div className="db-widget-skeleton" />
+                ) : peopleOnLeave.length === 0 ? (
+                  <div className="db-widget-empty-text">Everyone is present today</div>
+                ) : (
+                  peopleOnLeave.slice(0, 4).map(l => (
+                    <div key={`leave-${l.id}`} className="db-widget-section-item">
+                      <span className="db-widget-section-dot green" />
+                      <span className="db-widget-section-copy">
+                        <strong>{l.employee?.name || l.employee?.email || "Team member"}</strong>
+                        <small>{l.leave_type_label || "Approved leave"} · {formatDateRange(l.start_date, l.end_date)}</small>
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ── RECENT TASKS TABLE ── */}
-        <div className="db-card db-table-card">
-          <div className="db-card-header">
-            <div>
-              <h2 className="db-card-title">Recent Tasks</h2>
-              <p className="db-card-sub">Latest activity across all projects</p>
+        {/* ══ TEAM WORKLOAD TABLE & CHART ROW ════════════════════════ */}
+        <div className="db-workload-row">
+          <section className="db-card db-workload-table-card">
+            <div className="db-card-header">
+              <div>
+                <h2 className="db-card-title">Team Workload</h2>
+                <p className="db-card-sub">{user?.role === "employee" ? "Your current assignment load" : "Assignment distribution across the organization"}</p>
+              </div>
+              <Users size={15} className="db-card-icon-accent" />
             </div>
-            <Link to="/dashboard/tasks" className="db-link-btn">
-              View all <ArrowRight size={12} />
-            </Link>
+            <div className="db-workload-table-wrap">
+              <table className="db-workload-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Assigned</th>
+                    <th>Completed</th>
+                    <th>Overdue</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    [1,2,3].map(i => <tr key={i}><td colSpan={5}><div className="db-table-skeleton" /></td></tr>)
+                  ) : teamWorkloadMembers.length === 0 ? (
+                    <tr><td colSpan={5} className="db-table-empty">No workload data available</td></tr>
+                  ) : (
+                    teamWorkloadMembers.map(member => {
+                      const ws = getWorkloadStyle(member.workload_status);
+                      return (
+                        <tr key={member.id || member.name}>
+                          <td className="db-workload-name">{member.name}</td>
+                          <td>{member.active_tasks ?? member.assigned_tasks ?? 0}</td>
+                          <td>{member.completed_tasks ?? 0}</td>
+                          <td>{member.overdue_tasks ?? 0}</td>
+                          <td><span className="db-workload-status" style={{ background: ws.bg, color: ws.color }}>{member.workload_label || "Balanced"}</span></td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="db-card db-workload-chart-card">
+            <div className="db-card-header">
+              <div><h2 className="db-card-title">Workload Chart</h2><p className="db-card-sub">Assignments per member</p></div>
+              <Sparkles size={14} className="db-card-icon-accent" />
+            </div>
+            <div className="db-workload-chart-wrap">
+              <ResponsiveContainer width="100%" height={150}>
+                <BarChart data={teamWorkload} margin={{ top:4, right:4, left:-20, bottom:0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(23,25,28,0.05)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize:10, fill:"#a3a6af" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize:10, fill:"#a3a6af" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<GlassTooltip />} />
+                  <Bar dataKey="tasks" name="Active" radius={[5,5,0,0]} barSize={22}>
+                    {teamWorkload.map((e, i) => <Cell key={i} fill={e.color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        </div>
+
+        {/* ══ BOTTOM ROW: Recent Tasks + Project Progress & Activity ══ */}
+        <div className="db-bottom-layout">
+          {/* Recent Tasks Table */}
+          <div className="db-card db-recent-tasks-card">
+            <div className="db-card-header">
+              <div><h2 className="db-card-title">Recent Tasks</h2><p className="db-card-sub">Latest activity across all projects</p></div>
+              <Link to="/dashboard/tasks" className="db-link-btn">View all <ArrowRight size={11} /></Link>
+            </div>
+            <div className="db-table-wrap">
+              <table className="db-table">
+                <thead>
+                  <tr><th>Task</th><th>Project</th><th>Priority</th><th>Status</th><th>Assignee</th><th>Due</th></tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    [1,2,3].map(i => <tr key={i}><td colSpan={6}><div className="db-table-skeleton" /></td></tr>)
+                  ) : recentTasks.length === 0 ? (
+                    <tr><td colSpan={6} className="db-table-empty">No recent tasks found</td></tr>
+                  ) : (
+                    recentTasks.slice(0, 6).map(row => (
+                      <tr key={row.id}>
+                        <td className="db-task-name">{row.task}</td>
+                        <td className="db-task-project">{row.project}</td>
+                        <td><span className="db-priority-tag" style={{ color: row.priorityColor, background: `${row.priorityColor}14`, borderColor: `${row.priorityColor}30` }}><span className="db-priority-dot" style={{ background: row.priorityColor }} />{row.priority}</span></td>
+                        <td><span className="db-status-tag" style={{ background: row.statusBg, color: row.statusColor }}>{row.status}</span></td>
+                        <td><div className="db-assignee-chip" style={{ background: row.assigneeBg }}>{row.assignee}</div></td>
+                        <td className="db-due-date">{row.due}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="db-table-wrap">
-            <table className="db-table">
-              <thead>
-                <tr>
-                  <th>Task</th>
-                  <th>Project</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Assignee</th>
-                  <th>Due</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  [1, 2, 3].map(i => (
-                    <tr key={i}>
-                      <td colSpan={6}><div className="db-table-skeleton" /></td>
-                    </tr>
-                  ))
-                ) : recentTasks.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="db-table-empty">No recent tasks found</td>
-                  </tr>
+          {/* Right side stack: Project Progress and Activity Feed */}
+          <div className="db-bottom-sidebar-stack">
+            {/* Project Progress */}
+            <div className="db-card db-project-progress-card">
+              <div className="db-card-header">
+                <div><h2 className="db-card-title">Project Progress</h2><p className="db-card-sub">Milestone completion</p></div>
+                <Target size={14} className="db-card-icon-accent" />
+              </div>
+              <div className="db-progress-list">
+                {projectProgress.length === 0 ? (
+                  <div className="db-feed-empty"><p>No project data yet</p></div>
                 ) : (
-                  recentTasks.map(row => (
-                    <tr key={row.id}>
-                      <td className="db-task-name">{row.task}</td>
-                      <td className="db-task-project">{row.project}</td>
-                      <td>
-                        <span className="db-priority-tag" style={{ color: row.priorityColor, background: `${row.priorityColor}14`, borderColor: `${row.priorityColor}30` }}>
-                          <span className="db-priority-dot" style={{ background: row.priorityColor }} />
-                          {row.priority}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="db-status-tag" style={{ background: row.statusBg, color: row.statusColor }}>
-                          {row.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="db-assignee-chip" style={{ background: row.assigneeBg }}>
-                          {row.assignee}
+                  projectProgress.slice(0, 3).map(p => {
+                    const hs = getHealthStyle(p.health);
+                    const row = (
+                      <div className="db-progress-item">
+                        <div className="db-progress-meta">
+                          <span className="db-progress-name">
+                            {p.name}
+                            {p.health && <em className="db-progress-health" style={{ color: hs.color, background: hs.bg }}>{p.health}</em>}
+                          </span>
+                          <span className="db-progress-pct" style={{ color: p.color }}>{p.pct}%</span>
                         </div>
-                      </td>
-                      <td className="db-due-date">{row.due}</td>
-                    </tr>
+                        {p.lead && <small className="db-progress-lead">Lead: {p.lead}</small>}
+                        <div className="db-progress-track">
+                          <div className="db-progress-fill" style={{ width: `${p.pct}%`, background: `linear-gradient(90deg, ${p.color}, ${p.color}cc)` }} />
+                        </div>
+                      </div>
+                    );
+                    return p.id ? <Link key={p.id} to={`/dashboard/projects/${p.id}`} className="db-progress-link">{row}</Link> : <div key={p.name}>{row}</div>;
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Activity feed */}
+            <div className="db-card db-activity-feed-card">
+              <div className="db-card-header">
+                <div><h2 className="db-card-title">Activity Feed</h2><p className="db-card-sub">Recent workspace updates</p></div>
+                <Link to="/dashboard/activity" className="db-link-btn">View all <ArrowRight size={11} /></Link>
+              </div>
+              <div className="db-feed-list">
+                {activitiesLoading ? (
+                  [1,2,3].map(i => <div key={i} className="db-feed-skeleton" />)
+                ) : activityFeed.length === 0 ? (
+                  <div className="db-feed-empty"><Zap size={20} /><p>No recent activity</p></div>
+                ) : (
+                  activityFeed.slice(0, 4).map(item => (
+                    <div key={item.id} className="db-feed-item">
+                      <span className="db-feed-dot" style={{ background: item.color, boxShadow: `0 0 0 3px ${item.color}22` }} />
+                      <div className="db-feed-body">
+                        <p className="db-feed-text">{item.text}</p>
+                        <time className="db-feed-time">{item.time}</time>
+                      </div>
+                    </div>
                   ))
                 )}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         </div>
 

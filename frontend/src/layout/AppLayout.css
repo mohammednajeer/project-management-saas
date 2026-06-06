@@ -1,9 +1,9 @@
 /* AppLayout.css — updated for floating sidebar */
 .app-layout {
-  --admin-page-bg: #f0f2fa;
-  --admin-bg-wash-1: rgba(99, 84, 196, 0.06);
-  --admin-bg-wash-2: rgba(59, 130, 246, 0.05);
-  --admin-bg-wash-3: rgba(236, 72, 153, 0.03);
+  --admin-page-bg: #fafbfc;
+  --admin-bg-wash-1: rgba(99, 84, 196, 0.03);
+  --admin-bg-wash-2: rgba(59, 130, 246, 0.02);
+  --admin-bg-wash-3: rgba(236, 72, 153, 0.02);
   display: flex;
   min-height: 100vh;
   background: var(--admin-page-bg);

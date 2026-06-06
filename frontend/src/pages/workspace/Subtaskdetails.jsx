@@ -198,7 +198,7 @@ function Skeleton() {
 }
 
 /* ─── ISSUE MODAL ────────────────────────────────────────────────────────── */
-function IssueModal({ subtask, task, onClose, onSuccess }) {
+function IssueModal({ subtask, task, project, onClose, onSuccess }) {
   const [form, setForm]         = useState({ title: "", description: "", priority: "medium" });
   const [files, setFiles]       = useState([]);
   const [submitting, setSub]    = useState(false);
@@ -214,7 +214,7 @@ function IssueModal({ subtask, task, onClose, onSuccess }) {
       fd.append("title",       form.title.trim());
       fd.append("description", form.description.trim());
       fd.append("priority",    form.priority);
-      fd.append("project",     task?.project_data?.id || task?.project?.id || "");
+      fd.append("project",     project?.id || "");
       fd.append("task",        task?.id || "");
       fd.append("subtask",     subtask?.id || "");
       files.forEach(f => fd.append("attachments", f));
@@ -407,7 +407,7 @@ export default function SubtaskDetails() {
     e.preventDefault();
     if (!comment.trim()) return;
     setSubmittingComment(true);
-    const taskId = subtask?.task?.id;
+    const taskId = subtask?.task_data?.id || subtask?.task;
     try {
       await api.post(`/tasks/comments/${taskId}/`, {
         message: comment.trim(),
@@ -445,10 +445,16 @@ export default function SubtaskDetails() {
   }, [subtaskId]);
 
   /* ── Derived ─────────────────────────────────────────────────────────── */
-  const task      = subtask?.task;
-  const project   = task?.project_data || task?.project;
+  const task      = subtask?.task_data;
+  const project   = subtask?.project_data;
   const comments  = useMemo(() => subtask?.comments  || [], [subtask]);
   const issues    = useMemo(() => subtask?.issues    || [], [subtask]);
+  const activeIssuesCount = useMemo(() => {
+    return issues.filter(i => i.status !== "resolved" && i.status !== "closed").length;
+  }, [issues]);
+  const issueAttachmentsCount = useMemo(() => {
+    return issues.reduce((acc, issue) => acc + (issue.attachments?.length || 0), 0);
+  }, [issues]);
   const activities= useMemo(() => subtask?.activities|| [], [subtask]);
   const siblings  = useMemo(() => subtask?.sibling_subtasks || [], [subtask]);
   const taskFiles = useMemo(
@@ -459,7 +465,7 @@ export default function SubtaskDetails() {
 
   const sectionCounts = {
     comments:    comments.length,
-    attachments: attachments.length,
+    attachments: attachments.length + issueAttachmentsCount,
     resources:   taskFiles.length,
     issues:      issues.length,
     activity:    activities.length,
@@ -516,6 +522,12 @@ export default function SubtaskDetails() {
                 <Users size={11} />
                 <AvatarStack users={subtask?.assigned_users || []} />
               </span>
+              {activeIssuesCount > 0 && (
+                <span className="sd-blocked-badge">
+                  <AlertTriangle size={11} />
+                  Blocked ({activeIssuesCount})
+                </span>
+              )}
             </div>
           </div>
 
@@ -553,6 +565,15 @@ export default function SubtaskDetails() {
       </header>
 
       {error && <div className="sd-error-inline">{error}</div>}
+
+      {activeIssuesCount > 0 && (
+        <div className="sd-blocked-banner">
+          <AlertTriangle size={16} className="sd-blocked-banner-icon" />
+          <div className="sd-blocked-banner-content">
+            <strong>Blockage Alert:</strong> This subtask has {activeIssuesCount} active issue{activeIssuesCount > 1 ? "s" : ""} blocking progress. You can view details in the Issues tab below.
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════
           MAIN SHELL
@@ -704,32 +725,58 @@ export default function SubtaskDetails() {
 
           {/* ── ATTACHMENTS ── */}
           {activeSection === "attachments" && (
-            <section className="sd-panel sd-glass sd-anim">
-              <div className="sd-panel-head">
-                <div>
-                  <h2><Paperclip size={14} className="sd-panel-head-icon" /> Subtask Attachments</h2>
-                  <p>Files uploaded for this subtask only</p>
-                </div>
-                <label className="sd-upload-label">
-                  <FilePlus size={13} />
-                  Upload
-                  <input
-                    type="file"
-                    hidden
-                    multiple
-                    onChange={e => { uploadFile(e.target.files?.[0]); e.target.value = ""; }}
-                  />
-                </label>
-              </div>
-
-              {attachments.length === 0
-                ? <EmptyState icon={Paperclip} text="No attachments yet. Upload your work files here." />
-                : (
-                  <div className="sd-file-list">
-                    {attachments.map(f => <FileCard key={f.id} file={f} />)}
+            <div className="sd-attachments-view">
+              <section className="sd-panel sd-glass sd-anim">
+                <div className="sd-panel-head">
+                  <div>
+                    <h2><Paperclip size={14} className="sd-panel-head-icon" /> Subtask Attachments</h2>
+                    <p>Files uploaded for this subtask only</p>
                   </div>
-                )}
-            </section>
+                  <label className="sd-upload-label">
+                    <FilePlus size={13} />
+                    Upload
+                    <input
+                      type="file"
+                      hidden
+                      multiple
+                      onChange={e => { uploadFile(e.target.files?.[0]); e.target.value = ""; }}
+                    />
+                  </label>
+                </div>
+
+                {attachments.length === 0
+                  ? <EmptyState icon={Paperclip} text="No attachments yet. Upload your work files here." />
+                  : (
+                    <div className="sd-file-list">
+                      {attachments.map(f => <FileCard key={f.id} file={f} />)}
+                    </div>
+                  )}
+              </section>
+
+              {issues.some(issue => issue.attachments?.length > 0) && (
+                <section className="sd-panel sd-glass sd-anim sd-issue-attachments-section" style={{ marginTop: "16px" }}>
+                  <div className="sd-panel-head">
+                    <div>
+                      <h2><AlertTriangle size={14} className="sd-panel-head-icon" color="#DC2626" /> Issue Attachments</h2>
+                      <p>Files attached to issues raised on this subtask</p>
+                    </div>
+                  </div>
+                  <div className="sd-file-list">
+                    {issues.flatMap(issue =>
+                      (issue.attachments || []).map(f => (
+                        <FileCard 
+                          key={f.id} 
+                          file={{
+                            ...f,
+                            original_name: `[Issue: ${issue.title}] ${f.original_name || f.name || "File"}`
+                          }} 
+                        />
+                      ))
+                    )}
+                  </div>
+                </section>
+              )}
+            </div>
           )}
 
           {/* ── TASK RESOURCES ── */}
@@ -985,6 +1032,7 @@ export default function SubtaskDetails() {
         <IssueModal
           subtask={subtask}
           task={task}
+          project={project}
           onClose={() => setShowIssueModal(false)}
           onSuccess={() => loadSubtask()}
         />

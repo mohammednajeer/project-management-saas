@@ -249,9 +249,10 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        if not subtask.assigned_to.filter(
-            id=request.user.id
-        ).exists():
+        is_assigned_to_subtask = subtask.assigned_to.filter(id=request.user.id).exists()
+        is_assigned_to_subtask_issue = subtask.issues.filter(assigned_to=request.user).exists()
+
+        if not (is_assigned_to_subtask or is_assigned_to_subtask_issue):
 
             return Response(
                 {
@@ -292,6 +293,14 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
         )
 
         data = SubTaskSerializer(subtask).data
+        data["task_data"] = {
+            "id": str(subtask.task.id),
+            "title": subtask.task.title,
+        }
+        data["project_data"] = {
+            "id": str(subtask.task.project.id),
+            "name": subtask.task.project.name,
+        }
 
         data["comments"] = (
             TaskCommentSerializer(
@@ -307,16 +316,39 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
             ).data
         )
 
-        data["issues"] = [
-            {
+        data["issues"] = []
+        for issue in issues:
+            attachments_list = []
+            try:
+                attachments_list = [
+                    {
+                        "id": str(attachment.id),
+                        "file": attachment.file.url,
+                        "original_name": attachment.original_name,
+                        "uploaded_at": attachment.uploaded_at,
+                        "uploaded_by_data": {
+                            "id": str(attachment.uploaded_by.id),
+                            "name": attachment.uploaded_by.name,
+                            "email": attachment.uploaded_by.email,
+                            "role": attachment.uploaded_by.role,
+                        },
+                        "file_size": attachment.file.size,
+                    }
+                    for attachment in issue.attachments.select_related(
+                        "uploaded_by"
+                    ).all()
+                ]
+            except (AttributeError, OperationalError, ProgrammingError):
+                attachments_list = []
+
+            data["issues"].append({
                 "id": str(issue.id),
                 "title": issue.title,
                 "description": issue.description,
                 "status": issue.status,
                 "priority": issue.priority,
-            }
-            for issue in issues
-        ]
+                "attachments": attachments_list,
+            })
 
         data["sibling_subtasks"] = (
             SubTaskSerializer(
@@ -483,7 +515,28 @@ class MyTasksView(APIView):
                 "task",
                 "task__project"
             )
+            .annotate(
+                num_comments=Count("comments", distinct=True),
+                num_attachments=Count("attachments", distinct=True)
+            )
             .order_by("due_date")
+        )
+
+        issues = (
+            Issue.objects
+            .filter(
+                assigned_to=request.user
+            )
+            .select_related(
+                "project",
+                "task",
+                "subtask",
+                "subtask__task"
+            )
+            .annotate(
+                num_attachments=Count("attachments", distinct=True)
+            )
+            .order_by("-created_at")
         )
 
         data = []
@@ -515,6 +568,51 @@ class MyTasksView(APIView):
                         subtask.task.project.name
                     ),
                 },
+                "comments_count": subtask.num_comments,
+                "attachments_count": subtask.num_attachments,
+                "assignee_name": request.user.name or request.user.email,
+                "is_issue": False,
+            })
+
+        for issue in issues:
+
+            data.append({
+
+                "id": str(issue.id),
+
+                "title": issue.title,
+
+                "status": issue.status,
+
+                "priority": issue.priority,
+
+                "due_date": None,
+
+                "task": {
+                    "id": str(issue.task.id),
+                    "title": issue.task.title,
+                } if issue.task else {
+                    "id": str(issue.subtask.task.id),
+                    "title": issue.subtask.task.title,
+                } if (issue.subtask and hasattr(issue.subtask, "task") and issue.subtask.task) else None,
+
+                "subtask": {
+                    "id": str(issue.subtask.id),
+                    "title": issue.subtask.title,
+                } if issue.subtask else None,
+
+                "project": {
+                    "id": str(
+                        issue.project.id
+                    ),
+                    "title": (
+                        issue.project.name
+                    ),
+                },
+                "comments_count": 0,
+                "attachments_count": issue.num_attachments,
+                "assignee_name": request.user.name or request.user.email,
+                "is_issue": True,
             })
 
         return Response(data)
@@ -544,9 +642,12 @@ class EmployeeTaskWorkspaceView(APIView):
                     "comments",
                 )
                 .filter(
-                    id=task_id,
-                    project__organization=request.user.organization,
-                    subtasks__assigned_to=request.user,
+                    Q(id=task_id) &
+                    Q(project__organization=request.user.organization) & (
+                        Q(subtasks__assigned_to=request.user) |
+                        Q(issues__assigned_to=request.user) |
+                        Q(subtasks__issues__assigned_to=request.user)
+                    )
                 )
                 .distinct()
                 .get()

@@ -234,7 +234,6 @@ class IssueUpdateView(APIView):
 
     permission_classes = [
         IsAuthenticated,
-        IsManagerOrAdmin,
     ]
 
     def patch(self, request, issue_id):
@@ -243,6 +242,14 @@ class IssueUpdateView(APIView):
 
             issue = (
                 Issue.objects
+                .select_related(
+                    "project",
+                    "project__project_lead",
+                    "project__created_by",
+                    "task",
+                    "task__created_by",
+                    "raised_by",
+                )
                 .prefetch_related(
                     "attachments",
                     "attachments__uploaded_by",
@@ -261,6 +268,7 @@ class IssueUpdateView(APIView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
+
         old_status = issue.status
         old_priority = issue.priority
         status_value = request.data.get("status")
@@ -272,6 +280,57 @@ class IssueUpdateView(APIView):
         assigned_to_provided = "assigned_to" in request.data
         assigned_to_id = request.data.get("assigned_to")
         old_assigned_to = issue.assigned_to
+
+        if request.user.role == "employee":
+            if not issue.assigned_to or issue.assigned_to.id != request.user.id:
+                return Response(
+                    {
+                        "message": "You are not assigned to this issue."
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            requested_fields = set(request.data.keys())
+            if requested_fields - {"status"}:
+                return Response(
+                    {
+                        "message": "Employees are only allowed to update the status of assigned issues."
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            if not status_value:
+                return Response(
+                    {
+                        "message": "Status is required."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Valid transitions: open -> investigating, investigating -> resolved
+            if old_status == "open":
+                if status_value != "investigating":
+                    return Response(
+                        {
+                            "message": "Employees can only transition issues from open to investigating."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            elif old_status == "investigating":
+                if status_value != "resolved":
+                    return Response(
+                        {
+                            "message": "Employees can only transition issues from investigating to resolved."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {
+                        "message": f"Employees are not allowed to update issues with status '{old_status}'."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         if status_value:
             issue.status = status_value
@@ -342,6 +401,43 @@ class IssueUpdateView(APIView):
                     task=issue.task,
                     subtask=issue.subtask,
                 )
+
+                # Send status transition notifications
+                recipients = set()
+                if issue.status == "investigating":
+                    if issue.raised_by and issue.raised_by != request.user:
+                        recipients.add(issue.raised_by)
+                    
+                    for r_user in recipients:
+                        Notification.objects.create(
+                            user=r_user,
+                            title="Issue Investigating",
+                            message=f"Issue '{issue.title}' is now being investigated."
+                        )
+
+                elif issue.status == "resolved":
+                    if issue.raised_by and issue.raised_by != request.user:
+                        recipients.add(issue.raised_by)
+                    
+                    if issue.project.project_lead and issue.project.project_lead != request.user:
+                        recipients.add(issue.project.project_lead)
+                    
+                    assigned_manager = None
+                    if issue.task and issue.task.created_by and issue.task.created_by.role in ["manager", "admin"]:
+                        assigned_manager = issue.task.created_by
+                    elif issue.project.created_by and issue.project.created_by.role in ["manager", "admin"]:
+                        assigned_manager = issue.project.created_by
+                    
+                    if assigned_manager and assigned_manager != request.user:
+                        recipients.add(assigned_manager)
+                    
+                    resolver_name = request.user.name or request.user.email
+                    for r_user in recipients:
+                        Notification.objects.create(
+                            user=r_user,
+                            title="Issue Resolved",
+                            message=f"Issue '{issue.title}' has been resolved by {resolver_name}."
+                        )
 
 
         if old_priority != issue.priority:

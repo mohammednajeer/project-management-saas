@@ -54,10 +54,10 @@ const STATUS_PILL_CLASS = {
 };
 
 const DEADLINE_COLORS = {
-  todo:        "#8A87A0",
-  in_progress: "#3B82F6",
-  review:      "#6C53B3",
-  done:        "#16A34A",
+  todo:        "#9E9E9E",
+  in_progress: "#5B8CB8",
+  review:      "#8B7BA8",
+  done:        "#3D9A5F",
 };
 
 /* ─── HELPERS ────────────────────────────────────────────────────────────── */
@@ -102,8 +102,8 @@ function ProgressRing({ value }) {
       <svg className="wh-ring-svg" viewBox="0 0 80 80">
         <defs>
           <linearGradient id="wh-ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stopColor="#6C53B3" />
-            <stop offset="100%" stopColor="#9CAAF2" />
+            <stop offset="0%"   stopColor="#C96442" />
+            <stop offset="100%" stopColor="#D4835E" />
           </linearGradient>
         </defs>
         <circle className="wh-ring-track" cx="40" cy="40" r={r} />
@@ -235,31 +235,31 @@ export default function WorkspaceHome() {
   const statCards = useMemo(() => [
     {
       icon: Target,
-      iconBg: "#F2EFFE", iconColor: "#6C53B3",
+      iconBg: "#F5E6DA", iconColor: "#C96442",
       value: dashboard.assigned_tasks,
       label: "Assigned Tasks",
     },
     {
       icon: ListChecks,
-      iconBg: "#F5F3FF", iconColor: "#8B5CF6",
+      iconBg: "#D6E4F0", iconColor: "#5B8CB8",
       value: dashboard.assigned_subtasks,
       label: "Assigned Subtasks",
     },
     {
       icon: CheckCircle2,
-      iconBg: "#F0FDF4", iconColor: "#16A34A",
+      iconBg: "#E8F5ED", iconColor: "#3D9A5F",
       value: dashboard.completed_subtasks,
       label: "Completed",
     },
     {
       icon: Clock3,
-      iconBg: "#FFFBEB", iconColor: "#F59E0B",
+      iconBg: "#F5E6DA", iconColor: "#D4835E",
       value: dashboard.pending_subtasks,
       label: "Pending",
     },
     {
       icon: TrendingUp,
-      iconBg: "#EFF6FF", iconColor: "#3B82F6",
+      iconBg: "#D6E4F0", iconColor: "#3D6E8E",
       value: `${dashboard.completion_rate}%`,
       label: "Completion Rate",
     },
@@ -289,11 +289,11 @@ export default function WorkspaceHome() {
   // , [dashboard]);
 
   const quickActions = [
-    { icon: MessageSquarePlus, iconBg: "#FEF2F2", iconColor: "#DC2626", label: "Raise Issue" },
-    { icon: FileEdit,          iconBg: "#EFF6FF", iconColor: "#2563EB", label: "Update Task" },
-    { icon: StickyNote,        iconBg: "#FFFBEB", iconColor: "#D97706", label: "Add Note" },
-    { icon: Upload,            iconBg: "#F0FDF4", iconColor: "#16A34A", label: "Upload Work" },
-    { icon: LayoutList,        iconBg: "#F5F3FF", iconColor: "#7C3AED", label: "View Tasks" },
+    { icon: MessageSquarePlus, iconBg: "#F5DDD6", iconColor: "#A34A30", label: "Raise Issue" },
+    { icon: FileEdit,          iconBg: "#D6E4F0", iconColor: "#3D6E8E", label: "Update Task" },
+    { icon: StickyNote,        iconBg: "#F5E6DA", iconColor: "#C96442", label: "Add Note" },
+    { icon: Upload,            iconBg: "#E8F5ED", iconColor: "#3D9A5F", label: "Upload Work" },
+    { icon: LayoutList,        iconBg: "#E8E0F0", iconColor: "#6B5D8A", label: "View Tasks" },
   ];
 
   /* Focus summary for hero */
@@ -313,13 +313,13 @@ export default function WorkspaceHome() {
     );
   }
   const ACTIVITY_COLORS = {
-  task_create: "#3B82F6",
-  task_update: "#8B5CF6",
-  task_complete: "#16A34A",
-  issue_create: "#EF4444",
-  issue_assigned: "#DC2626",
-  subtask_updated: "#16A34A",
-  comment_added: "#2563EB",
+  task_create: "#5B8CB8",
+  task_update: "#5B8CB8",
+  task_complete: "#3D9A5F",
+  issue_create: "#C96442",
+  issue_assigned: "#A34A30",
+  subtask_updated: "#3D9A5F",
+  comment_added: "#5B8CB8",
 };
   /* ── Render ───────────────────────────────────────────────────────────── */
   return (
@@ -452,7 +452,7 @@ export default function WorkspaceHome() {
                       background:
                         ACTIVITY_COLORS[item.type]
                         || ACTIVITY_COLORS[item.action]
-                        || "#6C53B3"
+                        || "#C96442"
                     }}/>
                   <div>
                     <p className="wh-feed-text">{item.message}</p>
@@ -487,10 +487,10 @@ export default function WorkspaceHome() {
               {dashboard.recent_subtasks.map((subtask) => {
                 const statusKey = subtask.status || "todo";
                 const priorityColors = {
-                  critical: "#EF4444",
-                  high:     "#F59E0B",
-                  medium:   "#8B5CF6",
-                  low:      "#8A87A0",
+                  critical: "#A34A30",
+                  high:     "#C96442",
+                  medium:   "#5B8CB8",
+                  low:      "#9E9E9E",
                 };
                 const dotColor = priorityColors[subtask.priority?.toLowerCase()] || "#8A87A0";
                 return (

@@ -1290,3 +1290,43 @@
   .sd-hdr-action-btn span { display: none; }
   .sd-hdr-action-btn { padding: 6px 8px; }
 }
+
+/* Blockage indicators */
+.sd-blocked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+  background: #FEF2F2;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #DC2626;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sd-blocked-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--r-xl);
+  background: #FEF2F2;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  color: #991B1B;
+  font-size: 0.8rem;
+  margin: 12px 20px;
+  line-height: 1.4;
+  box-shadow: var(--sh-sm);
+}
+
+.sd-blocked-banner-icon {
+  color: #EF4444;
+  flex-shrink: 0;
+}
+
+.sd-blocked-banner-content {
+  flex: 1;
+}

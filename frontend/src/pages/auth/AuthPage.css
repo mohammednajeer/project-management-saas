@@ -697,3 +697,50 @@
   .ap-card { padding: 1.4rem 1rem; }
   .ap-oauth { grid-template-columns: 1fr; }
 }
+
+/* ── Quick Sign-In (Dev) ── */
+.ap-quick-signin {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--ap-secondary-bg);
+  border: 1px dashed rgba(108, 83, 179, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ap-quick-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ap-muted);
+  letter-spacing: 0.05em;
+}
+
+.ap-quick-buttons {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.ap-quick-btn {
+  flex: 1;
+  height: 2.2rem;
+  border: 1px solid rgba(108, 83, 179, 0.15);
+  border-radius: 0.45rem;
+  background: #ffffff;
+  color: var(--ap-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.ap-quick-btn:hover {
+  background: var(--ap-primary);
+  color: #ffffff;
+  border-color: transparent;
+  transform: translateY(-1px);
+}

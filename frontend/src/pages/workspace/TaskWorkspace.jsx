@@ -344,6 +344,9 @@ export default function TaskWorkspace() {
   const allActivity  = useMemo(() => (workspace?.activities || []).slice(0, 8), [workspace]);
   const taskFiles    = workspace?.attachments || [];
   const issues       = workspace?.issues      || [];
+  const activeIssues = useMemo(() => {
+    return issues.filter(i => i.status !== "resolved" && i.status !== "closed");
+  }, [issues]);
 
   const stats = useMemo(() => {
     const total   = subtasks.length;
@@ -415,6 +418,15 @@ export default function TaskWorkspace() {
       </button>
 
       {error && <div className="tw-error-inline">{error}</div>}
+
+      {activeIssues.length > 0 && (
+        <div className="tw-blocked-banner">
+          <AlertTriangle size={16} className="tw-blocked-banner-icon" />
+          <div className="tw-blocked-banner-content">
+            <strong>Blockage Alert:</strong> This workspace has {activeIssues.length} active issue{activeIssues.length > 1 ? "s" : ""} blocking progress.
+          </div>
+        </div>
+      )}
 
       {/* ════════════════════════════════════════════════════════════════
           HERO — Premium task context header
@@ -555,7 +567,9 @@ export default function TaskWorkspace() {
                 const isHighlighted = String(sub.id) === String(highlightedId);
                 const pal  = CARD_PALETTE[sub.status] || CARD_PALETTE.todo;
                 const sCfg = STATUS_CONFIG[sub.status] || STATUS_CONFIG.todo;
-                const prog = statusProgress(sub.status);
+                const isBlocked = issues.some(
+                  i => String(i.subtask) === String(sub.id) && i.status !== "resolved" && i.status !== "closed"
+                );
 
                 return (
                   <article
@@ -583,11 +597,21 @@ export default function TaskWorkspace() {
                       </div>
                     )}
 
-                    {/* Mine badge */}
-                    {isEditable && (
-                      <div className="tw-sub-mine-badge">
-                        <span className="tw-live-dot tw-live-dot--sm" />
-                        Assigned to you
+                    {/* Badge Container */}
+                    {(isEditable || isBlocked) && (
+                      <div className="tw-sub-badge-container">
+                        {isEditable && (
+                          <div className="tw-sub-mine-badge">
+                            <span className="tw-live-dot tw-live-dot--sm" />
+                            Assigned to you
+                          </div>
+                        )}
+                        {isBlocked && (
+                          <div className="tw-sub-blocked-badge">
+                            <AlertTriangle size={9} />
+                            Blocked
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -607,7 +631,7 @@ export default function TaskWorkspace() {
                     {/* Progress bar */}
                     <div className="tw-sub-progress">
                       <div className="tw-sub-progress-fill"
-                        style={{ width: `${prog}%`, background: sCfg.accent }}
+                        style={{ width: `${statusProgress(sub.status)}%`, background: sCfg.accent }}
                       />
                     </div>
 

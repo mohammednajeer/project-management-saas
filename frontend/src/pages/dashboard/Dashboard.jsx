@@ -59,49 +59,49 @@ const DEFAULT_CHART_DATA = [
 
 /* ─── CONFIG ─────────────────────────────────────────────────────────── */
 const PRIORITY_COLORS = {
-  critical: "#ef4444",
-  high:     "#f97316",
-  medium:   "#8b5cf6",
-  low:      "#94a3b8",
+  critical: "#A34A30",
+  high:     "#C96442",
+  medium:   "#5B8CB8",
+  low:      "#9E9E9E",
 };
 
 const STATUS_STYLES = {
-  backlog:     { label: "Backlog",     bg: "#f1f5f9", color: "#64748b" },
-  todo:        { label: "Backlog",     bg: "#f1f5f9", color: "#64748b" },
-  pending:     { label: "Pending",     bg: "#fef9c3", color: "#a16207" },
-  in_progress: { label: "In Progress", bg: "#dbeafe", color: "#1d4ed8" },
-  inprogress:  { label: "In Progress", bg: "#dbeafe", color: "#1d4ed8" },
-  review:      { label: "Review",      bg: "#ede9fe", color: "#6d28d9" },
-  done:        { label: "Done",        bg: "#dcfce7", color: "#15803d" },
-  completed:   { label: "Done",        bg: "#dcfce7", color: "#15803d" },
+  backlog:     { label: "Backlog",     bg: "#F2F2F2", color: "#7A7A7A" },
+  todo:        { label: "Backlog",     bg: "#F2F2F2", color: "#7A7A7A" },
+  pending:     { label: "Pending",     bg: "#F5E6DA", color: "#B55636" },
+  in_progress: { label: "In Progress", bg: "#D6E4F0", color: "#3D6E8E" },
+  inprogress:  { label: "In Progress", bg: "#D6E4F0", color: "#3D6E8E" },
+  review:      { label: "Review",      bg: "#E8E0F0", color: "#6B5D8A" },
+  done:        { label: "Done",        bg: "#E8F5ED", color: "#2D7A47" },
+  completed:   { label: "Done",        bg: "#E8F5ED", color: "#2D7A47" },
 };
 
 const ACTIVITY_COLORS = {
-  task_created:    "#22c55e",
-  subtask_created: "#8b5cf6",
-  comment_added:   "#f59e0b",
-  task_updated:    "#3b82f6",
-  subtask_updated: "#3b82f6",
-  default:         "#94a3b8",
+  task_created:    "#3D9A5F",
+  subtask_created: "#5B8CB8",
+  comment_added:   "#C96442",
+  task_updated:    "#5B8CB8",
+  subtask_updated: "#5B8CB8",
+  default:         "#9E9E9E",
 };
 
 const STATUS_DISTRIBUTION_CONFIG = [
-  { key: "backlog",     name: "Backlog",     color: "#94a3b8" },
-  { key: "in_progress", name: "In Progress", color: "#3b82f6" },
-  { key: "review",      name: "Review",      color: "#8b5cf6" },
-  { key: "done",        name: "Done",        color: "#22c55e" },
+  { key: "backlog",     name: "Backlog",     color: "#C4C4C4" },
+  { key: "in_progress", name: "In Progress", color: "#5B8CB8" },
+  { key: "review",      name: "Review",      color: "#8B7BA8" },
+  { key: "done",        name: "Done",        color: "#3D9A5F" },
 ];
 
 const CARD_GRADIENTS = [
-  { from: "#6354c4", to: "#9b7ff4", icon: FolderOpen,    shadow: "rgba(99,84,196,0.35)" },
-  { from: "#3b82f6", to: "#60a5fa", icon: CheckSquare,   shadow: "rgba(59,130,246,0.35)" },
-  { from: "#f97316", to: "#fb923c", icon: Clock,         shadow: "rgba(249,115,22,0.35)"  },
-  { from: "#22c55e", to: "#4ade80", icon: CheckSquare,   shadow: "rgba(34,197,94,0.35)"   },
-  { from: "#06b6d4", to: "#22d3ee", icon: Users,         shadow: "rgba(6,182,212,0.35)"   },
-  { from: "#ef4444", to: "#f87171", icon: AlertTriangle, shadow: "rgba(239,68,68,0.35)"   },
-  { from: "#4f6df5", to: "#818cf8", icon: ShieldCheck,   shadow: "rgba(79,109,245,0.35)"  },
-  { from: "#10b981", to: "#34d399", icon: UserCheck,     shadow: "rgba(16,185,129,0.35)"  },
-  { from: "#f59e0b", to: "#fbbf24", icon: Mail,          shadow: "rgba(245,158,11,0.35)"  },
+  { from: "#C96442", to: "#D4835E", icon: FolderOpen,    shadow: "rgba(201,100,66,0.22)" },
+  { from: "#5B8CB8", to: "#7BA8CC", icon: CheckSquare,   shadow: "rgba(91,140,184,0.22)" },
+  { from: "#D4835E", to: "#E0A07A", icon: Clock,         shadow: "rgba(212,131,94,0.22)"  },
+  { from: "#3D9A5F", to: "#5DB87A", icon: CheckSquare,   shadow: "rgba(61,154,95,0.22)"   },
+  { from: "#5C5C5C", to: "#7A7A7A", icon: Users,         shadow: "rgba(92,92,92,0.18)"   },
+  { from: "#A34A30", to: "#C96442", icon: AlertTriangle, shadow: "rgba(163,74,48,0.22)"   },
+  { from: "#4A7A9B", to: "#6BA3B8", icon: ShieldCheck,   shadow: "rgba(74,122,155,0.22)"  },
+  { from: "#3D9A5F", to: "#5DB87A", icon: UserCheck,     shadow: "rgba(61,154,95,0.22)"  },
+  { from: "#8B7BA8", to: "#A898C4", icon: Mail,          shadow: "rgba(139,123,168,0.22)"  },
 ];
 
 /* ─── HELPERS ─────────────────────────────────────────────────────────── */
@@ -143,7 +143,7 @@ const getAssigneeName = (t) => {
 const normalizeStatus = (s) => { const k = String(s || "").toLowerCase().replace(/\s+/g, "_"); if (k === "backlog" || k === "todo") return "backlog"; if (k === "inprogress" || k === "in_progress") return "in_progress"; if (k === "completed" || k === "done") return "done"; return k || "backlog"; };
 const buildInitials = (t) => { const src = getAssigneeName(t) || getProjectName(t) || t.title || "?"; return src.split(" ").filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join(""); };
 
-const AVATAR_COLORS = ["#6354c4", "#3b82f6", "#f97316", "#22c55e", "#06b6d4", "#ef4444", "#8b5cf6", "#f59e0b"];
+const AVATAR_COLORS = ["#C96442", "#5B8CB8", "#3D9A5F", "#8B7BA8", "#5C5C5C", "#A34A30", "#4A7A9B", "#D4835E"];
 
 const mapRecentTask = (task, i) => {
   const pk  = String(task.priority || "").toLowerCase();
@@ -715,16 +715,16 @@ export default function Dashboard() {
             <svg viewBox="0 0 120 120" className="db-ring-svg">
               <defs>
                 <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stopColor="#6354c4" />
-                  <stop offset="100%" stopColor="#9b7ff4" />
+                  <stop offset="0%"   stopColor="#C96442" />
+                  <stop offset="100%" stopColor="#D4835E" />
                 </linearGradient>
               </defs>
-              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(99,84,196,0.12)" strokeWidth="8" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(201,100,66,0.1)" strokeWidth="7" />
               <circle
                 cx="60" cy="60" r="50"
                 fill="none"
                 stroke="url(#ringGrad)"
-                strokeWidth="8"
+                strokeWidth="7"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 50}`}
                 strokeDashoffset={`${2 * Math.PI * 50 * (1 - completionPct / 100)}`}
@@ -945,11 +945,11 @@ export default function Dashboard() {
               <AreaChart data={chartData} margin={{ top: 8, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#6354c4" stopOpacity={0.22} />
-                    <stop offset="95%" stopColor="#6354c4" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#C96442" stopOpacity={0.18} />
+                    <stop offset="95%" stopColor="#C96442" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,84,196,0.08)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
                 <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<GlassTooltip />} />
@@ -957,11 +957,11 @@ export default function Dashboard() {
                   type="monotone"
                   dataKey="tasks"
                   name="Tasks"
-                  stroke="#6354c4"
-                  strokeWidth={2.5}
+                  stroke="#C96442"
+                  strokeWidth={2}
                   fill="url(#areaGrad)"
-                  dot={{ r: 4, fill: "#6354c4", strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: "#6354c4", stroke: "#fff", strokeWidth: 2 }}
+                  dot={{ r: 3, fill: "#C96442", strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: "#C96442", stroke: "#fff", strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -1020,7 +1020,7 @@ export default function Dashboard() {
                     innerRadius={42} outerRadius={68}
                     dataKey="value"
                     strokeWidth={3}
-                    stroke="#f0f2fa"
+                    stroke="#FAFAFA"
                   >
                     {statusDistribution.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
@@ -1104,7 +1104,7 @@ export default function Dashboard() {
             </div>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={teamWorkload} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,84,196,0.08)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<GlassTooltip />} />

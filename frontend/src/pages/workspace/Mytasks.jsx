@@ -31,9 +31,12 @@ import {
   ArrowRight,
   CheckCheck,
   Timer,
+  User,
 } from "lucide-react";
 
 import api from "../../services/api";
+import { IssueProvider } from "../../context/issues/IssueContext";
+import IssueDetailsModal from "../../components/issues/IssueDetailsModal";
 import "./MyTasks.css";
 
 /* ─── CONSTANTS ─────────────────────────────────────────────────────────── */
@@ -42,6 +45,13 @@ const STATUS_CONFIG = {
   in_progress: { label: "In Progress", color: "#2563EB", bg: "#EFF6FF", border: "rgba(37,99,235,0.18)",   accent: "#60A5FA" },
   review:      { label: "Review",      color: "#7C3AED", bg: "#F5F3FF", border: "rgba(124,58,237,0.18)",  accent: "#A78BFA" },
   done:        { label: "Done",        color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.18)",   accent: "#34D399" },
+};
+
+const ISSUE_STATUS_CONFIG = {
+  open:          { label: "Open",          color: "#DC2626", bg: "#FEF2F2", border: "rgba(220,38,38,0.22)",  accent: "#EF4444" },
+  investigating: { label: "Investigating", color: "#D97706", bg: "#FFFBEB", border: "rgba(217,119,6,0.18)",   accent: "#F59E0B" },
+  resolved:      { label: "Resolved",      color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.18)",   accent: "#34D399" },
+  closed:        { label: "Closed",        color: "#64748B", bg: "#F1F5F9", border: "rgba(100,116,139,0.18)",  accent: "#94A3B8" },
 };
 
 const PRIORITY_CONFIG = {
@@ -97,6 +107,14 @@ function formatRelative(value) {
 function isOverdue(due_date, status) {
   if (!due_date || status === "done") return false;
   return new Date(due_date) < new Date();
+}
+
+function getTabKey(status, isIssue) {
+  if (!isIssue) return status;
+  if (status === "open") return "todo";
+  if (status === "investigating") return "in_progress";
+  if (status === "resolved" || status === "closed") return "done";
+  return "todo";
 }
 
 function getDaysUntilDue(due_date) {
@@ -177,11 +195,12 @@ function PriorityBadge({ priority }) {
 }
 
 /* ─── STATUS PILL ────────────────────────────────────────────────────────── */
-function StatusPill({ status, onChange }) {
+function StatusPill({ status, onChange, isIssue = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const key = status || "todo";
-  const cfg = STATUS_CONFIG[key] || STATUS_CONFIG.todo;
+  const key = status || (isIssue ? "open" : "todo");
+  const config = isIssue ? ISSUE_STATUS_CONFIG : STATUS_CONFIG;
+  const cfg = config[key] || config[isIssue ? "open" : "todo"];
 
   useEffect(() => {
     if (!open) return;
@@ -190,29 +209,50 @@ function StatusPill({ status, onChange }) {
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
+  const allowedIssueStatuses = isIssue ? (
+    key === "open" ? [["investigating", ISSUE_STATUS_CONFIG.investigating]] :
+    key === "investigating" ? [["resolved", ISSUE_STATUS_CONFIG.resolved]] : []
+  ) : [];
+
+  const isDisabled = isIssue && allowedIssueStatuses.length === 0;
+
   return (
     <div className="mt-status-wrap" ref={ref} onClick={(e) => e.stopPropagation()}>
       <button
         className="mt-status-pill"
         style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.border }}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => !isDisabled && setOpen((o) => !o)}
+        disabled={isDisabled}
       >
         <span className="mt-status-dot" style={{ background: cfg.accent }} />
         {cfg.label}
-        <ChevronDown size={9} />
+        {!isDisabled && <ChevronDown size={9} />}
       </button>
       {open && (
         <div className="mt-status-dropdown">
-          {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-            <button
-              key={k}
-              className={`mt-status-option ${k === key ? "active" : ""}`}
-              onClick={() => { onChange?.(k); setOpen(false); }}
-            >
-              <span className="mt-status-option-dot" style={{ background: v.accent }} />
-              {v.label}
-            </button>
-          ))}
+          {isIssue ? (
+            allowedIssueStatuses.map(([k, v]) => (
+              <button
+                key={k}
+                className={`mt-status-option ${k === key ? "active" : ""}`}
+                onClick={() => { onChange?.(k); setOpen(false); }}
+              >
+                <span className="mt-status-option-dot" style={{ background: v.accent }} />
+                {v.label}
+              </button>
+            ))
+          ) : (
+            Object.entries(STATUS_CONFIG).map(([k, v]) => (
+              <button
+                key={k}
+                className={`mt-status-option ${k === key ? "active" : ""}`}
+                onClick={() => { onChange?.(k); setOpen(false); }}
+              >
+                <span className="mt-status-option-dot" style={{ background: v.accent }} />
+                {v.label}
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -224,11 +264,12 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const overdue     = isOverdue(task.due_date, task.status);
-  const statusKey   = task.status || "todo";
+  const statusKey   = task.status || (task.is_issue ? "open" : "todo");
   const priorityKey = task.priority?.toLowerCase() || "low";
   const priCfg      = PRIORITY_CONFIG[priorityKey] || PRIORITY_CONFIG.low;
-  const palette     = CARD_PALETTE[statusKey]  || CARD_PALETTE.todo;
-  const stCfg       = STATUS_CONFIG[statusKey] || STATUS_CONFIG.todo;
+  const config      = task.is_issue ? ISSUE_STATUS_CONFIG : STATUS_CONFIG;
+  const stCfg       = config[statusKey] || config[task.is_issue ? "open" : "todo"];
+  const palette     = task.is_issue ? { gradStart: "#FFF8F8", gradEnd: "#FEE2E2", topAccent: stCfg.accent } : (CARD_PALETTE[statusKey] || CARD_PALETTE.todo);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -238,11 +279,25 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
   }, [menuOpen]);
 
   const projectName = task.task?.project?.name || task.project?.name || task.project?.title || "—";
+  const isCritical = priorityKey === "critical";
+
+  const cardClassName = `mt-task-card${
+    task.is_issue ? " mt-task-card--issue" : ""
+  }${
+    task.is_issue && isCritical ? " mt-task-card--critical-issue" : ""
+  }${
+    overdue ? " mt-task-card--overdue" : ""
+  }`;
+
+  const allowedMenuOptions = task.is_issue ? (
+    statusKey === "open" ? [["investigating", ISSUE_STATUS_CONFIG.investigating]] :
+    statusKey === "investigating" ? [["resolved", ISSUE_STATUS_CONFIG.resolved]] : []
+  ) : Object.entries(STATUS_CONFIG);
 
   return (
     <article
-      className={`mt-task-card${overdue ? " mt-task-card--overdue" : ""}`}
-      style={!overdue ? {
+      className={cardClassName}
+      style={!overdue && !task.is_issue ? {
         background: `linear-gradient(145deg, ${palette.gradStart} 0%, ${palette.gradEnd} 100%)`,
         "--card-top-accent": palette.topAccent,
       } : {}}
@@ -256,33 +311,43 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
 
       {/* Header row */}
       <div className="mt-card-header">
-        <span className="mt-card-project-tag">
-          <Layers size={9} />
+        <span className={`mt-card-project-tag ${task.is_issue ? "mt-card-project-tag--issue" : ""}`}>
+          {task.is_issue ? <AlertTriangle size={9} /> : <Layers size={9} />}
           {projectName}
         </span>
+        {task.is_issue && (
+          <span className="mt-card-issue-badge">
+            <AlertTriangle size={8} />
+            Issue
+          </span>
+        )}
         <div className="mt-card-actions" onClick={(e) => e.stopPropagation()}>
           <button className="mt-icon-btn" title="Open" onClick={(e) => { e.stopPropagation(); onOpenTask?.(task); }}>
             <ExternalLink size={11} />
           </button>
-          <button className="mt-icon-btn" title="Raise Issue" onClick={(e) => { e.stopPropagation(); onRaiseIssue?.(task); }}>
-            <MessageSquarePlus size={11} />
-          </button>
-          <div className="mt-menu-wrap" ref={menuRef}>
-            <button className="mt-icon-btn" onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}>
-              <MoreHorizontal size={11} />
+          {!task.is_issue && (
+            <button className="mt-icon-btn" title="Raise Issue" onClick={(e) => { e.stopPropagation(); onRaiseIssue?.(task); }}>
+              <MessageSquarePlus size={11} />
             </button>
-            {menuOpen && (
-              <div className="mt-card-menu">
-                {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                  <button key={k} className="mt-card-menu-item"
-                    onClick={() => { onStatusChange?.(task.id, k); setMenuOpen(false); }}>
-                    <span className="mt-menu-dot" style={{ background: v.accent }} />
-                    Mark as {v.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
+          {allowedMenuOptions.length > 0 && (
+            <div className="mt-menu-wrap" ref={menuRef}>
+              <button className="mt-icon-btn" onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}>
+                <MoreHorizontal size={11} />
+              </button>
+              {menuOpen && (
+                <div className="mt-card-menu">
+                  {allowedMenuOptions.map(([k, v]) => (
+                    <button key={k} className="mt-card-menu-item"
+                      onClick={() => { onStatusChange?.(task.id, k, task.is_issue); setMenuOpen(false); }}>
+                      <span className="mt-menu-dot" style={{ background: v.accent }} />
+                      Mark as {v.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -303,7 +368,7 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
       {/* Priority + Status badges */}
       <div className="mt-card-badges">
         <PriorityBadge priority={task.priority} />
-        <StatusPill status={task.status} onChange={(s) => onStatusChange?.(task.id, s)} />
+        <StatusPill status={task.status} isIssue={task.is_issue} onChange={(s) => onStatusChange?.(task.id, s, task.is_issue)} />
       </div>
 
       {/* Progress bar (visual indicator based on status) */}
@@ -312,7 +377,7 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
           <div
             className="mt-card-progress-fill"
             style={{
-              width: statusKey === "done" ? "100%" : statusKey === "review" ? "75%" : statusKey === "in_progress" ? "45%" : "10%",
+              width: statusKey === "done" || statusKey === "resolved" || statusKey === "closed" ? "100%" : statusKey === "review" ? "75%" : statusKey === "in_progress" || statusKey === "investigating" ? "45%" : "10%",
               background: stCfg.accent,
             }}
           />
@@ -322,8 +387,14 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
       {/* Footer */}
       <div className="mt-card-footer">
         <div className="mt-card-due">
-          <CalendarDays size={10} />
-          <DueBadge due_date={task.due_date} status={task.status} />
+          {!task.is_issue && <CalendarDays size={10} />}
+          {!task.is_issue && <DueBadge due_date={task.due_date} status={task.status} />}
+          {task.is_issue && task.assignee_name && (
+            <span className="mt-card-assignee">
+              <User size={9} />
+              {task.assignee_name}
+            </span>
+          )}
         </div>
         <div className="mt-card-counts">
           {task.comments_count > 0 && (
@@ -350,10 +421,19 @@ function TaskRow({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
   const priorityKey = task.priority?.toLowerCase() || "low";
   const priCfg      = PRIORITY_CONFIG[priorityKey] || PRIORITY_CONFIG.low;
   const projectName = task.task?.project?.name || task.project?.name || task.project?.title || "—";
+  const isCritical = priorityKey === "critical";
+
+  const rowClassName = `mt-list-row${
+    task.is_issue ? " mt-list-row--issue" : ""
+  }${
+    task.is_issue && isCritical ? " mt-list-row--critical-issue" : ""
+  }${
+    overdue ? " mt-list-row--overdue" : ""
+  }`;
 
   return (
     <div
-      className={`mt-list-row${overdue ? " mt-list-row--overdue" : ""}`}
+      className={rowClassName}
       onClick={() => onOpenTask?.(task)}
       role="button"
       tabIndex={0}
@@ -363,18 +443,29 @@ function TaskRow({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
 
       <div className="mt-row-main">
         <span className="mt-row-project">
-          <Layers size={9} />
+          {task.is_issue ? <AlertTriangle size={9} color="#DC2626" /> : <Layers size={9} />}
           {projectName}
+          {task.is_issue && (
+            <span className="mt-card-issue-badge" style={{ marginLeft: 6 }}>
+              <AlertTriangle size={8} /> Issue
+            </span>
+          )}
         </span>
         <span className="mt-row-title">{task.title}</span>
       </div>
 
       <div className="mt-row-meta">
         <PriorityBadge priority={task.priority} />
-        <StatusPill status={task.status} onChange={(s) => onStatusChange?.(task.id, s)} />
+        <StatusPill status={task.status} isIssue={task.is_issue} onChange={(s) => onStatusChange?.(task.id, s, task.is_issue)} />
         <div className="mt-row-due">
-          <CalendarDays size={10} />
-          <DueBadge due_date={task.due_date} status={task.status} />
+          {!task.is_issue && <CalendarDays size={10} />}
+          {!task.is_issue && <DueBadge due_date={task.due_date} status={task.status} />}
+          {task.is_issue && task.assignee_name && (
+            <span className="mt-card-assignee">
+              <User size={9} />
+              {task.assignee_name}
+            </span>
+          )}
         </div>
         <div className="mt-row-counts">
           {task.comments_count > 0 && <span className="mt-count-chip"><MessageCircle size={9} />{task.comments_count}</span>}
@@ -585,7 +676,7 @@ function Sidebar({ tasks, activities = [] }) {
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN PAGE
    ═══════════════════════════════════════════════════════════════════════════ */
-export default function MyTasks() {
+function MyTasksContent() {
   const navigate = useNavigate();
   const [tasks,            setTasks]          = useState([]);
   const [loading,          setLoading]        = useState(true);
@@ -598,6 +689,7 @@ export default function MyTasks() {
   const [viewMode,         setViewMode]       = useState("grid");
   const [showFilters,      setShowFilters]    = useState(false);
   const [recentActivities, setRecentActivities] = useState([]);
+  const [selectedIssue,    setSelectedIssue]  = useState(null);
 
   /* ── Fetch ── */
   useEffect(() => {
@@ -623,19 +715,33 @@ export default function MyTasks() {
   }, []);
 
   /* ── Status update ── */
-  const handleStatusChange = useCallback(async (taskId, newStatus) => {
-    setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t));
+  const handleStatusChange = useCallback(async (taskId, newStatus, isIssue = false) => {
+    let oldStatus = null;
+    setTasks((prev) => prev.map((t) => {
+      if (t.id === taskId) {
+        oldStatus = t.status;
+        return { ...t, status: newStatus };
+      }
+      return t;
+    }));
     try {
-      await api.patch(`/workspace/subtasks/${taskId}/`, { status: newStatus });
+      if (isIssue) {
+        await api.patch(`/issues/${taskId}/`, { status: newStatus });
+      } else {
+        await api.patch(`/workspace/subtasks/${taskId}/`, { status: newStatus });
+      }
     } catch {
-      setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t } : t));
+      if (oldStatus) {
+        setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: oldStatus } : t));
+      }
     }
   }, []);
 
-  const openTaskWorkspace = useCallback((subtask) => {
-    const taskId = subtask?.task?.id;
+  const openTaskWorkspace = useCallback((task) => {
+    const taskId = task?.task?.id;
     if (!taskId) return;
-    navigate(`/workspace/task/${taskId}?subtask=${subtask.id}`);
+    const subtaskId = task.is_issue ? task.subtask?.id : task.id;
+    navigate(`/workspace/task/${taskId}?subtask=${subtaskId}`);
   }, [navigate]);
 
   /* ── Derived ── */
@@ -651,7 +757,8 @@ export default function MyTasks() {
   const tabCounts = useMemo(() => {
     const c = { all: tasks.length, todo: 0, in_progress: 0, review: 0, done: 0, overdue: 0 };
     tasks.forEach((t) => {
-      if (c[t.status] !== undefined) c[t.status]++;
+      const tabKey = getTabKey(t.status, t.is_issue);
+      if (c[tabKey] !== undefined) c[tabKey]++;
       if (isOverdue(t.due_date, t.status)) c.overdue++;
     });
     return c;
@@ -662,7 +769,7 @@ export default function MyTasks() {
     if (activeTab === "overdue") {
       list = list.filter((t) => isOverdue(t.due_date, t.status));
     } else if (activeTab !== "all") {
-      list = list.filter((t) => t.status === activeTab);
+      list = list.filter((t) => getTabKey(t.status, t.is_issue) === activeTab);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -692,11 +799,11 @@ export default function MyTasks() {
 
   const heroStats = useMemo(() => {
     const total   = tasks.length;
-    const done    = tasks.filter((t) => t.status === "done").length;
+    const done    = tasks.filter((t) => getTabKey(t.status, t.is_issue) === "done").length;
     const overdue = tasks.filter((t) => isOverdue(t.due_date, t.status)).length;
     const now = new Date();
     const today = tasks.filter((t) => {
-      if (!t.due_date || t.status === "done") return false;
+      if (!t.due_date || t.status === "done" || t.status === "resolved" || t.status === "closed") return false;
       const d = new Date(t.due_date);
       return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
     }).length;
@@ -925,6 +1032,26 @@ export default function MyTasks() {
         {!loading && <Sidebar tasks={tasks} activities={recentActivities} />}
       </div>
 
+      {selectedIssue && (
+        <IssueDetailsModal
+          issue={selectedIssue}
+          onClose={() => setSelectedIssue(null)}
+          onUpdate={(updated) => {
+            setTasks((prev) =>
+              prev.map((t) => (t.id === updated.id ? { ...t, status: updated.status } : t))
+            );
+          }}
+        />
+      )}
+
     </div>
+  );
+}
+
+export default function MyTasks() {
+  return (
+    <IssueProvider>
+      <MyTasksContent />
+    </IssueProvider>
   );
 }

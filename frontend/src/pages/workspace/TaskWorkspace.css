@@ -1479,6 +1479,58 @@
   grid-template-columns: minmax(0, 1fr) 278px;
   gap: 14px;
 }
+/* Blockage indicators */
+.tw-blocked-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--r-xl);
+  background: #FEF2F2;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  color: #991B1B;
+  font-size: 0.8rem;
+  margin-bottom: 16px;
+  line-height: 1.4;
+  box-shadow: var(--sh-sm);
+}
+
+.tw-blocked-banner-icon {
+  color: #EF4444;
+  flex-shrink: 0;
+}
+
+.tw-blocked-banner-content {
+  flex: 1;
+}
+
+.tw-sub-badge-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 9px 12px 0;
+}
+
+.tw-sub-badge-container .tw-sub-mine-badge {
+  margin: 0;
+}
+
+.tw-sub-blocked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.63rem;
+  font-weight: 700;
+  color: #DC2626;
+  background: #FEF2F2;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
 
 /* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
 @media (max-width: 1200px) {

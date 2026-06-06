@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { AlertCircle, FileImage, FileText, Layers, Loader2, Save, UserRound, X } from "lucide-react";
 import useIssues from "../../context/issues/useIssues";
+import { useAuth } from "../../context/AuthContext";
 import IssuePriorityBadge from "./IssuePriorityBadge";
 import IssueStatusBadge from "./IssueStatusBadge";
 import {
@@ -45,8 +46,9 @@ function getReferenceName(item, fallback) {
   return item?.name || item?.title || fallback || "None";
 }
 
-export default function IssueDetailsModal({ issue, onClose }) {
+export default function IssueDetailsModal({ issue, onClose, onUpdate }) {
   const { canManageIssues, teamMembers, updateIssue } = useIssues();
+  const { user } = useAuth();
   const [currentIssue, setCurrentIssue] = useState(issue);
   const [form, setForm] = useState({
     status: issue?.status || "open",
@@ -55,6 +57,8 @@ export default function IssueDetailsModal({ issue, onClose }) {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const isAssignedToMe = currentIssue?.assigned_to_data?.id && String(currentIssue.assigned_to_data.id) === String(user?.id);
 
   const dirty = useMemo(
     () =>
@@ -79,6 +83,26 @@ export default function IssueDetailsModal({ issue, onClose }) {
       });
 
       setCurrentIssue(updated);
+      onUpdate?.(updated);
+    } catch (err) {
+      console.log(err);
+      setError(getErrorMessage(err, "Issue could not be updated."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEmployeeStatusUpdate = async (newStatus) => {
+    try {
+      setSaving(true);
+      setError("");
+
+      const updated = await updateIssue(currentIssue.id, {
+        status: newStatus,
+      });
+
+      setCurrentIssue(updated);
+      onUpdate?.(updated);
     } catch (err) {
       console.log(err);
       setError(getErrorMessage(err, "Issue could not be updated."));
@@ -228,6 +252,39 @@ export default function IssueDetailsModal({ issue, onClose }) {
                   {saving ? <Loader2 size={16} className="issue-spin" /> : <Save size={16} />}
                   {saving ? "Updating" : "Update Issue"}
                 </button>
+              </div>
+            )}
+
+            {!canManageIssues && isAssignedToMe && (
+              <div className="issue-manager-panel">
+                <span className="issue-section-label">Actions</span>
+                {currentIssue.status === "open" && (
+                  <button
+                    type="button"
+                    className="issue-primary-button"
+                    disabled={saving}
+                    onClick={() => handleEmployeeStatusUpdate("investigating")}
+                  >
+                    {saving ? <Loader2 size={16} className="issue-spin" /> : null}
+                    Start Investigation
+                  </button>
+                )}
+                {currentIssue.status === "investigating" && (
+                  <button
+                    type="button"
+                    className="issue-primary-button"
+                    disabled={saving}
+                    onClick={() => handleEmployeeStatusUpdate("resolved")}
+                  >
+                    {saving ? <Loader2 size={16} className="issue-spin" /> : null}
+                    Mark as Resolved
+                  </button>
+                )}
+                {["resolved", "closed"].includes(currentIssue.status) && (
+                  <p className="issue-employee-status-message">
+                    Status updates for {currentIssue.status} issues are restricted to managers.
+                  </p>
+                )}
               </div>
             )}
           </aside>

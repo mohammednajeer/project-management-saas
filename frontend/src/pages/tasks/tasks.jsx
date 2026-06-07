@@ -18,47 +18,50 @@ import {
   Draggable,
 } from "@hello-pangea/dnd";
 
+import processIllustration from "../../assets/images/undraw_process_0wew.svg";
+import emptyIllustration from "../../assets/images/undraw_teamwork_zplp.svg";
+
 const COLUMNS = [
   {
     key: "todo",
     title: "Backlog",
-    accent: "#94a3b8",
+    accent: "#777b86",
   },
   {
     key: "in_progress",
     title: "In Progress",
-    accent: "#3b82f6",
+    accent: "#5B8CB8",
   },
   {
     key: "review",
     title: "Review",
-    accent: "#8b5cf6",
+    accent: "#8B7BA8",
   },
   {
     key: "done",
     title: "Done",
-    accent: "#22c55e",
+    accent: "#3D9A5F",
   },
 ];
 
 const PRIORITY_CONFIG = {
   critical: {
-    color: "#ef4444",
+    color: "#C96442",
     label: "Critical",
   },
 
   high: {
-    color: "#f59e0b",
+    color: "#D4835E",
     label: "High",
   },
 
   medium: {
-    color: "#3b82f6",
+    color: "#5B8CB8",
     label: "Medium",
   },
 
   low: {
-    color: "#94a3b8",
+    color: "#777b86",
     label: "Low",
   },
 };
@@ -89,6 +92,7 @@ function avatarColor(name = "") {
 
 function Avatar({
   name,
+  profilePicture,
   size = 28,
 }) {
 
@@ -107,15 +111,22 @@ function Avatar({
       style={{
         width: size,
         height: size,
-        background:
-          avatarColor(name),
+        background: profilePicture ? "transparent" : avatarColor(name),
 
         fontSize:
           size * 0.38,
       }}
       title={name}
     >
-      {initials}
+      {profilePicture ? (
+        <img
+          src={profilePicture}
+          alt={name}
+          style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
+        />
+      ) : (
+        initials
+      )}
     </div>
   );
 }
@@ -316,57 +327,68 @@ export default function Tasks() {
     );
   }
 
+  const backlogCount = visibleTasks.filter(t => t.status === "todo").length;
+  const inProgressCount = visibleTasks.filter(t => t.status === "in_progress").length;
+  const reviewCount = visibleTasks.filter(t => t.status === "review").length;
+  const doneCount = visibleTasks.filter(t => t.status === "done").length;
+
   return (
     <div className="tasks-page">
 
-      {/* Header */}
-      <div className="tasks-header">
-
-        <div className="tasks-header-left">
-
-          <h1>
-            Kanban Board
-          </h1>
-
-          <p>
-            {
-              visibleTasks.length
-            }{" "}
-            tasks across all
-            stages
+      {/* Hero Header */}
+      <section className="tasks-hero">
+        <div className="tasks-hero-left">
+          <div className="tasks-eyebrow">
+            <span className="tasks-eyebrow-dot" />
+            Workspace Kanban
+          </div>
+          <h1 className="tasks-title">Workflow Board</h1>
+          <p className="tasks-subtitle">
+            Organize tasks, monitor progress, and coordinate subtasks in real time. Drag cards across columns to update status.
           </p>
-
+          <div className="tasks-hero-stats">
+            <div className="task-stat-pill">
+              <span className="stat-label">Backlog</span>
+              <strong className="stat-val">{backlogCount}</strong>
+            </div>
+            <div className="task-stat-pill font-blue">
+              <span className="stat-label">In Progress</span>
+              <strong className="stat-val">{inProgressCount}</strong>
+            </div>
+            <div className="task-stat-pill font-purple">
+              <span className="stat-label">Review</span>
+              <strong className="stat-val">{reviewCount}</strong>
+            </div>
+            <div className="task-stat-pill font-green">
+              <span className="stat-label">Done</span>
+              <strong className="stat-val">{doneCount}</strong>
+            </div>
+          </div>
         </div>
+        <div className="tasks-hero-illustration">
+          <img src={processIllustration} alt="Process Illustration" />
+        </div>
+      </section>
 
-        <div className="tasks-header-right">
-
+      {/* Toolbar */}
+      <div className="tasks-toolbar">
+        <div className="tasks-toolbar-left">
+          <span className="tasks-count-tag">
+            {visibleTasks.length} {visibleTasks.length === 1 ? "task" : "tasks"} across all stages
+          </span>
+        </div>
+        <div className="tasks-toolbar-right">
           <select
             className="project-filter-select"
-            value={
-              filterProject
-            }
-            onChange={(e) =>
-              setFilterProject(
-                e.target.value
-              )
-            }
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
           >
-
-            <option value="all">
-              All Projects
-            </option>
-
-            {projects.map(
-              (p) => (
-                <option
-                  key={p.id}
-                  value={p.id}
-                >
-                  {p.name}
-                </option>
-              )
-            )}
-
+            <option value="all">All Projects</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
           </select>
 
           <button
@@ -378,22 +400,36 @@ export default function Tasks() {
               openCreateTaskModal();
             }}
           >
-
             <Plus size={16} />
-
             Add Task
-
           </button>
-
         </div>
-
       </div>
 
-      <DragDropContext
-        onDragEnd={
-          handleDragEnd
-        }
-      >
+      {visibleTasks.length === 0 ? (
+        <div className="tasks-empty-state">
+          <img src={emptyIllustration} alt="No tasks" className="tasks-empty-img" />
+          <h3>No Tasks Found</h3>
+          <p>Get started by adding a task to this project or workspace.</p>
+          <button
+            type="button"
+            className="add-task-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openCreateTaskModal();
+            }}
+          >
+            <Plus size={16} />
+            Create First Task
+          </button>
+        </div>
+      ) : (
+        <DragDropContext
+          onDragEnd={
+            handleDragEnd
+          }
+        >
 
         <div className="kanban-board">
 
@@ -604,6 +640,9 @@ export default function Tasks() {
                                             name={
                                               assignedUser.name
                                             }
+                                            profilePicture={
+                                              assignedUser.profile_picture
+                                            }
                                           />
                                         ) : (
                                           <div className="task-avatar-placeholder" />
@@ -718,6 +757,7 @@ export default function Tasks() {
         </div>
 
       </DragDropContext>
+      )}
 
       {/* Footer */}
       <div className="kanban-footer">

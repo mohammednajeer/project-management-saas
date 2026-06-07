@@ -85,6 +85,7 @@ function App() {
             <Route path="projects/:projectId" element={<ProjectDetails />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="tasks/:taskId" element={<TaskDetails />} />
+            <Route path="subtask/:subtaskId" element={<SubtaskDetails />} />
             <Route path="issues" element={<IssuesPage />} />
             <Route path="activity" element={<ActivityPage />} />
             <Route path="profile" element={<ProfilePage />} />

@@ -738,10 +738,16 @@ function MyTasksContent() {
   }, []);
 
   const openTaskWorkspace = useCallback((task) => {
-    const taskId = task?.task?.id;
-    if (!taskId) return;
-    const subtaskId = task.is_issue ? task.subtask?.id : task.id;
-    navigate(`/workspace/task/${taskId}?subtask=${subtaskId}`);
+    if (task.is_issue) {
+      if (task.subtask?.id) {
+        navigate(`/workspace/task/${task.task.id}?subtask=${task.subtask.id}`);
+      } else {
+        const taskId = task?.task?.id;
+        if (taskId) navigate(`/workspace/task/${taskId}`);
+      }
+    } else {
+      navigate(`/workspace/task/${task.task?.id}?subtask=${task.id}`);
+    }
   }, [navigate]);
 
   /* ── Derived ── */

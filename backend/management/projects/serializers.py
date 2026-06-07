@@ -13,6 +13,8 @@ def serialize_user_brief(user):
         "id": str(user.id),
         "name": user.name,
         "email": user.email,
+        "role": user.role,
+        "profile_picture": user.profile_picture.url if user.profile_picture else None,
         "initials": user.name[:2].upper() if user.name else "?",
     }
 

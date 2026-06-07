@@ -10,32 +10,36 @@ import {
   CheckCircle2,
   ListChecks,
   ArrowUpRight,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import api from "../../services/api";
 import "./Projects.css";
 import CreateProjectModal from "./CreateProjectModal";
 import { Link } from "react-router-dom";
 import { getHealthStyle, formatDueDate, formatStatusLabel } from "./projectUtils";
+import processIllustration from "../../assets/images/undraw_process_0wew.svg";
+import emptyIllustration from "../../assets/images/undraw_teamwork_zplp.svg";
 
 const STATUS_STYLES = {
-  "In Progress": { bg: "#dbeafe", color: "#1d4ed8" },
-  Review: { bg: "#ede9fe", color: "#6d28d9" },
-  Backlog: { bg: "#f1f5f9", color: "#64748b" },
-  Done: { bg: "#dcfce7", color: "#15803d" },
+  "In Progress": { bg: "rgba(91, 140, 184, 0.12)", color: "#5B8CB8" },
+  Review: { bg: "rgba(139, 123, 168, 0.12)", color: "#8B7BA8" },
+  Backlog: { bg: "rgba(119, 123, 134, 0.12)", color: "#777b86" },
+  Done: { bg: "rgba(61, 154, 95, 0.12)", color: "#3D9A5F" },
 };
 
 const PRIORITY_STYLES = {
-  Critical: { bg: "#fee2e2", color: "#b91c1c" },
-  High: { bg: "#ffedd5", color: "#c2410c" },
-  Medium: { bg: "#dbeafe", color: "#1d4ed8" },
-  Low: { bg: "#f1f5f9", color: "#64748b" },
+  Critical: { bg: "rgba(201, 100, 66, 0.12)", color: "#C96442" },
+  High: { bg: "rgba(212, 131, 94, 0.12)", color: "#D4835E" },
+  Medium: { bg: "rgba(91, 140, 184, 0.12)", color: "#5B8CB8" },
+  Low: { bg: "rgba(119, 123, 134, 0.12)", color: "#777b86" },
 };
 
 const PROGRESS_COLORS = {
-  "In Progress": "#3b82f6",
-  Review: "#8b5cf6",
-  Done: "#22c55e",
-  Backlog: "#94a3b8",
+  "In Progress": "#5B8CB8",
+  Review: "#8B7BA8",
+  Done: "#3D9A5F",
+  Backlog: "#777b86",
 };
 
 const AVATAR_COLORS = [
@@ -53,9 +57,9 @@ const FILTERS = ["All", "In Progress", "Review", "Backlog", "Done"];
 
 const KPI_CONFIG = [
   { key: "total", label: "Total Projects", icon: FolderKanban, from: "#6354c4", to: "#9b7ff4" },
-  { key: "active", label: "Active Projects", icon: Zap, from: "#3b82f6", to: "#60a5fa" },
-  { key: "completed", label: "Completed Projects", icon: CheckCircle2, from: "#22c55e", to: "#4ade80" },
-  { key: "tasks", label: "Total Tasks", icon: ListChecks, from: "#f97316", to: "#fb923c" },
+  { key: "active", label: "Active Projects", icon: Zap, from: "#5B8CB8", to: "#a8c8f8" },
+  { key: "completed", label: "Completed Projects", icon: CheckCircle2, from: "#3D9A5F", to: "#a3dfb2" },
+  { key: "tasks", label: "Total Tasks", icon: ListChecks, from: "#D4835E", to: "#fbe1d1" },
 ];
 
 function avatarColor(seed = "") {
@@ -77,6 +81,7 @@ export default function Projects() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("grid");
 
   const fetchProjects = async () => {
     try {
@@ -100,8 +105,8 @@ export default function Projects() {
   });
 
   const kpis = useMemo(() => {
-    const activeCount = projects.filter((p) => p.status === "active").length;
-    const completedCount = projects.filter((p) => p.status === "completed").length;
+    const activeCount = projects.filter((p) => p.status === "In Progress" || p.status === "active").length;
+    const completedCount = projects.filter((p) => p.status === "Done" || p.status === "completed").length;
     const totalTasks = projects.reduce((a, p) => a + (p.total_tasks || 0), 0);
     return {
       total: projects.length,
@@ -113,22 +118,25 @@ export default function Projects() {
 
   return (
     <div className="projects-page">
-      <header className="projects-header">
-        <div className="projects-header-left">
+      <section className="projects-hero">
+        <div className="projects-hero-left">
           <div className="projects-eyebrow">
             <span className="projects-eyebrow-dot" />
-            Workspace
+            Project Hub
           </div>
-          <h1 className="projects-title">Projects</h1>
+          <h1 className="projects-title">Workspace Projects</h1>
           <p className="projects-subtitle">
-            {projects.length} project{projects.length !== 1 ? "s" : ""} across your workspace
+            Manage, track, and collaborate on your team's initiatives. Organize tasks, monitor project health, and coordinate milestones in real time.
           </p>
+          <button type="button" className="projects-create-btn" onClick={() => setModalOpen(true)}>
+            <Plus size={16} />
+            Create Project
+          </button>
         </div>
-        <button type="button" className="projects-create-btn" onClick={() => setModalOpen(true)}>
-          <Plus size={16} />
-          New Project
-        </button>
-      </header>
+        <div className="projects-hero-illustration">
+          <img src={processIllustration} alt="Project Process" />
+        </div>
+      </section>
 
       <section className="projects-kpi-grid" aria-label="Project statistics">
         {KPI_CONFIG.map((kpi) => {
@@ -176,6 +184,26 @@ export default function Projects() {
             <SlidersHorizontal size={15} />
           </button>
         </div>
+
+        <div className="toolbar-divider" />
+        <div className="projects-view-toggle">
+          <button
+            type="button"
+            className={`view-toggle-btn ${viewMode === "grid" ? "active" : ""}`}
+            onClick={() => setViewMode("grid")}
+            title="Grid View"
+          >
+            <LayoutGrid size={15} />
+          </button>
+          <button
+            type="button"
+            className={`view-toggle-btn ${viewMode === "list" ? "active" : ""}`}
+            onClick={() => setViewMode("list")}
+            title="List View"
+          >
+            <List size={15} />
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -185,9 +213,7 @@ export default function Projects() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="projects-empty">
-          <div className="projects-empty-icon">
-            <Layers size={28} />
-          </div>
+          <img src={emptyIllustration} alt="No projects" className="projects-empty-img" />
           <h3>No projects found</h3>
           <p>Try a different filter or create your first project</p>
           <button type="button" className="projects-create-btn" onClick={() => setModalOpen(true)}>
@@ -195,7 +221,7 @@ export default function Projects() {
             Create Project
           </button>
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="projects-grid">
           {filtered.map((project, index) => {
             const total = project.total_tasks || 0;
@@ -340,6 +366,147 @@ export default function Projects() {
               </article>
             );
           })}
+        </div>
+      ) : (
+        <div className="projects-list-wrap">
+          <table className="projects-list-table">
+            <thead>
+              <tr>
+                <th>Project Details</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Health</th>
+                <th>Progress</th>
+                <th>Project Lead</th>
+                <th>Team Members</th>
+                <th>Due Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((project) => {
+                const total = project.total_tasks || 0;
+                const done = project.completed_tasks || 0;
+                const pct = total ? Math.round((done / total) * 100) : 0;
+                const statusStyle = STATUS_STYLES[project.status] || STATUS_STYLES.Backlog;
+                const priorityStyle = PRIORITY_STYLES[project.priority] || PRIORITY_STYLES.Low;
+                const barColor = PROGRESS_COLORS[project.status] || "#94a3b8";
+                const members = project.members_data || [];
+                const dueLabel = formatDueDate(project.due_date);
+                const healthStyle = getHealthStyle(project.health);
+                const lead = project.project_lead_data;
+
+                return (
+                  <tr key={project.id} className="project-list-row">
+                    <td className="project-td-name">
+                      <Link to={`/dashboard/projects/${project.id}`} className="project-link-title">
+                        {project.name}
+                      </Link>
+                      <p className="project-list-desc" title={project.description}>
+                        {project.description || "No description provided."}
+                      </p>
+                    </td>
+                    <td>
+                      <span
+                        className="card-status"
+                        style={{ background: statusStyle.bg, color: statusStyle.color }}
+                      >
+                        {formatStatusLabel(project.status)}
+                      </span>
+                    </td>
+                    <td>
+                      {project.priority ? (
+                        <span
+                          className="card-priority-tag"
+                          style={{ background: priorityStyle.bg, color: priorityStyle.color }}
+                        >
+                          {project.priority}
+                        </span>
+                      ) : (
+                        <span className="empty-dash">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className="card-health"
+                        style={{ background: healthStyle.bg, color: healthStyle.color }}
+                      >
+                        {project.health_label || healthStyle.label}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="table-progress-cell">
+                        <div className="table-progress-labels">
+                          <span className="table-pct" style={{ color: barColor }}>{pct}%</span>
+                          <span className="table-tasks-count">{done}/{total} tasks</span>
+                        </div>
+                        <div className="table-progress-bar-bg">
+                          <div
+                            className="table-progress-bar-fill"
+                            style={{ width: `${pct}%`, backgroundColor: barColor }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {lead ? (
+                        <div className="table-lead-cell">
+                          <span
+                            className="table-lead-avatar"
+                            style={{
+                              background: `linear-gradient(135deg, ${avatarColor(lead.name)}, ${avatarColor(`${lead.name}2`)})`,
+                            }}
+                          >
+                            {lead.initials || memberInitials(lead)}
+                          </span>
+                          <span className="table-lead-name" title={lead.name}>{lead.name}</span>
+                        </div>
+                      ) : (
+                        <span className="empty-dash">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="table-members-cell">
+                        <div className="card-avatar-stack">
+                          {members.slice(0, 3).map((m, i) => (
+                            <div
+                              key={m.id ?? i}
+                              className="avatar"
+                              style={{
+                                zIndex: 10 - i,
+                                background: `linear-gradient(135deg, ${avatarColor(m.name)}, ${avatarColor(`${m.name}2`)})`,
+                              }}
+                              title={m.name}
+                            >
+                              {memberInitials(m)}
+                            </div>
+                          ))}
+                          {members.length > 3 && (
+                            <div className="avatar avatar--more">+{members.length - 3}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {dueLabel ? (
+                        <span className="table-due-lbl">
+                          <Calendar size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                          {dueLabel}
+                        </span>
+                      ) : (
+                        <span className="empty-dash">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <Link to={`/dashboard/projects/${project.id}`} className="table-open-btn">
+                        Open <ArrowUpRight size={13} />
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

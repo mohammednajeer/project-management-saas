@@ -1,3 +1,42 @@
+:root {
+  --ink:          #17191c;
+  --ink-muted:    #4c4c4c;
+  --ash:          #777b86;
+  --dove:         #a3a6af;
+  --fog:          #f7f7f8;
+  --fog-dark:     #efefef;
+  --white:        #ffffff;
+  --border:       rgba(23,25,28,0.08);
+  --border-mid:   rgba(23,25,28,0.14);
+
+  --apricot:      #fbe1d1;
+  --apricot-mid:  #f5c9af;
+  --sky:          #d3e3fc;
+  --sky-mid:      #a8c8f8;
+
+  --green:        #3D9A5F;
+  --red:          #C96442;
+  --orange:       #D4835E;
+  --blue:         #5B8CB8;
+  --purple:       #8B7BA8;
+
+  --font-serif:   'Lora', Georgia, serif;
+  --font-sans:    'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  24px;
+  --r-pill: 9999px;
+
+  --sh-xs:  0 1px 3px rgba(23,25,28,0.04);
+  --sh-sm:  0 2px 8px rgba(23,25,28,0.05);
+  --sh-md:  0 4px 16px rgba(23,25,28,0.08);
+  --sh-lg:  0 8px 28px rgba(23,25,28,0.10);
+}
+
 /* AppLayout.css — updated for floating sidebar */
 .app-layout {
   --admin-page-bg: #fafbfc;

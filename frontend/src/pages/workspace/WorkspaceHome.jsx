@@ -411,7 +411,12 @@ export default function WorkspaceHome() {
               {dashboard.upcoming_deadlines.map((subtask) => {
                 const statusKey = subtask.status || "todo";
                 return (
-                  <div key={subtask.id} className="wh-deadline-item">
+                  <Link
+                    key={subtask.id}
+                    to={`/workspace/task/${subtask.task}?subtask=${subtask.id}`}
+                    className="wh-deadline-item"
+                    style={{ textDecoration: "none", cursor: "pointer" }}
+                  >
                     <div
                       className="wh-deadline-line"
                       style={{ background: DEADLINE_COLORS[statusKey] || DEADLINE_COLORS.todo }}
@@ -423,7 +428,7 @@ export default function WorkspaceHome() {
                     <span className={`wh-status-pill ${STATUS_PILL_CLASS[statusKey] || "wh-status-pill--todo"}`}>
                       {STATUS_LABELS[statusKey] || subtask.status}
                     </span>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -494,7 +499,12 @@ export default function WorkspaceHome() {
                 };
                 const dotColor = priorityColors[subtask.priority?.toLowerCase()] || "#8A87A0";
                 return (
-                  <div key={subtask.id} className="wh-task-item">
+                  <Link
+                    key={subtask.id}
+                    to={`/workspace/task/${subtask.task}?subtask=${subtask.id}`}
+                    className="wh-task-item"
+                    style={{ textDecoration: "none", cursor: "pointer" }}
+                  >
                     <div
                       className="wh-task-priority-dot"
                       style={{ background: dotColor }}
@@ -509,7 +519,7 @@ export default function WorkspaceHome() {
                     <span className={`wh-status-pill ${STATUS_PILL_CLASS[statusKey] || "wh-status-pill--todo"}`}>
                       {STATUS_LABELS[statusKey] || subtask.status}
                     </span>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

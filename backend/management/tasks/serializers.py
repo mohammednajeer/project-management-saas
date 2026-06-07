@@ -76,6 +76,8 @@ class TaskSerializer(serializers.ModelSerializer):
                 "id": str(user.id),
                 "name": user.name,
                 "email": user.email,
+                "role": user.role,
+                "profile_picture": user.profile_picture.url if user.profile_picture else None,
             }
 
             for user in obj.assigned_to.all()
@@ -117,6 +119,8 @@ class SubTaskSerializer(serializers.ModelSerializer):
                 "id": str(user.id),
                 "name": user.name,
                 "email": user.email,
+                "role": user.role,
+                "profile_picture": user.profile_picture.url if user.profile_picture else None,
             }
             for user in obj.assigned_to.all()
         ]
@@ -155,6 +159,8 @@ class TaskCommentSerializer(serializers.ModelSerializer):
             "id": str(obj.user.id),
             "name": obj.user.name,
             "email": obj.user.email,
+            "role": obj.user.role,
+            "profile_picture": obj.user.profile_picture.url if obj.user.profile_picture else None,
         }
     
     def get_subtask_data(self,obj):

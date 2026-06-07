@@ -600,7 +600,7 @@ export default function Dashboard() {
                   <div className="db-widget-empty-text">No task deadlines</div>
                 ) : (
                   upcomingDeadlines.slice(0, 3).map(d => (
-                    <Link key={`d-${d.source}-${d.id}`} to={d.source === "task" ? "/dashboard/tasks" : "/dashboard/calendar"} className="db-widget-section-item link">
+                    <Link key={`d-${d.source}-${d.id}`} to={d.source === "task" ? `/dashboard/tasks/${d.id}` : d.source === "subtask" ? `/dashboard/subtask/${d.id}` : "/dashboard/calendar"} className="db-widget-section-item link">
                       <span className="db-widget-section-dot orange" />
                       <span className="db-widget-section-copy">
                         <strong>{d.title}</strong>
@@ -833,7 +833,11 @@ export default function Dashboard() {
                   ) : (
                     recentTasks.slice(0, 6).map(row => (
                       <tr key={row.id}>
-                        <td className="db-task-name">{row.task}</td>
+                        <td className="db-task-name">
+                          <Link to={`/dashboard/tasks/${row.id}`} style={{ textDecoration: "none", color: "inherit", fontWeight: "inherit" }}>
+                            {row.task}
+                          </Link>
+                        </td>
                         <td className="db-task-project">{row.project}</td>
                         <td><span className="db-priority-tag" style={{ color: row.priorityColor, background: `${row.priorityColor}14`, borderColor: `${row.priorityColor}30` }}><span className="db-priority-dot" style={{ background: row.priorityColor }} />{row.priority}</span></td>
                         <td><span className="db-status-tag" style={{ background: row.statusBg, color: row.statusColor }}>{row.status}</span></td>

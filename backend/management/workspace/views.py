@@ -217,7 +217,7 @@ from activities.utils import create_activity
 
 class WorkspaceSubTaskStatusUpdateView(APIView):
 
-    permission_classes = [IsAuthenticated, IsEmployee]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, subtask_id):
 
@@ -249,18 +249,18 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        is_assigned_to_subtask = subtask.assigned_to.filter(id=request.user.id).exists()
-        is_assigned_to_subtask_issue = subtask.issues.filter(assigned_to=request.user).exists()
+        if request.user.role not in ["admin", "manager"]:
+            is_assigned_to_subtask = subtask.assigned_to.filter(id=request.user.id).exists()
+            is_assigned_to_subtask_issue = subtask.issues.filter(assigned_to=request.user).exists()
 
-        if not (is_assigned_to_subtask or is_assigned_to_subtask_issue):
-
-            return Response(
-                {
-                    "message":
-                    "You are not allowed to access this subtask"
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
+            if not (is_assigned_to_subtask or is_assigned_to_subtask_issue):
+                return Response(
+                    {
+                        "message":
+                        "You are not allowed to access this subtask"
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         comments = (
             TaskComment.objects
@@ -368,20 +368,9 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
 
     def patch(self, request, subtask_id):
 
-        requested_fields = set(request.data.keys())
-
-        if requested_fields - {"status"}:
-            return Response(
-                {
-                    "message":
-                    "Only status can be updated"
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
         new_status = request.data.get("status")
 
-        if new_status not in ALLOWED_SUBTASK_STATUSES:
+        if new_status and new_status not in ALLOWED_SUBTASK_STATUSES:
             return Response(
                 {
                     "message":
@@ -410,16 +399,27 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        if not subtask.assigned_to.filter(
-            id=request.user.id
-        ).exists():
-            return Response(
-                {
-                    "message":
-                    "You are not allowed to update this subtask"
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if request.user.role not in ["admin", "manager"]:
+            requested_fields = set(request.data.keys())
+            if requested_fields - {"status"}:
+                return Response(
+                    {
+                        "message":
+                        "Only status can be updated"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not subtask.assigned_to.filter(
+                id=request.user.id
+            ).exists():
+                return Response(
+                    {
+                        "message":
+                        "You are not allowed to update this subtask"
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         if subtask.status != new_status:
             subtask.status = new_status

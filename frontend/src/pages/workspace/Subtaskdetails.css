@@ -1330,3 +1330,54 @@
 .sd-blocked-banner-content {
   flex: 1;
 }
+
+/* ─── MANAGED ASSIGNEES IN SIDEBAR ─── */
+.sd-assignees-manage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sd-assignees-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sd-assignee-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--r-full);
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sd-assignee-pill:hover {
+  border-color: var(--border-mid);
+  background: var(--bg-muted);
+  color: var(--text-1);
+}
+
+.sd-assignee-pill.active {
+  background: var(--brand);
+  color: #ffffff;
+  border-color: var(--brand);
+  box-shadow: var(--shadow-brand);
+}
+
+.sd-assignee-pill.active:hover {
+  background: var(--brand-hover);
+}
+
+.sd-assignee-pill .sd-avatar {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}

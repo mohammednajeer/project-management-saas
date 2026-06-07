@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Calendar,
@@ -23,6 +23,7 @@ import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import "./ProjectDetails.css";
 import CreateTaskModal from "./CreateTaskModal";
+import emptyTasksIllustration from "../../assets/images/undraw_check-boxes_x5fg.svg";
 import {
   getHealthStyle,
   formatDueDate,
@@ -106,6 +107,11 @@ export default function ProjectDetails() {
   const [milestoneForm, setMilestoneForm] = useState(EMPTY_MILESTONE);
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
   const [teamWorkload, setTeamWorkload] = useState([]);
+
+  const sortedMilestones = useMemo(() => {
+    if (!project || !project.milestones) return [];
+    return [...project.milestones].sort((a, b) => new Date(a.target_date) - new Date(b.target_date));
+  }, [project]);
 
   const fetchTasks = async () => {
     try {
@@ -429,267 +435,103 @@ export default function ProjectDetails() {
         })}
       </section>
 
-      <div className="pd-content-grid">
-        <div className="pd-glass-card pd-progress-card">
-          <div className="pd-progress-top">
-            <div className="pd-card-title">
-              <div className="pd-card-title-icon">
-                <BarChart2 size={14} />
+      <div className="pd-main-layout">
+        <div className="pd-main-content">
+          <section className="pd-milestones-section">
+            <div className="pd-task-header">
+              <div className="pd-task-header-left">
+                <h2 className="pd-section-title">Milestones Timeline</h2>
+                <p className="pd-section-sub">
+                  {milestoneProgress}% complete · {milestoneSummary.upcoming?.length || 0} upcoming
+                </p>
               </div>
-              Project Progress
-            </div>
-            <div className="pd-progress-ring-wrap">
-              <svg className="pd-progress-ring" viewBox="0 0 72 72" aria-hidden>
-                <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(99,84,196,0.12)" strokeWidth="6" />
-                <circle
-                  cx="36"
-                  cy="36"
-                  r="30"
-                  fill="none"
-                  stroke="url(#pdProgressGrad)"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 30}`}
-                  strokeDashoffset={`${2 * Math.PI * 30 * (1 - progress / 100)}`}
-                  transform="rotate(-90 36 36)"
-                />
-                <defs>
-                  <linearGradient id="pdProgressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#6354c4" />
-                    <stop offset="100%" stopColor="#9b7ff4" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <span className="pd-progress-pct">{progress}%</span>
-            </div>
-          </div>
-          <div className="pd-progress-track">
-            <div className="pd-progress-bar" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="pd-progress-meta">
-            <span>{done} tasks completed</span>
-            <span>{total - done} remaining</span>
-          </div>
-        </div>
-
-        <div className="pd-glass-card pd-members-card">
-          <div className="pd-card-title">
-            <div className="pd-card-title-icon">
-              <Users size={14} />
-            </div>
-            Team Members
-          </div>
-
-          {lead && (
-            <div className="pd-lead-inline">
-              <span>Project Lead</span>
-              <div className="pd-member">
-                <div
-                  className="pd-avatar"
-                  style={{
-                    background: `linear-gradient(135deg, ${avatarColor(lead.name)}, ${avatarColor(`${lead.name}2`)})`,
-                  }}
+              {canManage && !isLocked && (
+                <button
+                  type="button"
+                  className="pd-create-task-btn"
+                  onClick={() => setShowMilestoneForm((v) => !v)}
                 >
-                  {lead.initials || memberInitials(lead)}
-                </div>
-                <span className="pd-member-name">{lead.name}</span>
-              </div>
-            </div>
-          )}
-
-          {project.members_data?.length === 0 ? (
-            <p className="pd-members-empty">No members yet.</p>
-          ) : (
-            <div className="pd-members-list">
-              {project.members_data?.map((member) => {
-                const workload = teamWorkload.find((row) => row.id === member.id);
-                const ws = getWorkloadStyle(workload?.workload_status);
-                const showWorkload = workload && (canManage || String(member.id) === String(user?.id));
-                return (
-                  <div key={member.id} className="pd-member pd-member--workload">
-                    <div
-                      className="pd-avatar"
-                      style={{
-                        background: `linear-gradient(135deg, ${avatarColor(member.name)}, ${avatarColor(`${member.name}2`)})`,
-                      }}
-                    >
-                      {memberInitials(member)}
-                    </div>
-                    <div className="pd-member-body">
-                      <span className="pd-member-name">{member.name}</span>
-                      {showWorkload && (
-                        <div className="pd-member-workload">
-                          <span>{workload.active_tasks} Active Tasks</span>
-                          <span
-                            className="pd-workload-status"
-                            style={{ background: ws.bg, color: ws.color }}
-                          >
-                            {workload.workload_label}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {canManage && !isLocked && (
-                      <button
-                        type="button"
-                        className="remove-member-btn"
-                        onClick={() => removeMember(member.id)}
-                        title="Remove member"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {!isLocked && canManage && (
-            <div className="pd-manage-members">
-              <div className="pd-manage-title">
-                <UserPlus size={12} />
-                Add Members
-              </div>
-              <div className="pd-member-select-list">
-                {teamMembers
-                  .filter((tm) => !project.members_data?.some((pm) => pm.id === tm.id))
-                  .map((member) => (
-                    <button
-                      type="button"
-                      key={member.id}
-                      className={`member-pill ${selectedMembers.includes(member.id) ? "active" : ""}`}
-                      onClick={() => {
-                        setSelectedMembers(
-                          selectedMembers.includes(member.id)
-                            ? selectedMembers.filter((id) => id !== member.id)
-                            : [...selectedMembers, member.id]
-                        );
-                      }}
-                    >
-                      {member.name}
-                    </button>
-                  ))}
-              </div>
-              {selectedMembers.length > 0 && (
-                <button type="button" className="pd-add-members-btn" onClick={addMembers}>
-                  <UserPlus size={14} />
-                  Add {selectedMembers.length} Member{selectedMembers.length > 1 ? "s" : ""}
+                  <Plus size={15} />
+                  Add Milestone
                 </button>
               )}
             </div>
-          )}
-        </div>
-      </div>
 
-      <section className="pd-milestones-section">
-        <div className="pd-task-header">
-          <div className="pd-task-header-left">
-            <h2 className="pd-section-title">Milestones</h2>
-            <p className="pd-section-sub">
-              {milestoneProgress}% complete · {milestoneSummary.upcoming?.length || 0} upcoming
-            </p>
-          </div>
-          {canManage && !isLocked && (
-            <button
-              type="button"
-              className="pd-create-task-btn"
-              onClick={() => setShowMilestoneForm((v) => !v)}
-            >
-              <Plus size={15} />
-              Add Milestone
-            </button>
-          )}
-        </div>
+            {showMilestoneForm && canManage && (
+              <form className="pd-milestone-form pd-glass-card" onSubmit={createMilestone}>
+                <input
+                  className="pd-edit-input pd-milestone-input"
+                  placeholder="Milestone title"
+                  value={milestoneForm.title}
+                  onChange={(e) => setMilestoneForm({ ...milestoneForm, title: e.target.value })}
+                  required
+                />
+                <textarea
+                  className="pd-edit-textarea"
+                  placeholder="Description (optional)"
+                  value={milestoneForm.description}
+                  onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })}
+                />
+                <div className="pd-milestone-form-row">
+                  <input
+                    type="date"
+                    className="pd-status-select"
+                    value={milestoneForm.target_date}
+                    onChange={(e) => setMilestoneForm({ ...milestoneForm, target_date: e.target.value })}
+                    required
+                  />
+                  <select
+                    className="pd-status-select"
+                    value={milestoneForm.status}
+                    onChange={(e) => setMilestoneForm({ ...milestoneForm, status: e.target.value })}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                  <button type="submit" className="pd-add-members-btn">Save Milestone</button>
+                </div>
+              </form>
+            )}
 
-        <div className="pd-milestone-progress-card pd-glass-card">
-          <div className="pd-milestone-progress-top">
-            <span>Progress toward milestones</span>
-            <strong>{milestoneProgress}%</strong>
-          </div>
-          <div className="pd-progress-track">
-            <div className="pd-progress-bar" style={{ width: `${milestoneProgress}%` }} />
-          </div>
-        </div>
+            <div className="pd-timeline-wrap pd-glass-card">
+              {sortedMilestones.length === 0 ? (
+                <p className="pd-members-empty">No milestones added yet.</p>
+              ) : (
+                <div className="pd-timeline">
+                  {sortedMilestones.map((milestone) => {
+                    const isCompleted = milestone.status === "completed";
+                    const isOverdue = !isCompleted && milestone.target_date && new Date(milestone.target_date) < new Date();
+                    const msStyle = isCompleted
+                      ? { color: "#3D9A5F", bg: "rgba(61, 154, 95, 0.12)", label: "Completed" }
+                      : isOverdue
+                      ? { color: "#C96442", bg: "rgba(201, 100, 66, 0.12)", label: "Overdue" }
+                      : { color: "#5B8CB8", bg: "rgba(91, 140, 184, 0.12)", label: "Pending" };
 
-        {showMilestoneForm && canManage && (
-          <form className="pd-milestone-form pd-glass-card" onSubmit={createMilestone}>
-            <input
-              className="pd-edit-input pd-milestone-input"
-              placeholder="Milestone title"
-              value={milestoneForm.title}
-              onChange={(e) => setMilestoneForm({ ...milestoneForm, title: e.target.value })}
-              required
-            />
-            <textarea
-              className="pd-edit-textarea"
-              placeholder="Description (optional)"
-              value={milestoneForm.description}
-              onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })}
-            />
-            <div className="pd-milestone-form-row">
-              <input
-                type="date"
-                className="pd-status-select"
-                value={milestoneForm.target_date}
-                onChange={(e) => setMilestoneForm({ ...milestoneForm, target_date: e.target.value })}
-                required
-              />
-              <select
-                className="pd-status-select"
-                value={milestoneForm.status}
-                onChange={(e) => setMilestoneForm({ ...milestoneForm, status: e.target.value })}
-              >
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-              <button type="submit" className="pd-add-members-btn">Save Milestone</button>
-            </div>
-          </form>
-        )}
-
-        <div className="pd-milestone-groups">
-          {[
-            { key: "overdue", title: "Overdue Milestones", tone: "danger" },
-            { key: "upcoming", title: "Upcoming Milestones", tone: "brand" },
-            { key: "completed", title: "Completed Milestones", tone: "success" },
-          ].map((group) => {
-            const items = milestoneSummary[group.key] || [];
-            return (
-              <div key={group.key} className="pd-glass-card pd-milestone-group">
-                <h3 className={`pd-milestone-group-title pd-milestone-group-title--${group.tone}`}>
-                  {group.title}
-                  <span>{items.length}</span>
-                </h3>
-                {items.length === 0 ? (
-                  <p className="pd-members-empty">None</p>
-                ) : (
-                  <div className="pd-milestone-list">
-                    {items.map((milestone) => {
-                      const ms = MILESTONE_STATUS_STYLES[milestone.status] || MILESTONE_STATUS_STYLES.pending;
-                      return (
-                        <article key={milestone.id} className="pd-milestone-card">
-                          <div className="pd-milestone-card-top">
-                            <strong>{milestone.title}</strong>
-                            <span
-                              className="pd-milestone-status"
-                              style={{ background: ms.bg, color: ms.color }}
-                            >
-                              {formatStatusLabel(milestone.status)}
+                    return (
+                      <div key={milestone.id} className={`pd-timeline-item ${isCompleted ? "completed" : isOverdue ? "overdue" : ""}`}>
+                        <div className="pd-timeline-badge" style={{ backgroundColor: msStyle.color, boxShadow: `0 0 0 4px ${msStyle.bg}` }}>
+                          {isCompleted ? <CheckCircle2 size={12} color="#fff" /> : <Clock size={12} color="#fff" />}
+                        </div>
+                        <div className="pd-timeline-content">
+                          <div className="pd-timeline-header">
+                            <h4 className="pd-timeline-title">{milestone.title}</h4>
+                            <span className="pd-timeline-status-badge" style={{ background: msStyle.bg, color: msStyle.color }}>
+                              {msStyle.label}
                             </span>
                           </div>
-                          {milestone.description && <p>{milestone.description}</p>}
-                          <div className="pd-milestone-card-meta">
-                            <Calendar size={12} />
-                            {formatDueDate(milestone.target_date)}
+                          {milestone.description && <p className="pd-timeline-desc">{milestone.description}</p>}
+                          <div className="pd-timeline-meta">
+                            <Calendar size={11} />
+                            <span>Target: {formatDueDate(milestone.target_date)}</span>
                           </div>
+                          
                           {canManage && !isLocked && (
-                            <div className="pd-milestone-actions">
-                              {milestone.status !== "completed" && (
+                            <div className="pd-timeline-actions">
+                              {!isCompleted && (
                                 <button
                                   type="button"
-                                  className="pd-btn"
+                                  className="pd-timeline-action-btn complete"
                                   onClick={() => updateMilestoneStatus(milestone.id, "completed")}
                                 >
                                   Mark complete
@@ -697,111 +539,264 @@ export default function ProjectDetails() {
                               )}
                               <button
                                 type="button"
-                                className="pd-btn pd-btn--danger"
+                                className="pd-timeline-action-btn delete"
                                 onClick={() => deleteMilestone(milestone.id)}
                               >
                                 Delete
                               </button>
                             </div>
                           )}
-                        </article>
-                      );
-                    })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="pd-tasks-section">
+            <div className="pd-task-header">
+              <div className="pd-task-header-left">
+                <h2 className="pd-section-title">Project Tasks</h2>
+                <p className="pd-section-sub">
+                  {tasks.length} task{tasks.length !== 1 ? "s" : ""} total
+                </p>
+              </div>
+              {canManage && !isLocked && (
+                <button
+                  type="button"
+                  className="pd-create-task-btn"
+                  onClick={() => setTaskModalOpen(true)}
+                >
+                  <Plus size={15} />
+                  Create Task
+                </button>
+              )}
+            </div>
+
+            {tasks.length === 0 ? (
+              <div className="pd-empty-tasks">
+                <img src={emptyTasksIllustration} alt="No tasks" className="pd-empty-tasks-img" />
+                <h3>No tasks yet</h3>
+                <p>Create your first task to start tracking progress</p>
+              </div>
+            ) : (
+              <div className="pd-task-grid">
+                {tasks.map((task) => {
+                  const tTotal = task.subtask_count || 0;
+                  const tDone = task.completed_subtasks || 0;
+                  const tProgress = tTotal ? Math.round((tDone / tTotal) * 100) : 0;
+                  const statusStyle = taskBadgeStyle(TASK_STATUS_STYLES, task.status);
+                  const priorityStyle = taskBadgeStyle(TASK_PRIORITY_STYLES, task.priority);
+                  const taskDue = formatDueDate(task.due_date);
+
+                  return (
+                    <Link to={`/dashboard/tasks/${task.id}`} key={task.id} className="pd-task-card-link">
+                      <article className="pd-task-card">
+                        <div className="pd-task-top">
+                          <span
+                            className="pd-task-status"
+                            style={{ background: statusStyle.bg, color: statusStyle.color }}
+                          >
+                            {formatStatusLabel(task.status)}
+                          </span>
+                          <span
+                            className="pd-task-priority"
+                            style={{ background: priorityStyle.bg, color: priorityStyle.color }}
+                          >
+                            {formatStatusLabel(task.priority)}
+                          </span>
+                        </div>
+
+                        <h3>{task.title}</h3>
+                        <p>{task.description || "No description"}</p>
+
+                        <div className="pd-task-progress-top">
+                          <span>Subtasks</span>
+                          <span className="pd-task-pct">{tProgress}%</span>
+                        </div>
+                        <div className="pd-task-progress-track">
+                          <div className="pd-task-progress-bar" style={{ width: `${tProgress}%` }} />
+                        </div>
+
+                        <div className="pd-task-footer">
+                          <span className="pd-task-subtasks">
+                            {tDone}/{tTotal} subtasks
+                          </span>
+                          <span className="pd-task-due">
+                            {taskDue ? (
+                              <>
+                                <Clock size={11} style={{ marginRight: 4 }} />
+                                {taskDue}
+                              </>
+                            ) : (
+                              "No due date"
+                            )}
+                          </span>
+                        </div>
+                      </article>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside className="pd-sidebar">
+          <div className="pd-glass-card pd-progress-card">
+            <div className="pd-progress-top">
+              <div className="pd-card-title">
+                <div className="pd-card-title-icon">
+                  <BarChart2 size={14} />
+                </div>
+                Project Progress
+              </div>
+              <div className="pd-progress-ring-wrap">
+                <svg className="pd-progress-ring" viewBox="0 0 72 72" aria-hidden>
+                  <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(23,25,28,0.06)" strokeWidth="6" />
+                  <circle
+                    cx="36"
+                    cy="36"
+                    r="30"
+                    fill="none"
+                    stroke="url(#pdProgressGrad)"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 30}`}
+                    strokeDashoffset={`${2 * Math.PI * 30 * (1 - progress / 100)}`}
+                    transform="rotate(-90 36 36)"
+                  />
+                  <defs>
+                    <linearGradient id="pdProgressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#17191c" />
+                      <stop offset="100%" stopColor="#777b86" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="pd-progress-pct">{progress}%</span>
+              </div>
+            </div>
+            <div className="pd-progress-track">
+              <div className="pd-progress-bar" style={{ width: `${progress}%`, background: "var(--ink)" }} />
+            </div>
+            <div className="pd-progress-meta">
+              <span>{done} tasks completed</span>
+              <span>{total - done} remaining</span>
+            </div>
+          </div>
+
+          <div className="pd-glass-card pd-members-card">
+            <div className="pd-card-title">
+              <div className="pd-card-title-icon">
+                <Users size={14} />
+              </div>
+              Team Members
+            </div>
+
+            {lead && (
+              <div className="pd-lead-inline">
+                <span>Project Lead</span>
+                <div className="pd-member">
+                  <div
+                    className="pd-avatar"
+                    style={{
+                      background: `linear-gradient(135deg, ${avatarColor(lead.name)}, ${avatarColor(`${lead.name}2`)})`,
+                    }}
+                  >
+                    {lead.initials || memberInitials(lead)}
                   </div>
+                  <span className="pd-member-name">{lead.name}</span>
+                </div>
+              </div>
+            )}
+
+            {project.members_data?.length === 0 ? (
+              <p className="pd-members-empty">No members yet.</p>
+            ) : (
+              <div className="pd-members-list">
+                {project.members_data?.map((member) => {
+                  const workload = teamWorkload.find((row) => row.id === member.id);
+                  const ws = getWorkloadStyle(workload?.workload_status);
+                  const showWorkload = workload && (canManage || String(member.id) === String(user?.id));
+                  return (
+                    <div key={member.id} className="pd-member pd-member--workload">
+                      <div
+                        className="pd-avatar"
+                        style={{
+                          background: `linear-gradient(135deg, ${avatarColor(member.name)}, ${avatarColor(`${member.name}2`)})`,
+                        }}
+                      >
+                        {memberInitials(member)}
+                      </div>
+                      <div className="pd-member-body">
+                        <span className="pd-member-name">{member.name}</span>
+                        {showWorkload && (
+                          <div className="pd-member-workload">
+                            <span>{workload.active_tasks} Active Tasks</span>
+                            <span
+                              className="pd-workload-status"
+                              style={{ background: ws.bg, color: ws.color }}
+                            >
+                              {workload.workload_label}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {canManage && !isLocked && (
+                        <button
+                          type="button"
+                          className="remove-member-btn"
+                          onClick={() => removeMember(member.id)}
+                          title="Remove member"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {!isLocked && canManage && (
+              <div className="pd-manage-members">
+                <div className="pd-manage-title">
+                  <UserPlus size={12} />
+                  Add Members
+                </div>
+                <div className="pd-member-select-list">
+                  {teamMembers
+                    .filter((tm) => !project.members_data?.some((pm) => pm.id === tm.id))
+                    .map((member) => (
+                      <button
+                        type="button"
+                        key={member.id}
+                        className={`member-pill ${selectedMembers.includes(member.id) ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedMembers(
+                            selectedMembers.includes(member.id)
+                              ? selectedMembers.filter((id) => id !== member.id)
+                              : [...selectedMembers, member.id]
+                          );
+                        }}
+                      >
+                        {member.name}
+                      </button>
+                    ))}
+                </div>
+                {selectedMembers.length > 0 && (
+                  <button type="button" className="pd-add-members-btn" onClick={addMembers}>
+                    <UserPlus size={14} />
+                    Add {selectedMembers.length} Member{selectedMembers.length > 1 ? "s" : ""}
+                  </button>
                 )}
               </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="pd-tasks-section">
-        <div className="pd-task-header">
-          <div className="pd-task-header-left">
-            <h2 className="pd-section-title">Project Tasks</h2>
-            <p className="pd-section-sub">
-              {tasks.length} task{tasks.length !== 1 ? "s" : ""} total
-            </p>
+            )}
           </div>
-          {canManage && !isLocked && (
-            <button
-              type="button"
-              className="pd-create-task-btn"
-              onClick={() => setTaskModalOpen(true)}
-            >
-              <Plus size={15} />
-              Create Task
-            </button>
-          )}
-        </div>
-
-        {tasks.length === 0 ? (
-          <div className="pd-empty-tasks">
-            <div className="pd-empty-tasks-icon">
-              <Layers size={24} />
-            </div>
-            <h3>No tasks yet</h3>
-            <p>Create your first task to start tracking progress</p>
-          </div>
-        ) : (
-          <div className="pd-task-grid">
-            {tasks.map((task) => {
-              const tTotal = task.subtask_count || 0;
-              const tDone = task.completed_subtasks || 0;
-              const tProgress = tTotal ? Math.round((tDone / tTotal) * 100) : 0;
-              const statusStyle = taskBadgeStyle(TASK_STATUS_STYLES, task.status);
-              const priorityStyle = taskBadgeStyle(TASK_PRIORITY_STYLES, task.priority);
-              const taskDue = formatDueDate(task.due_date);
-
-              return (
-                <article key={task.id} className="pd-task-card">
-                  <div className="pd-task-top">
-                    <span
-                      className="pd-task-status"
-                      style={{ background: statusStyle.bg, color: statusStyle.color }}
-                    >
-                      {formatStatusLabel(task.status)}
-                    </span>
-                    <span
-                      className="pd-task-priority"
-                      style={{ background: priorityStyle.bg, color: priorityStyle.color }}
-                    >
-                      {formatStatusLabel(task.priority)}
-                    </span>
-                  </div>
-
-                  <h3>{task.title}</h3>
-                  <p>{task.description || "No description"}</p>
-
-                  <div className="pd-task-progress-top">
-                    <span>Subtasks</span>
-                    <span className="pd-task-pct">{tProgress}%</span>
-                  </div>
-                  <div className="pd-task-progress-track">
-                    <div className="pd-task-progress-bar" style={{ width: `${tProgress}%` }} />
-                  </div>
-
-                  <div className="pd-task-footer">
-                    <span className="pd-task-subtasks">
-                      {tDone}/{tTotal} subtasks
-                    </span>
-                    <span className="pd-task-due">
-                      {taskDue ? (
-                        <>
-                          <Clock size={11} />
-                          {taskDue}
-                        </>
-                      ) : (
-                        "No due date"
-                      )}
-                    </span>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+        </aside>
+      </div>
 
       <CreateTaskModal
         open={taskModalOpen}

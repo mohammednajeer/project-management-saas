@@ -45,11 +45,11 @@ const FILTER_TABS = [
 ];
 
 const STAT_ITEMS = [
-  { key: "task",     label: "Task Events",    emoji: "📋", actions: ["task_created","task_updated","task_deleted"] },
-  { key: "subtask",  label: "Subtask Events", emoji: "🔖", actions: ["subtask_created","subtask_updated","subtask_completed"] },
-  { key: "comment",  label: "Comments",       emoji: "💬", actions: ["comment_added"] },
-  { key: "project",  label: "Projects",       emoji: "📁", actions: ["project_created"] },
-  { key: "member",   label: "Members",        emoji: "👥", actions: ["member_added"] },
+  { key: "task",     label: "Task Events",    icon: <ListTodo size={16} />, actions: ["task_created","task_updated","task_deleted"] },
+  { key: "subtask",  label: "Subtask Events", icon: <Layers size={16} />, actions: ["subtask_created","subtask_updated","subtask_completed"] },
+  { key: "comment",  label: "Comments",       icon: <MessageSquare size={16} />, actions: ["comment_added"] },
+  { key: "project",  label: "Projects",       icon: <FolderOpen size={16} />, actions: ["project_created"] },
+  { key: "member",   label: "Members",        icon: <Users size={16} />, actions: ["member_added"] },
 ];
 
 const BREAKDOWN_COLORS = {
@@ -212,8 +212,12 @@ function ActiveUsers({ activities }) {
     <div className="ap-users-list">
       {users.map(({ user, count }, i) => (
         <div key={user.id || user.email} className="ap-user-item">
-          <div className="ap-user-av" style={{ background: AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length] }}>
-            {buildInitials(user)}
+          <div className="ap-user-av" style={{ background: user.profile_picture ? "transparent" : AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length] }}>
+            {user.profile_picture ? (
+              <img src={user.profile_picture} alt="" />
+            ) : (
+              buildInitials(user)
+            )}
           </div>
           <div className="ap-user-item-info">
             <div className="ap-user-item-name">{user.name || user.email || "Unknown"}</div>
@@ -340,7 +344,9 @@ export default function ActivityPage() {
             className={`ap-chip ${activeFilter === s.key ? "active" : ""}`}
             onClick={() => setActiveFilter(activeFilter === s.key ? "all" : s.key)}
           >
-            <span className="ap-chip-emoji">{s.emoji}</span>
+            <div className="ap-chip-icon">
+              {s.icon}
+            </div>
             <div className="ap-chip-body">
               <div className="ap-chip-count">{loading ? "—" : statCounts[s.key]}</div>
               <div className="ap-chip-label">{s.label}</div>
@@ -451,7 +457,13 @@ export default function ActivityPage() {
                           <div className="ap-card" data-type={activity.action}>
                             <div className="ap-card-head">
                               <div className="ap-user-row">
-                                <div className="ap-avatar">{buildInitials(user)}</div>
+                                <div className="ap-avatar">
+                                  {user.profile_picture ? (
+                                    <img src={user.profile_picture} alt="" />
+                                  ) : (
+                                    buildInitials(user)
+                                  )}
+                                </div>
                                 <div className="ap-user-info">
                                   <div className="ap-user-name">{user.name || user.email || "Unknown user"}</div>
                                   <span className="ap-role-tag">{formatRole(user.role)}</span>

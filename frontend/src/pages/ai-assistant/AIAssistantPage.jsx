@@ -425,41 +425,43 @@ function WorkloadInsightsResult({ data }) {
         <StatPill label="Underused" value={data.summary?.underutilized} />
       </div>
 
-      <div className="ai-recommendation-list">
-        {(data.recommendations || []).map((recommendation, index) => (
-          <article key={`${recommendation.type}-${index}`} className="ai-recommendation">
-            <span className="ai-recommendation-icon">
-              <Lightbulb size={16} />
-            </span>
-            <div>
-              <div className="ai-risk-top">
-                <strong>{formatLabel(recommendation.type)}</strong>
-                <SeverityBadge value={recommendation.severity} />
+      <div className="ai-workload-scroll-body">
+        <div className="ai-recommendation-list">
+          {(data.recommendations || []).map((recommendation, index) => (
+            <article key={`${recommendation.type}-${index}`} className="ai-recommendation">
+              <span className="ai-recommendation-icon">
+                <Lightbulb size={16} />
+              </span>
+              <div>
+                <div className="ai-risk-top">
+                  <strong>{formatLabel(recommendation.type)}</strong>
+                  <SeverityBadge value={recommendation.severity} />
+                </div>
+                <p>{recommendation.message}</p>
+                {recommendation.employee ? (
+                  <small>{recommendation.employee.name} · {recommendation.employee.workload_label}</small>
+                ) : null}
               </div>
-              <p>{recommendation.message}</p>
-              {recommendation.employee ? (
-                <small>{recommendation.employee.name} · {recommendation.employee.workload_label}</small>
-              ) : null}
-            </div>
-          </article>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
 
-      <div className="ai-member-grid">
-        {(data.members || []).slice(0, 8).map((member) => (
-          <div key={member.id} className="ai-member-card">
-            <span className="ai-avatar">{initials(member.name)}</span>
-            <div>
-              <strong>{member.name}</strong>
-              <small>
-                {member.active_tasks} active · {member.open_issues} issues · {member.overdue_tasks} overdue
-              </small>
+        <div className="ai-member-grid">
+          {(data.members || []).slice(0, 8).map((member) => (
+            <div key={member.id} className="ai-member-card">
+              <span className="ai-avatar">{initials(member.name)}</span>
+              <div>
+                <strong>{member.name}</strong>
+                <small>
+                  {member.active_tasks} active · {member.open_issues} issues · {member.overdue_tasks} overdue
+                </small>
+              </div>
+              <span className={`ai-workload-badge ai-workload-badge--${member.workload_status}`}>
+                {member.workload_label}
+              </span>
             </div>
-            <span className={`ai-workload-badge ai-workload-badge--${member.workload_status}`}>
-              {member.workload_label}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -637,33 +639,28 @@ export default function AIAssistantPage() {
 
   return (
     <main className="ai-page">
-      <header className="ai-header">
-        <div className="ai-header-copy">
-          <span className="ai-eyebrow">
-            <Sparkles size={14} />
-            Operations intelligence
-          </span>
-          <h1>AI Assistant</h1>
-          <p>
-            Generate project summaries, surface delivery risks, review weekly activity,
-            rebalance workload, and break new work into actionable tasks.
-          </p>
+      {/* ── WELCOME HERO ── */}
+      <section className="ai-welcome">
+        <div className="ai-welcome-avatar">
+          <Sparkles size={20} />
         </div>
-        <div className="ai-hero-card" aria-label="Assistant status">
-          <span className="ai-hero-icon">
-            <Bot size={26} />
-          </span>
-          <div className="ai-hero-stats">
-            {heroStats.map(({ label, value, icon: Icon }) => (
-              <div key={label}>
-                <Icon size={15} />
-                <strong>{value}</strong>
-                <span>{label}</span>
-              </div>
-            ))}
-          </div>
+        <h1 className="ai-welcome-title">
+          How can I help <span className="text-serif italic">today</span>?
+        </h1>
+        <p className="ai-welcome-sub">
+          I can summarize projects, detect delivery risks, review weekly
+          activity, rebalance workloads, and plan new work.
+        </p>
+        <div className="ai-welcome-stats">
+          {heroStats.map(({ label, value, icon: Icon }) => (
+            <div key={label} className="ai-stat-chip">
+              <Icon size={14} />
+              <strong>{value}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
         </div>
-      </header>
+      </section>
 
       {projectsError ? <ErrorState message={projectsError} /> : null}
 

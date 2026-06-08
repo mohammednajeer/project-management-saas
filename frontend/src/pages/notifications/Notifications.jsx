@@ -17,6 +17,7 @@ import {
   Settings,
 } from "lucide-react";
 import useNotifications from "../../context/useNotifications";
+import processIllustration from "../../assets/images/undraw_process_0wew.svg";
 import "./Notifications.css";
 
 /* ─── CATEGORY CONSTANTS & META ─────────────────────────────────────────── */
@@ -151,58 +152,14 @@ export default function Notifications() {
 
   /* ── Loading ────────────────────────────────────────────────────────── */
   if (loading) return (
-    <main className="notifications-page">
-      <div className="nf-page-header">
-        <div className="nf-header-inner">
-          <div className="nf-header-left">
-            <div className="nf-eyebrow"><span className="nf-eyebrow-dot" /> Inbox</div>
-            <h1 className="nf-title">Notifications</h1>
-            <p className="nf-subtitle">Stay updated with project activity.</p>
-          </div>
-        </div>
-      </div>
+    <main className="notifications-page" style={{ paddingTop: "24px" }}>
       <Skeleton />
     </main>
   );
 
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
-    <main className="notifications-page">
-
-      {/* ── PAGE HEADER ───────────────────────────────────────────────── */}
-      <div className="nf-page-header">
-        <div className="nf-header-inner">
-          <div className="nf-header-left">
-            <div className="nf-eyebrow">
-              <span className="nf-eyebrow-dot" />
-              Inbox
-            </div>
-            <h1 className="nf-title">Notifications</h1>
-            <p className="nf-subtitle">Stay updated with project activity.</p>
-          </div>
-
-          <div className="nf-header-right">
-            {unreadCount > 0 && (
-              <div className="nf-unread-badge">
-                <Bell size={14} />
-                <span className="nf-unread-count">{unreadCount}</span>
-                unread
-              </div>
-            )}
-            {markAllAsRead && (
-              <button
-                type="button"
-                className="nf-mark-all-btn"
-                onClick={markAllAsRead}
-                disabled={unreadCount === 0}
-              >
-                <CheckCheck size={13} />
-                Mark all read
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+    <main className="notifications-page" style={{ paddingTop: "24px" }}>
 
       {/* ── FILTER TABS ───────────────────────────────────────────────── */}
       <div className="nf-filter-bar">
@@ -226,6 +183,16 @@ export default function Notifications() {
             <span className="nf-tab-count">{unreadCount}</span>
           </button>
         </div>
+        {unreadCount > 0 && markAllAsRead && (
+          <button
+            type="button"
+            className="nf-inline-mark-read-btn"
+            onClick={markAllAsRead}
+          >
+            <CheckCheck size={13} />
+            Mark all read
+          </button>
+        )}
       </div>
 
       {/* ── CATEGORY PILLS ────────────────────────────────────────────── */}

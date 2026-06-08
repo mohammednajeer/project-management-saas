@@ -35,6 +35,7 @@ class ActivitySerializer(serializers.ModelSerializer):
             "name": obj.user.name,
             "email": obj.user.email,
             "role": obj.user.role,
+            "profile_picture": obj.user.profile_picture.url if obj.user.profile_picture else None,
         }
     
     def get_project_data(self, obj):

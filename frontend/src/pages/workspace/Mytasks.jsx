@@ -37,36 +37,36 @@ import {
 import api from "../../services/api";
 import { IssueProvider } from "../../context/issues/IssueContext";
 import IssueDetailsModal from "../../components/issues/IssueDetailsModal";
+import successIllustration from "../../assets/images/undraw_successful_rtc4.svg";
 import "./MyTasks.css";
 
 /* ─── CONSTANTS ─────────────────────────────────────────────────────────── */
 const STATUS_CONFIG = {
-  todo:        { label: "Todo",        color: "#64748B", bg: "#F1F5F9", border: "rgba(100,116,139,0.18)", accent: "#94A3B8" },
-  in_progress: { label: "In Progress", color: "#2563EB", bg: "#EFF6FF", border: "rgba(37,99,235,0.18)",   accent: "#60A5FA" },
-  review:      { label: "Review",      color: "#7C3AED", bg: "#F5F3FF", border: "rgba(124,58,237,0.18)",  accent: "#A78BFA" },
-  done:        { label: "Done",        color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.18)",   accent: "#34D399" },
+  todo:        { label: "Todo",        color: "#B45309", bg: "#fbe1d1", border: "rgba(180,83,9,0.18)",  accent: "#D4835E" },
+  in_progress: { label: "In Progress", color: "#1E3A8A", bg: "#d3e3fc", border: "rgba(30,58,138,0.18)",   accent: "#5B8CB8" },
+  review:      { label: "Review",      color: "#5B21B6", bg: "#e8def8", border: "rgba(91,33,182,0.18)",  accent: "#8B7BA8" },
+  done:        { label: "Done",        color: "#166534", bg: "#d8f3dc", border: "rgba(22,101,52,0.18)",   accent: "#3D9A5F" },
 };
 
 const ISSUE_STATUS_CONFIG = {
-  open:          { label: "Open",          color: "#DC2626", bg: "#FEF2F2", border: "rgba(220,38,38,0.22)",  accent: "#EF4444" },
-  investigating: { label: "Investigating", color: "#D97706", bg: "#FFFBEB", border: "rgba(217,119,6,0.18)",   accent: "#F59E0B" },
-  resolved:      { label: "Resolved",      color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.18)",   accent: "#34D399" },
-  closed:        { label: "Closed",        color: "#64748B", bg: "#F1F5F9", border: "rgba(100,116,139,0.18)",  accent: "#94A3B8" },
+  open:          { label: "Open",          color: "#991B1B", bg: "#f8d7da", border: "rgba(153,27,27,0.22)",  accent: "#A34A30" },
+  investigating: { label: "Investigating", color: "#854D0E", bg: "#fff3cd", border: "rgba(133,77,14,0.18)",   accent: "#D4835E" },
+  resolved:      { label: "Resolved",      color: "#166534", bg: "#d8f3dc", border: "rgba(22,101,52,0.18)",   accent: "#3D9A5F" },
+  closed:        { label: "Closed",        color: "#374151", bg: "#F1F5F9", border: "rgba(55,65,81,0.18)",  accent: "#94A3B8" },
 };
 
 const PRIORITY_CONFIG = {
-  critical: { label: "Critical", color: "#DC2626", bg: "#FEF2F2",  border: "rgba(220,38,38,0.2)",   dot: "#EF4444",  cardTint: "rgba(254,242,242,0.6)"  },
-  high:     { label: "High",     color: "#D97706", bg: "#FFFBEB",  border: "rgba(217,119,6,0.2)",   dot: "#F59E0B",  cardTint: "rgba(255,251,235,0.6)"  },
-  medium:   { label: "Medium",   color: "#7C3AED", bg: "#F5F3FF",  border: "rgba(124,58,237,0.2)",  dot: "#8B5CF6",  cardTint: "rgba(245,243,255,0.5)"  },
-  low:      { label: "Low",      color: "#64748B", bg: "#F8FAFC",  border: "rgba(100,116,139,0.15)", dot: "#94A3B8",  cardTint: "rgba(248,250,252,0.5)"  },
+  critical: { label: "Critical", color: "#991B1B", bg: "#f8d7da",  border: "rgba(153,27,27,0.2)",   dot: "#A34A30",  cardTint: "rgba(248,215,218,0.6)"  },
+  high:     { label: "High",     color: "#854D0E", bg: "#fff3cd",  border: "rgba(133,77,14,0.2)",   dot: "#D4835E",  cardTint: "rgba(255,243,205,0.6)"  },
+  medium:   { label: "Medium",   color: "#1E3A8A", bg: "#d3e3fc",  border: "rgba(30,58,138,0.2)",  dot: "#5B8CB8",  cardTint: "rgba(211,227,252,0.5)"  },
+  low:      { label: "Low",      color: "#374151", bg: "#F1F5F9",  border: "rgba(55,65,81,0.15)", dot: "#94A3B8",  cardTint: "rgba(241,245,249,0.5)"  },
 };
 
-// Pastel card accent colors per status — inspired by the Salesforce/Weihu reference boards
 const CARD_PALETTE = {
-  todo:        { gradStart: "#F8F9FF", gradEnd: "#EEF2FF", topAccent: "#C7D2FE" },
-  in_progress: { gradStart: "#F0F9FF", gradEnd: "#E0F2FE", topAccent: "#7DD3FC" },
-  review:      { gradStart: "#FAF5FF", gradEnd: "#F3E8FF", topAccent: "#D8B4FE" },
-  done:        { gradStart: "#F0FDF9", gradEnd: "#DCFCE7", topAccent: "#6EE7B7" },
+  todo:        "#fbe1d1",
+  in_progress: "#d3e3fc",
+  review:      "#e8def8",
+  done:        "#d8f3dc",
 };
 
 const STATUS_TABS = [
@@ -266,10 +266,9 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
   const overdue     = isOverdue(task.due_date, task.status);
   const statusKey   = task.status || (task.is_issue ? "open" : "todo");
   const priorityKey = task.priority?.toLowerCase() || "low";
-  const priCfg      = PRIORITY_CONFIG[priorityKey] || PRIORITY_CONFIG.low;
   const config      = task.is_issue ? ISSUE_STATUS_CONFIG : STATUS_CONFIG;
   const stCfg       = config[statusKey] || config[task.is_issue ? "open" : "todo"];
-  const palette     = task.is_issue ? { gradStart: "#FFF8F8", gradEnd: "#FEE2E2", topAccent: stCfg.accent } : (CARD_PALETTE[statusKey] || CARD_PALETTE.todo);
+  const paletteBg   = task.is_issue ? stCfg.bg : (CARD_PALETTE[statusKey] || CARD_PALETTE.todo);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -297,17 +296,14 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
   return (
     <article
       className={cardClassName}
-      style={!overdue && !task.is_issue ? {
-        background: `linear-gradient(145deg, ${palette.gradStart} 0%, ${palette.gradEnd} 100%)`,
-        "--card-top-accent": palette.topAccent,
+      style={!overdue ? {
+        background: paletteBg,
       } : {}}
       onClick={() => onOpenTask?.(task)}
       onKeyDown={(e) => e.key === "Enter" && onOpenTask?.(task)}
       role="button"
       tabIndex={0}
     >
-      {/* Top accent bar */}
-      <div className="mt-card-accent-bar" style={{ background: overdue ? "#FCA5A5" : palette.topAccent }} />
 
       {/* Header row */}
       <div className="mt-card-header">
@@ -416,7 +412,7 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
 }
 
 /* ─── LIST ROW (list view variant) ──────────────────────────────────────── */
-function TaskRow({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
+function TaskRow({ task, onStatusChange, onOpenTask }) {
   const overdue     = isOverdue(task.due_date, task.status);
   const priorityKey = task.priority?.toLowerCase() || "low";
   const priCfg      = PRIORITY_CONFIG[priorityKey] || PRIORITY_CONFIG.low;
@@ -830,7 +826,7 @@ function MyTasksContent() {
   return (
     <div className="mt-page">
 
-      {/* ══ HERO BANNER ══════════════════════════════════════════════════ */}
+      {/* ── HERO BANNER ══════════════════════════════════════════════════ */}
       <header className="mt-hero">
         <div className="mt-hero-left">
           <div className="mt-hero-eyebrow">
@@ -847,41 +843,15 @@ function MyTasksContent() {
           </p>
 
           <div className="mt-hero-stats">
-            <StatCard value={heroStats.total}   label="Total"   color="#6366F1" bg="#EEF2FF" icon={Layers}       />
-            <StatCard value={heroStats.done}    label="Done"    color="#059669" bg="#ECFDF5" icon={CheckCircle2} />
-            {heroStats.today > 0 && <StatCard value={heroStats.today}   label="Today"   color="#2563EB" bg="#EFF6FF" icon={Clock}        />}
-            {heroStats.overdue > 0 && <StatCard value={heroStats.overdue} label="Overdue" color="#DC2626" bg="#FEF2F2" icon={AlertTriangle} />}
+            <StatCard value={heroStats.total}   label="Total"   color="#5B8CB8" bg="#d3e3fc" icon={Layers}       />
+            <StatCard value={heroStats.done}    label="Done"    color="#3D9A5F" bg="#d8f3dc" icon={CheckCircle2} />
+            {heroStats.today > 0 && <StatCard value={heroStats.today}   label="Today"   color="#D4835E" bg="#fff3cd" icon={Clock}        />}
+            {heroStats.overdue > 0 && <StatCard value={heroStats.overdue} label="Overdue" color="#A34A30" bg="#f8d7da" icon={AlertTriangle} />}
           </div>
         </div>
 
-        <div className="mt-hero-right">
-          <div className="mt-completion-ring">
-            <svg width="96" height="96" viewBox="0 0 96 96">
-              <defs>
-                <linearGradient id="hero-ring-g" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#6366F1" />
-                  <stop offset="100%" stopColor="#A78BFA" />
-                </linearGradient>
-              </defs>
-              <circle cx="48" cy="48" r="38" fill="none" stroke="#EEF2FF" strokeWidth="7" />
-              <circle
-                cx="48" cy="48" r="38"
-                fill="none"
-                stroke="url(#hero-ring-g)"
-                strokeWidth="7"
-                strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 38}
-                strokeDashoffset={2 * Math.PI * 38 * (1 - heroStats.pct / 100)}
-                transform="rotate(-90 48 48)"
-                className="mt-ring-fill-animated"
-              />
-            </svg>
-            <div className="mt-completion-label">
-              <span className="mt-completion-pct">{heroStats.pct}</span>
-              <span className="mt-completion-unit">%</span>
-            </div>
-          </div>
-          <span className="mt-completion-caption">Completion</span>
+        <div className="mt-hero-right-illustration">
+          <img src={successIllustration} alt="Success" className="mt-hero-illustration" />
         </div>
       </header>
 

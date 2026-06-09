@@ -3,42 +3,45 @@
    Inspired by: Linear · ClickUp · Weihu Kanban · Salesforce Pipeline
    Font pairing: Sora (display) + DM Sans (body) — matches MyTasks.css
    ═══════════════════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 /* ─── DESIGN TOKENS ──────────────────────────────────────────────────────── */
 .tw-page {
   /* Brand */
-  --brand:        #6366F1;
-  --brand-hover:  #4F46E5;
-  --brand-mid:    #818CF8;
-  --brand-light:  #EEF2FF;
-  --brand-dim:    #F5F3FF;
+  --brand:       #17191c;
+  --brand-mid:   #4c4c4c;
+  --brand-light: #d3e3fc;
+  --brand-hover: #4c4c4c;
 
   /* Neutrals */
-  --ink-1:  #0F0F1A;
-  --ink-2:  #374151;
-  --ink-3:  #6B7280;
-  --ink-4:  #9CA3AF;
-  --ink-5:  #D1D5DB;
-  --ink-6:  #F3F4F6;
+  --ink-1:    #17191c;
+  --ink-2:    #4c4c4c;
+  --ink-3:    #777b86;
+  --ink-4:    #a3a6af;
+  --ink-5:    rgba(23, 25, 28, 0.08);
 
-  /* Surfaces */
-  --surface:   #FFFFFF;
-  --surface-2: #FAFBFF;
-  --surface-3: #F1F3FA;
-  --page-bg:   #F5F6FB;
+  /* Backgrounds */
+  --page-bg:    transparent;
+  --surface:    #FFFFFF;
+  --surface-2:  #FAFBFF;
+  --surface-3:  #F1F3FA;
 
   /* Borders */
-  --border:     #E5E7EB;
-  --border-mid: rgba(99,102,241,0.14);
+  --border-soft: rgba(23, 25, 28, 0.08);
+  --border-mid:  rgba(23, 25, 28, 0.14);
+  --border-hard: rgba(23, 25, 28, 0.08);
+  --border:      rgba(23, 25, 28, 0.08);
 
   /* Shadows */
-  --sh-xs:    0 1px 3px rgba(15,15,26,0.04);
-  --sh-sm:    0 2px 8px rgba(15,15,26,0.06), 0 1px 2px rgba(15,15,26,0.04);
-  --sh-md:    0 4px 16px rgba(15,15,26,0.08), 0 1px 4px rgba(15,15,26,0.05);
-  --sh-lg:    0 8px 32px rgba(15,15,26,0.1),  0 2px 8px rgba(15,15,26,0.06);
-  --sh-brand: 0 4px 16px rgba(99,102,241,0.22);
-  --sh-card:  0 2px 12px rgba(15,15,26,0.07), 0 1px 3px rgba(15,15,26,0.04);
+  --sh-xs:  0 1px 3px rgba(23, 25, 28, 0.04);
+  --sh-sm:  0 2px 8px rgba(23, 25, 28, 0.05);
+  --sh-md:  0 4px 16px rgba(23, 25, 28, 0.08);
+  --sh-lg:  0 8px 32px rgba(23, 25, 28, 0.1);
+  --sh-brand: 0 4px 16px rgba(23, 25, 28, 0.15);
+  --sh-card:  0 2px 12px rgba(23, 25, 28, 0.07);
+
+  /* Shadows backward compatibility */
+  --sh-brand-light: 0 4px 16px rgba(99, 102, 241, 0.22);
 
   /* Radii */
   --r-sm:   8px;
@@ -49,26 +52,27 @@
   --r-pill: 9999px;
 
   /* Semantics */
-  --green:  #059669;
-  --red:    #DC2626;
-  --yellow: #D97706;
+  --green:      #3D9A5F;
+  --green-bg:   #d8f3dc;
+  --red:        #A34A30;
+  --red-bg:     #f8d7da;
+  --yellow:     #D4835E;
+  --yellow-bg:  #fff3cd;
+  --blue:       #5B8CB8;
+  --blue-bg:    #d3e3fc;
 }
 
 /* ─── PAGE ───────────────────────────────────────────────────────────────── */
 .tw-page {
   min-height: 100vh;
-  background: var(--page-bg);
-  background-image:
-    radial-gradient(ellipse 900px 500px at 0% 0%,   rgba(99,102,241,0.05) 0%, transparent 65%),
-    radial-gradient(ellipse 600px 400px at 100% 20%, rgba(139,92,246,0.04) 0%, transparent 60%);
-  background-attachment: fixed;
+  background: transparent;
   font-family: 'DM Sans', 'Segoe UI', sans-serif;
   color: var(--ink-1);
   -webkit-font-smoothing: antialiased;
-  padding: 20px 24px 48px;
+  padding: 22px 28px 40px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 /* ─── BACK BUTTON ────────────────────────────────────────────────────────── */
@@ -111,17 +115,18 @@
 
 /* ─── HERO ───────────────────────────────────────────────────────────────── */
 .tw-hero {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--brand);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--r-2xl);
-  padding: 22px 26px;
+  padding: 28px 32px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 20px;
-  box-shadow: var(--sh-sm);
+  box-shadow: var(--sh-lg);
   position: relative;
   overflow: hidden;
+  color: #ffffff;
 }
 
 .tw-hero::before {
@@ -129,15 +134,15 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 500px 250px at 0% 60%,  rgba(99,102,241,0.04), transparent),
-    radial-gradient(ellipse 350px 200px at 100% 0%, rgba(139,92,246,0.04), transparent);
+    radial-gradient(ellipse 500px 250px at 0% 60%,  rgba(211, 227, 252, 0.05), transparent),
+    radial-gradient(ellipse 350px 200px at 100% 0%, rgba(251, 225, 209, 0.05), transparent);
   pointer-events: none;
 }
 
 .tw-hero-body {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   flex: 1;
   min-width: 0;
   position: relative;
@@ -147,22 +152,22 @@
 .tw-hero-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.9px;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--brand);
+  color: rgba(255, 255, 255, 0.5);
   margin-bottom: 2px;
 }
 
 .tw-live-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #22C55E;
-  box-shadow: 0 0 0 3px rgba(34,197,94,0.22);
-  animation: twPulse 2.2s ease-in-out infinite;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  animation: twPulse 2.5s ease-in-out infinite;
   flex-shrink: 0;
 }
 
@@ -172,25 +177,25 @@
 }
 
 @keyframes twPulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.22); }
-  50%       { box-shadow: 0 0 0 7px rgba(34,197,94,0.06); }
+  0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2); }
+  50%       { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.06); }
 }
 
 .tw-hero-title {
-  font-family: 'Sora', sans-serif;
-  font-size: clamp(1.2rem, 2.2vw, 1.55rem);
-  font-weight: 700;
-  letter-spacing: -0.4px;
-  color: var(--ink-1);
+  font-family: 'Lora', Georgia, serif;
+  font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #ffffff;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .tw-hero-desc {
   margin: 0;
-  font-size: 0.83rem;
-  color: var(--ink-3);
-  line-height: 1.55;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.6;
   max-width: 560px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -212,11 +217,11 @@
   gap: 4px;
   padding: 3px 9px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--border);
-  background: var(--surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
   font-size: 0.68rem;
   font-weight: 600;
-  color: var(--ink-2);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .tw-hero-team {
@@ -229,7 +234,7 @@
 .tw-hero-team-label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--ink-4);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* Ring */
@@ -265,14 +270,14 @@
   font-family: 'Sora', sans-serif;
   font-size: 1.25rem;
   font-weight: 800;
-  color: var(--brand);
+  color: #ffffff;
   line-height: 1;
 }
 
 .tw-ring-unit {
   font-size: 0.6rem;
   font-weight: 700;
-  color: var(--ink-4);
+  color: rgba(255, 255, 255, 0.5);
   align-self: flex-end;
   margin-bottom: 3px;
 }
@@ -283,7 +288,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--ink-4);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* ─── BADGES ─────────────────────────────────────────────────────────────── */
@@ -324,11 +329,11 @@
   margin-left: -6px;
   border-radius: 50%;
   border: 2px solid var(--surface);
-  background: linear-gradient(135deg, var(--brand), #A78BFA);
+  background: linear-gradient(135deg, var(--brand), var(--brand-mid));
   color: #fff;
   font-size: 0.55rem;
   font-weight: 900;
-  box-shadow: 0 2px 6px rgba(99,102,241,0.2);
+  box-shadow: 0 2px 6px rgba(23, 25, 28, 0.1);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -489,9 +494,9 @@
 /* ── Subtask card ── */
 .tw-sub-card {
   position: relative;
-  border: 1px solid rgba(99,102,241,0.1);
+  border: 1px solid var(--border-soft);
   border-radius: var(--r-xl);
-  padding: 0 0 13px;
+  padding: 0 0 16px 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -504,38 +509,29 @@
 }
 
 .tw-sub-card:focus-visible {
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.3);
+  box-shadow: 0 0 0 3px var(--brand-light);
 }
 
 .tw-sub-card--mine {
-  border-color: rgba(99,102,241,0.18);
+  border-color: var(--border-soft);
 }
 
 .tw-sub-card--mine:hover {
   transform: translateY(-4px) scale(1.005);
   box-shadow: var(--sh-lg);
-  border-color: rgba(99,102,241,0.28);
+  border-color: var(--border-mid);
 }
 
 .tw-sub-card--locked {
   background: var(--surface-3) !important;
-  border-color: var(--border) !important;
+  border-color: var(--border-soft) !important;
   opacity: 0.6;
   cursor: default;
 }
 
 .tw-sub-card--highlighted {
-  border-color: rgba(99,102,241,0.4) !important;
-  box-shadow: 0 0 0 2px rgba(99,102,241,0.14), var(--sh-md) !important;
-}
-
-/* Top stripe */
-.tw-sub-stripe {
-  height: 4px;
-  width: 100%;
-  flex-shrink: 0;
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  opacity: 0.85;
+  border-color: var(--brand-light) !important;
+  box-shadow: 0 0 0 2px var(--brand-light), var(--sh-md) !important;
 }
 
 /* Lock indicator */
@@ -549,7 +545,7 @@
   padding: 2px 7px;
   border-radius: var(--r-pill);
   background: rgba(255,255,255,0.9);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-soft);
   color: var(--ink-4);
   font-size: 0.62rem;
   font-weight: 700;
@@ -560,7 +556,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 9px 12px 0;
+  margin: 12px 12px 0;
   font-size: 0.63rem;
   font-weight: 700;
   color: #16A34A;
@@ -603,16 +599,20 @@
 
 /* Progress bar */
 .tw-sub-progress {
-  height: 3px;
-  background: rgba(0,0,0,0.07);
-  border-radius: var(--r-pill);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(23, 25, 28, 0.04);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
   overflow: hidden;
-  margin: 9px 12px 0;
+  margin: 0;
 }
 
 .tw-sub-progress-fill {
   height: 100%;
-  border-radius: var(--r-pill);
+  border-radius: 0;
   transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
   opacity: 0.85;
 }
@@ -665,8 +665,8 @@
   margin: 10px 12px 0;
   padding: 7px 10px;
   border-radius: var(--r-md);
-  background: rgba(99,102,241,0.06);
-  border: 1px solid rgba(99,102,241,0.12);
+  background: rgba(23, 25, 28, 0.04);
+  border: 1px solid rgba(23, 25, 28, 0.08);
   color: var(--brand);
   font-size: 0.72rem;
   font-weight: 700;
@@ -741,7 +741,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), #A78BFA);
+  background: linear-gradient(135deg, var(--brand), var(--brand-mid));
   color: #fff;
   font-size: 0.58rem;
   font-weight: 900;
@@ -771,7 +771,7 @@
 
 .tw-comment-ta:focus {
   border-color: var(--brand-mid);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  box-shadow: 0 0 0 3px var(--brand-light);
 }
 .tw-comment-ta::placeholder { color: var(--ink-5); }
 
@@ -808,7 +808,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), #A78BFA);
+  background: linear-gradient(135deg, var(--brand), var(--brand-mid));
   color: #fff;
   font-size: 0.55rem;
   font-weight: 900;
@@ -955,7 +955,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), #A78BFA);
+  background: linear-gradient(135deg, var(--brand), var(--brand-mid));
   color: #fff;
   font-size: 0.5rem;
   font-weight: 900;
@@ -1160,7 +1160,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), #A78BFA);
+  background: linear-gradient(135deg, var(--brand), var(--brand-mid));
   color: #fff;
   font-size: 0.6rem;
   font-weight: 900;

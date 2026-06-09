@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Activity,
   AlertTriangle,
@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Circle,
-  Clock3,
   Download,
   Eye,
   FileImage,
@@ -27,10 +26,8 @@ import {
   Sparkles,
   Target,
   UploadCloud,
-  UserRound,
   Users,
   X,
-  Zap,
 } from "lucide-react";
 
 import api from "../../services/api";
@@ -38,17 +35,17 @@ import "./SubtaskDetails.css";
 
 /* ─── CONSTANTS ──────────────────────────────────────────────────────────── */
 const STATUS_CONFIG = {
-  todo:        { label: "Todo",        color: "#8A87A0", bg: "#F2F0F8", border: "rgba(138,135,160,0.2)" },
-  in_progress: { label: "In Progress", color: "#3B82F6", bg: "#EFF6FF", border: "rgba(59,130,246,0.2)"  },
-  review:      { label: "Review",      color: "#8B5CF6", bg: "#F5F3FF", border: "rgba(139,92,246,0.2)"  },
-  done:        { label: "Done",        color: "#16A34A", bg: "#F0FDF4", border: "rgba(22,163,74,0.2)"   },
+  todo:        { label: "Todo",        color: "#B45309", bg: "#fbe1d1", border: "rgba(180,83,9,0.18)",  accent: "#D4835E" },
+  in_progress: { label: "In Progress", color: "#1E3A8A", bg: "#d3e3fc", border: "rgba(30,58,138,0.18)",   accent: "#5B8CB8" },
+  review:      { label: "Review",      color: "#5B21B6", bg: "#e8def8", border: "rgba(91,33,182,0.18)",  accent: "#8B7BA8" },
+  done:        { label: "Done",        color: "#166534", bg: "#d8f3dc", border: "rgba(22,101,52,0.18)",   accent: "#3D9A5F" },
 };
 
 const PRIORITY_CONFIG = {
-  critical: { label: "Critical", color: "#DC2626", bg: "rgba(220,38,38,0.08)",   dot: "#DC2626" },
-  high:     { label: "High",     color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  dot: "#F59E0B" },
-  medium:   { label: "Medium",   color: "#8B5CF6", bg: "rgba(139,92,246,0.08)",  dot: "#8B5CF6" },
-  low:      { label: "Low",      color: "#8A87A0", bg: "rgba(138,135,160,0.08)", dot: "#B8B5CC" },
+  critical: { label: "Critical", color: "#991B1B", bg: "#f8d7da",  border: "rgba(153,27,27,0.2)",   dot: "#A34A30",  cardTint: "rgba(248,215,218,0.6)"  },
+  high:     { label: "High",     color: "#854D0E", bg: "#fff3cd",  border: "rgba(133,77,14,0.2)",   dot: "#D4835E",  cardTint: "rgba(255,243,205,0.6)"  },
+  medium:   { label: "Medium",   color: "#1E3A8A", bg: "#d3e3fc",  border: "rgba(30,58,138,0.2)",  dot: "#5B8CB8",  cardTint: "rgba(211,227,252,0.5)"  },
+  low:      { label: "Low",      color: "#374151", bg: "#F1F5F9",  border: "rgba(55,65,81,0.15)", dot: "#94A3B8",  cardTint: "rgba(241,245,249,0.5)"  },
 };
 
 const STATUS_ACTIONS = [
@@ -352,6 +349,7 @@ export default function SubtaskDetails() {
     }
   }, [subtaskId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadSubtask(); }, [loadSubtask]);
 
   /*
@@ -489,7 +487,7 @@ export default function SubtaskDetails() {
       {/* ═══════════════════════════════════════════════════════════════
           STICKY CONTEXT HEADER
           ═══════════════════════════════════════════════════════════════ */}
-      <header className="sd-header sd-glass">
+      <header className="sd-header">
 
         {/* Breadcrumb */}
         <div className="sd-breadcrumb">
@@ -518,7 +516,7 @@ export default function SubtaskDetails() {
                 <CalendarDays size={11} />
                 {formatDate(subtask?.due_date)}
               </span>
-              <span className="sd-meta-pill">
+              <span className="sd-meta-assignees">
                 <Users size={11} />
                 <AvatarStack users={subtask?.assigned_users || []} />
               </span>

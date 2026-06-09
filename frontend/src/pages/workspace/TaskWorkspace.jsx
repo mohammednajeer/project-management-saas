@@ -6,7 +6,6 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
-  Circle,
   Clock3,
   ExternalLink,
   FileImage,
@@ -17,7 +16,6 @@ import {
   Layers,
   Lock,
   MessageCircle,
-  MoreHorizontal,
   Paperclip,
   Send,
   Sparkles,
@@ -35,25 +33,24 @@ import "./TaskWorkspace.css";
 
 /* ─── CONSTANTS ──────────────────────────────────────────────────────────── */
 const STATUS_CONFIG = {
-  todo:        { label: "Todo",        color: "#64748B", bg: "#F1F5F9", accent: "#94A3B8", border: "rgba(100,116,139,0.18)" },
-  in_progress: { label: "In Progress", color: "#2563EB", bg: "#EFF6FF", accent: "#60A5FA", border: "rgba(37,99,235,0.18)"   },
-  review:      { label: "Review",      color: "#7C3AED", bg: "#F5F3FF", accent: "#A78BFA", border: "rgba(124,58,237,0.18)"  },
-  done:        { label: "Done",        color: "#059669", bg: "#ECFDF5", accent: "#34D399", border: "rgba(5,150,105,0.18)"   },
+  todo:        { label: "Todo",        color: "#B45309", bg: "#fbe1d1", border: "rgba(180,83,9,0.18)",  accent: "#D4835E" },
+  in_progress: { label: "In Progress", color: "#1E3A8A", bg: "#d3e3fc", border: "rgba(30,58,138,0.18)",   accent: "#5B8CB8" },
+  review:      { label: "Review",      color: "#5B21B6", bg: "#e8def8", border: "rgba(91,33,182,0.18)",  accent: "#8B7BA8" },
+  done:        { label: "Done",        color: "#166534", bg: "#d8f3dc", border: "rgba(22,101,52,0.18)",   accent: "#3D9A5F" },
 };
 
 const PRIORITY_CONFIG = {
-  critical: { label: "Critical", color: "#DC2626", bg: "#FEF2F2", dot: "#EF4444" },
-  high:     { label: "High",     color: "#D97706", bg: "#FFFBEB", dot: "#F59E0B" },
-  medium:   { label: "Medium",   color: "#7C3AED", bg: "#F5F3FF", dot: "#8B5CF6" },
-  low:      { label: "Low",      color: "#64748B", bg: "#F8FAFC", dot: "#94A3B8" },
+  critical: { label: "Critical", color: "#991B1B", bg: "#f8d7da",  border: "rgba(153,27,27,0.2)",   dot: "#A34A30",  cardTint: "rgba(248,215,218,0.6)"  },
+  high:     { label: "High",     color: "#854D0E", bg: "#fff3cd",  border: "rgba(133,77,14,0.2)",   dot: "#D4835E",  cardTint: "rgba(255,243,205,0.6)"  },
+  medium:   { label: "Medium",   color: "#1E3A8A", bg: "#d3e3fc",  border: "rgba(30,58,138,0.2)",  dot: "#5B8CB8",  cardTint: "rgba(211,227,252,0.5)"  },
+  low:      { label: "Low",      color: "#374151", bg: "#F1F5F9",  border: "rgba(55,65,81,0.15)", dot: "#94A3B8",  cardTint: "rgba(241,245,249,0.5)"  },
 };
 
-// Weihu-inspired pastel card palettes per status
 const CARD_PALETTE = {
-  todo:        { from: "#F8F9FF", to: "#EEF2FF", stripe: "#C7D2FE" },
-  in_progress: { from: "#F0F9FF", to: "#DBEAFE", stripe: "#93C5FD" },
-  review:      { from: "#FAF5FF", to: "#EDE9FE", stripe: "#C4B5FD" },
-  done:        { from: "#F0FDF9", to: "#D1FAE5", stripe: "#6EE7B7" },
+  todo:        "#fbe1d1",
+  in_progress: "#d3e3fc",
+  review:      "#e8def8",
+  done:        "#d8f3dc",
 };
 
 const ACTIVITY_COLORS = {
@@ -282,7 +279,6 @@ export default function TaskWorkspace() {
   const navigate           = useNavigate();
   const [searchParams]     = useSearchParams();
   const highlightedId      = searchParams.get("subtask");
-  const issueFileRef       = useRef(null);
 
   const [workspace,    setWorkspace]    = useState(null);
   const [loading,      setLoading]      = useState(true);
@@ -305,6 +301,7 @@ export default function TaskWorkspace() {
     }
   }, [taskId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadWorkspace(); }, [loadWorkspace]);
 
   /*
@@ -336,29 +333,34 @@ export default function TaskWorkspace() {
    */
 
   /* ── Derived ─────────────────────────────────────────────────────────── */
-  const permissions  = workspace?.permissions || {};
   const task         = workspace?.task;
   const subtasks     = workspace?.subtasks    || [];
-  const editableIds  = useMemo(() => new Set(permissions.editable_subtasks || []), [permissions]);
-  const taskComments = useMemo(() => (workspace?.comments  || []).filter(c => !c.subtask), [workspace]);
-  const allActivity  = useMemo(() => (workspace?.activities || []).slice(0, 8), [workspace]);
   const taskFiles    = workspace?.attachments || [];
   const issues       = workspace?.issues      || [];
+
+  const editableIds  = useMemo(() => new Set(workspace?.permissions?.editable_subtasks || []), [workspace?.permissions?.editable_subtasks]);
+  const taskComments = useMemo(() => (workspace?.comments  || []).filter(c => !c.subtask), [workspace]);
+  const allActivity  = useMemo(() => (workspace?.activities || []).slice(0, 8), [workspace]);
+
   const activeIssues = useMemo(() => {
-    return issues.filter(i => i.status !== "resolved" && i.status !== "closed");
-  }, [issues]);
+    const issuesList = workspace?.issues || [];
+    return issuesList.filter(i => i.status !== "resolved" && i.status !== "closed");
+  }, [workspace?.issues]);
 
   const stats = useMemo(() => {
-    const total   = subtasks.length;
-    const done    = subtasks.filter(s => s.status === "done").length;
-    const inProg  = subtasks.filter(s => s.status === "in_progress").length;
-    const review  = subtasks.filter(s => s.status === "review").length;
+    const subtasksList = workspace?.subtasks || [];
+    const issuesList   = workspace?.issues || [];
+    const total   = subtasksList.length;
+    const done    = subtasksList.filter(s => s.status === "done").length;
+    const inProg  = subtasksList.filter(s => s.status === "in_progress").length;
+    const review  = subtasksList.filter(s => s.status === "review").length;
     const pct     = total > 0 ? Math.round((done / total) * 100) : 0;
-    const blockers = issues.filter(i => i.status !== "resolved").length;
+    const blockers = issuesList.filter(i => i.status !== "resolved").length;
     return { total, done, inProg, review, blockers, pct };
-  }, [subtasks, issues]);
+  }, [workspace?.subtasks, workspace?.issues]);
 
   /* ── Status update (optimistic) ─────────────────────────────────────── */
+  // eslint-disable-next-line no-unused-vars
   const updateStatus = async (subtaskId, newStatus) => {
     const snap = workspace;
     setWorkspace(prev => ({
@@ -476,11 +478,11 @@ export default function TaskWorkspace() {
           <svg width="76" height="76" viewBox="0 0 76 76">
             <defs>
               <linearGradient id="tw-ring-g" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%"   stopColor="#6366F1" />
-                <stop offset="100%" stopColor="#A78BFA" />
+                <stop offset="0%"   stopColor="#d3e3fc" />
+                <stop offset="100%" stopColor="#e8def8" />
               </linearGradient>
             </defs>
-            <circle cx="38" cy="38" r="30" fill="none" stroke="#EEF2FF" strokeWidth="6" />
+            <circle cx="38" cy="38" r="30" fill="none" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="6" />
             <circle
               cx="38" cy="38" r="30"
               fill="none"
@@ -576,18 +578,13 @@ export default function TaskWorkspace() {
                     key={sub.id}
                     className={`tw-sub-card ${isEditable ? "tw-sub-card--mine" : "tw-sub-card--locked"} ${isHighlighted ? "tw-sub-card--highlighted" : ""}`}
                     style={isEditable ? {
-                      background: `linear-gradient(145deg, ${pal.from} 0%, ${pal.to} 100%)`,
+                      background: pal,
                     } : {}}
                     onClick={() => openSubtask(sub)}
                     role="button"
                     tabIndex={isEditable ? 0 : -1}
                     onKeyDown={e => e.key === "Enter" && openSubtask(sub)}
                   >
-                    {/* Top stripe */}
-                    <div
-                      className="tw-sub-stripe"
-                      style={{ background: isEditable ? pal.stripe : "#E2E8F0" }}
-                    />
 
                     {/* Lock overlay for non-editable */}
                     {!isEditable && (

@@ -25,19 +25,29 @@ import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../utils
 import "./Sidebar.css";
 
 const navItems = [
+  { type: "header", label: "Core" },
   { icon: LayoutDashboard, label: "Dashboard",     to: "/dashboard",              end: true },
   { icon: FolderOpen,      label: "Projects",      to: "/dashboard/projects"                },
   { icon: CheckSquare,     label: "Tasks",         to: "/dashboard/tasks"                   },
+  { icon: BarChart2,       label: "Reports",       to: "/dashboard/reports"                 },
+
+  { type: "divider" },
+  { type: "header", label: "Operations" },
   { icon: Activity,        label: "Activity",      to: "/dashboard/activity"                },
   { icon: AlertCircle,     label: "Issues",        to: "/dashboard/issues"                  },
   { icon: Users,           label: "Team",          to: "/dashboard/team"                    },
-  { icon: BarChart2,       label: "Reports",       to: "/dashboard/reports"                 },
   { icon: PlaneTakeoff,    label: "Leave",         to: "/dashboard/leave"                   },
   { icon: CalendarDays,    label: "Calendar",      to: "/dashboard/calendar"                },
-  { icon: Bot,             label: "AI Assistant",  to: "/dashboard/ai-assistant"           },
+
+  { type: "divider" },
+  { type: "header", label: "Collaboration" },
+  { icon: MessageCircle,   label: "Chat",          to: "/dashboard/chat"                    },
+  { icon: Bot,             label: "AI Assistant",  to: "/dashboard/ai-assistant"            },
+
+  { type: "divider" },
+  { type: "header", label: "System" },
   { icon: Bell,            label: "Notifications", to: "/dashboard/notifications"           },
   { icon: Building2,       label: "Organization",  to: "/dashboard/organization"            },
-  { icon: MessageCircle,   label: "Chat",          to: "/dashboard/chat"                    },
 ];
 
 export default function Sidebar() {
@@ -89,30 +99,43 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="sb-nav">
-        {navItems.map(({ icon: Icon, label, to, end }) => (
-          <NavLink
-            key={label}
-            to={to}
-            end={end}
-            data-label={label}
-            className={({ isActive }) =>
-              `sb-item${isActive ? " sb-item--active" : ""}`
-            }
-          >
-            <span className="sb-item-icon">
-              <Icon size={17} />
+        {navItems.map((item, idx) => {
+          if (item.type === "header") {
+            return (
+              <div key={`header-${idx}`} className="sb-group-title">
+                {item.label}
+              </div>
+            );
+          }
+          if (item.type === "divider") {
+            return <div key={`divider-${idx}`} className="sb-group-divider" />;
+          }
+          const { icon: Icon, label, to, end } = item;
+          return (
+            <NavLink
+              key={label}
+              to={to}
+              end={end}
+              data-label={label}
+              className={({ isActive }) =>
+                `sb-item${isActive ? " sb-item--active" : ""}`
+              }
+            >
+              <span className="sb-item-icon">
+                <Icon size={17} />
+                {label === "Notifications" && unreadCount > 0 && (
+                  <span className="sb-badge">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </span>
+              <span className="sb-item-label">{label}</span>
               {label === "Notifications" && unreadCount > 0 && (
-                <span className="sb-badge">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
+                <span className="sb-item-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
               )}
-            </span>
-            <span className="sb-item-label">{label}</span>
-            {label === "Notifications" && unreadCount > 0 && (
-              <span className="sb-item-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
-            )}
-          </NavLink>
-        ))}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Footer */}

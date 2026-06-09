@@ -22,6 +22,7 @@ import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../utils
 import "./Sidebar.css";
 
 const workspaceNavItems = [
+  { type: "header", label: "Core" },
   {
     icon: Home,
     label: "Workspace Home",
@@ -33,6 +34,9 @@ const workspaceNavItems = [
     label: "My Work",
     to: "/workspace/my-tasks",
   },
+
+  { type: "divider" },
+  { type: "header", label: "Operations" },
   {
     icon: AlertCircle,
     label: "Issues",
@@ -53,15 +57,21 @@ const workspaceNavItems = [
     label: "Activity",
     to: "/workspace/activity",
   },
-  {
-    icon: Bell,
-    label: "Notifications",
-    to: "/workspace/notifications",
-  },
+
+  { type: "divider" },
+  { type: "header", label: "Collaboration" },
   {
     icon: MessageCircle,
     label: "Chat",
     to: "/workspace/chat",
+  },
+
+  { type: "divider" },
+  { type: "header", label: "System" },
+  {
+    icon: Bell,
+    label: "Notifications",
+    to: "/workspace/notifications",
   },
 ];
 
@@ -118,30 +128,43 @@ export default function WorkspaceSidebar() {
 
       {/* Nav */}
       <nav className="sb-nav">
-        {workspaceNavItems.map(({ icon: Icon, label, to, end }) => (
-          <NavLink
-            key={label}
-            to={to}
-            end={end}
-            data-label={label}
-            className={({ isActive }) =>
-              `sb-item${isActive ? " sb-item--active" : ""}`
-            }
-          >
-            <span className="sb-item-icon">
-              <Icon size={17} />
+        {workspaceNavItems.map((item, idx) => {
+          if (item.type === "header") {
+            return (
+              <div key={`header-${idx}`} className="sb-group-title">
+                {item.label}
+              </div>
+            );
+          }
+          if (item.type === "divider") {
+            return <div key={`divider-${idx}`} className="sb-group-divider" />;
+          }
+          const { icon: Icon, label, to, end } = item;
+          return (
+            <NavLink
+              key={label}
+              to={to}
+              end={end}
+              data-label={label}
+              className={({ isActive }) =>
+                `sb-item${isActive ? " sb-item--active" : ""}`
+              }
+            >
+              <span className="sb-item-icon">
+                <Icon size={17} />
+                {label === "Notifications" && unreadCount > 0 && (
+                  <span className="sb-badge">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </span>
+              <span className="sb-item-label">{label}</span>
               {label === "Notifications" && unreadCount > 0 && (
-                <span className="sb-badge">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
+                <span className="sb-item-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
               )}
-            </span>
-            <span className="sb-item-label">{label}</span>
-            {label === "Notifications" && unreadCount > 0 && (
-              <span className="sb-item-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
-            )}
-          </NavLink>
-        ))}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Footer */}

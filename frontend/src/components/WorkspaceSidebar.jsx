@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Bell,
   CheckSquare,
@@ -11,7 +12,6 @@ import {
   UserRound,
   MessageCircle,
 } from "lucide-react";
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import api from "../services/api";
@@ -19,7 +19,7 @@ import { useAuth } from "../context/AuthContext";
 import useNotifications from "../context/useNotifications";
 import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../utils/company";
 
-import "./WorkspaceSidebar.css";
+import "./Sidebar.css";
 
 const workspaceNavItems = [
   {
@@ -66,16 +66,17 @@ const workspaceNavItems = [
 ];
 
 export default function WorkspaceSidebar() {
-  const [hovered, setHovered] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
   const company = getCompanyFromUser(user);
   const companyName = getCompanyName(company, user?.organization || "ProjectFlow");
+
   const initials = (user?.name || user?.email || "U")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0])
+    .map((p) => p[0])
     .join("")
     .toUpperCase();
 
@@ -85,107 +86,96 @@ export default function WorkspaceSidebar() {
     } catch (err) {
       console.log(err);
     }
-
     window.location.href = "/signin";
   };
 
   return (
     <aside
-      className={`workspace-sidebar ${
-        hovered
-          ? "workspace-sidebar--expanded"
-          : "workspace-sidebar--collapsed"
-      }`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className={`sb ${expanded ? "sb--open" : ""}`}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
     >
-      <a
-        href="/workspace"
-        className="workspace-sidebar-brand"
-      >
-        <span className="workspace-sidebar-brand-icon">
+      {/* Glow backdrop */}
+      <div className="sb-glow" />
+
+      {/* Brand */}
+      <div className="sb-brand">
+        <div className="sb-brand-icon">
           {company?.logo ? (
             <img src={company.logo} alt="" />
           ) : (
             getCompanyInitials(company, "PF")
           )}
-        </span>
-        <span className="workspace-sidebar-brand-copy">
-          <strong>{companyName}</strong>
-          <small>
-            <Sparkles size={12} />
-            ProjectFlow
-          </small>
-        </span>
-      </a>
+        </div>
+        <div className="sb-brand-copy">
+          <span className="sb-company-name">{companyName}</span>
+          <span className="sb-product-name">
+            <Sparkles size={12} style={{ color: "#a8c8f8" }} />
+            Workspace
+          </span>
+        </div>
+      </div>
 
-      <nav className="workspace-sidebar-nav">
-        {workspaceNavItems.map(({
-          icon: Icon,
-          label,
-          to,
-          end,
-        }) => (
+      {/* Nav */}
+      <nav className="sb-nav">
+        {workspaceNavItems.map(({ icon: Icon, label, to, end }) => (
           <NavLink
             key={label}
             to={to}
             end={end}
             data-label={label}
             className={({ isActive }) =>
-              `workspace-sidebar-link${
-                isActive ? " is-active" : ""
-              }`
+              `sb-item${isActive ? " sb-item--active" : ""}`
             }
           >
-            <span className="workspace-sidebar-icon">
-              <Icon size={18} />
-              {label === "Notifications" &&
-                unreadCount > 0 && (
-                  <span className="workspace-notification-badge">
-                    {unreadCount > 99
-                      ? "99+"
-                      : unreadCount}
-                  </span>
-                )}
+            <span className="sb-item-icon">
+              <Icon size={17} />
+              {label === "Notifications" && unreadCount > 0 && (
+                <span className="sb-badge">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </span>
-            <span className="workspace-sidebar-label">
-              {label}
-            </span>
+            <span className="sb-item-label">{label}</span>
+            {label === "Notifications" && unreadCount > 0 && (
+              <span className="sb-item-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      <NavLink
-        to="/workspace/profile"
-        data-label="Profile"
-        className={({ isActive }) =>
-          `workspace-sidebar-profile${
-            isActive ? " is-active" : ""
-          }`
-        }
-      >
-        <span className="workspace-sidebar-avatar">
-          {user?.profile_picture ? (
-            <img src={user.profile_picture} alt="" />
-          ) : (
-            initials || <UserRound size={15} />
-          )}
-        </span>
-        <span className="workspace-sidebar-label">
-          Profile
-        </span>
-      </NavLink>
+      {/* Footer */}
+      <div className="sb-footer">
+        <div className="sb-divider" />
 
-      <button
-        className="workspace-sidebar-logout"
-        type="button"
-        onClick={handleLogout}
-      >
-        <LogOut size={18} />
-        <span className="workspace-sidebar-label">
-          Logout
-        </span>
-      </button>
+        <NavLink
+          to="/workspace/profile"
+          className={({ isActive }) =>
+            `sb-item sb-item--profile${isActive ? " sb-item--active" : ""}`
+          }
+        >
+          <span className="sb-item-icon">
+            <div className="sb-avatar">
+              {user?.profile_picture ? (
+                <img src={user.profile_picture} alt="" />
+              ) : (
+                initials || <UserRound size={13} />
+              )}
+            </div>
+          </span>
+          <div className="sb-profile-info">
+            <span className="sb-profile-name">{user?.name || user?.email || "Profile"}</span>
+            <span className="sb-profile-role">{user?.role || "Member"}</span>
+          </div>
+        </NavLink>
+
+        <button className="sb-item sb-item--logout" onClick={handleLogout}>
+          <span className="sb-item-icon">
+            <LogOut size={17} />
+          </span>
+          <span className="sb-item-label">Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

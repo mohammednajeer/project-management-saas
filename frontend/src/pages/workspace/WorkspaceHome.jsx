@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
   Clock3,
-  Flame,
   ListChecks,
   Target,
   TrendingUp,
@@ -18,10 +17,23 @@ import {
   Sparkles,
   Building2,
 } from "lucide-react";
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+} from "recharts";
 
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { getCompanyFromUser, getCompanyInitials, getCompanyName } from "../../utils/company";
+import checkBoxesIllustration from "../../assets/images/undraw_check-boxes_x5fg.svg";
 import "./WorkspaceHome.css";
 
 /* ─── CONSTANTS ──────────────────────────────────────────────────────────── */
@@ -54,11 +66,20 @@ const STATUS_PILL_CLASS = {
 };
 
 const DEADLINE_COLORS = {
-  todo:        "#9E9E9E",
-  in_progress: "#5B8CB8",
-  review:      "#8B7BA8",
-  done:        "#3D9A5F",
+  todo:        "#a3a6af",
+  in_progress: "#3b82f6",
+  review:      "#8b5cf6",
+  done:        "#16a34a",
 };
+
+const STAT_CARDS_CONFIG = [
+  { label: "Assigned Tasks", key: "assigned_tasks", icon: Target, from: "#17191c", to: "#4c4c4c", shadow: "rgba(23,25,28,0.18)", suffix: "" },
+  { label: "Assigned Subtasks", key: "assigned_subtasks", icon: ListChecks, from: "#3b82f6", to: "#5B8CB8", shadow: "rgba(91,140,184,0.22)", suffix: "" },
+  { label: "Completed", key: "completed_subtasks", icon: CheckCircle2, from: "#16a34a", to: "#3D9A5F", shadow: "rgba(61,154,95,0.22)", suffix: "" },
+  { label: "Pending", key: "pending_subtasks", icon: Clock3, from: "#D4835E", to: "#E0A07A", shadow: "rgba(212,131,94,0.22)", suffix: "" },
+  { label: "Overdue", key: "overdue_subtasks", icon: AlertTriangle, from: "#dc2626", to: "#C96442", shadow: "rgba(220,38,38,0.22)", suffix: "" },
+  { label: "Completion Rate", key: "completion_rate", icon: TrendingUp, from: "#777b86", to: "#a3a6af", shadow: "rgba(92,92,92,0.16)", suffix: "%" },
+];
 
 /* ─── HELPERS ────────────────────────────────────────────────────────────── */
 function formatDate(value) {
@@ -102,8 +123,8 @@ function ProgressRing({ value }) {
       <svg className="wh-ring-svg" viewBox="0 0 80 80">
         <defs>
           <linearGradient id="wh-ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stopColor="#C96442" />
-            <stop offset="100%" stopColor="#D4835E" />
+            <stop offset="0%"   stopColor="#17191c" />
+            <stop offset="100%" stopColor="#777b86" />
           </linearGradient>
         </defs>
         <circle className="wh-ring-track" cx="40" cy="40" r={r} />
@@ -127,51 +148,22 @@ function LoadingSkeleton() {
   return (
     <div className="wh-page">
       <div className="wh-loading-wrap">
-        <div className="wh-skeleton wh-skeleton-hero" />
-        <div className="wh-skeleton-row">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="wh-skeleton wh-skeleton-card" />
+        <div className="wh-skeleton wh-skeleton-hero" style={{ height: "140px", borderRadius: "24px" }} />
+        <div className="wh-skeleton-row" style={{ marginTop: "16px" }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="wh-skeleton wh-skeleton-card" style={{ height: "108px", borderRadius: "22px" }} />
           ))}
         </div>
-        <div className="wh-skeleton-row" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="wh-skeleton wh-skeleton-block" />
-          ))}
+        <div className="wh-skeleton-row" style={{ gridTemplateColumns: "1fr 1fr", marginTop: "16px" }}>
+          <div className="wh-skeleton wh-skeleton-block" style={{ height: "200px", borderRadius: "24px" }} />
+          <div className="wh-skeleton wh-skeleton-block" style={{ height: "200px", borderRadius: "24px" }} />
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── FOCUS CARD ─────────────────────────────────────────────────────────── */
-function FocusCard({ variant, icon: Icon, value, label }) {
-  return (
-    <div className={`wh-focus-card wh-focus-card--${variant}`}>
-      <div className="wh-focus-icon">
-        <Icon size={17} />
-      </div>
-      <div className="wh-focus-body">
-        <div className="wh-focus-value">{value}</div>
-        <div className="wh-focus-label">{label}</div>
-      </div>
-    </div>
-  );
-}
 
-/* ─── STAT CARD ──────────────────────────────────────────────────────────── */
-function StatCard({ icon: Icon, iconBg, iconColor, value, label }) {
-  return (
-    <article className="wh-stat-card wh-glass">
-      <div className="wh-stat-icon" style={{ background: iconBg, color: iconColor }}>
-        <Icon size={17} />
-      </div>
-      <div className="wh-stat-body">
-        <div className="wh-stat-value">{value}</div>
-        <div className="wh-stat-label">{label}</div>
-      </div>
-    </article>
-  );
-}
 
 /* ─── QUICK ACTION BTN ───────────────────────────────────────────────────── */
 function ActionBtn({ icon: Icon, iconBg, iconColor, label, onClick }) {
@@ -185,115 +177,116 @@ function ActionBtn({ icon: Icon, iconBg, iconColor, label, onClick }) {
   );
 }
 
+/* ─── CUSTOM TOOLTIP ─────────────────────────────────────────────────── */
+function GlassTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="wh-tooltip">
+      <div className="wh-tooltip-label">{label || "Value"}</div>
+      {payload.map((p, i) => (
+        <div key={i} className="wh-tooltip-row" style={{ color: p.color || p.payload?.color }}>
+          <span className="wh-tooltip-dot" style={{ background: p.color || p.payload?.color }} />
+          {p.name}: <strong>{p.value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function WorkspaceHome() {
   const { user } = useAuth();
   const [dashboard, setDashboard] = useState(initialDashboard);
+  const [subtasksList, setSubtasksList] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
-  const [activityFeed, setActivityFeed] =useState([]);
-
-  const fetchActivityFeed = useCallback( async () => {
-
-      try {
-
-        const response =
-          await api.get(
-            "/workspace/activity-feed/?limit=6"
-          );
-
-        setActivityFeed(
-          response.data
-        );
-
-      } catch (err) {
-
-        console.log(err);
-      }
-    });
+  const [activityFeed, setActivityFeed] = useState([]);
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    let active = true;
+
+    const fetchData = async () => {
       try {
-        const response = await api.get("/workspace/dashboard/");
-        setDashboard({ ...initialDashboard, ...response.data });
+        const [dashRes, feedRes, subtasksRes] = await Promise.all([
+          api.get("/workspace/dashboard/"),
+          api.get("/workspace/activity-feed/?limit=6").catch(err => {
+            console.warn("Could not load activity feed:", err);
+            return { data: [] };
+          }),
+          api.get("/workspace/subtasks/").catch(err => {
+            console.warn("Could not load subtasks list for workspace analytics:", err);
+            return { data: [] };
+          })
+        ]);
+
+        if (!active) return;
+
+        setDashboard({ ...initialDashboard, ...dashRes.data });
+        setActivityFeed(feedRes.data);
+        setSubtasksList(Array.isArray(subtasksRes.data) ? subtasksRes.data : []);
       } catch (err) {
-        setError(
-          err.response?.data?.message || "Could not load your dashboard."
-        );
+        if (active) {
+          setError(
+            err.response?.data?.message || "Could not load your dashboard."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
-    fetchDashboard();
-    fetchActivityFeed();
+
+    fetchData();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   /* ── Derived data ─────────────────────────────────────────────────────── */
-  const statCards = useMemo(() => [
-    {
-      icon: Target,
-      iconBg: "#F5E6DA", iconColor: "#C96442",
-      value: dashboard.assigned_tasks,
-      label: "Assigned Tasks",
-    },
-    {
-      icon: ListChecks,
-      iconBg: "#D6E4F0", iconColor: "#5B8CB8",
-      value: dashboard.assigned_subtasks,
-      label: "Assigned Subtasks",
-    },
-    {
-      icon: CheckCircle2,
-      iconBg: "#E8F5ED", iconColor: "#3D9A5F",
-      value: dashboard.completed_subtasks,
-      label: "Completed",
-    },
-    {
-      icon: Clock3,
-      iconBg: "#F5E6DA", iconColor: "#D4835E",
-      value: dashboard.pending_subtasks,
-      label: "Pending",
-    },
-    {
-      icon: TrendingUp,
-      iconBg: "#D6E4F0", iconColor: "#3D6E8E",
-      value: `${dashboard.completion_rate}%`,
-      label: "Completion Rate",
-    },
-  ], [dashboard]);
 
-  const focusItems = useMemo(() => [
-    { variant: "overdue",  icon: AlertTriangle, value: dashboard.overdue_subtasks,       label: "Overdue" },
-    { variant: "review",   icon: CheckCircle2,  value: dashboard.review_subtasks ?? 0,   label: "In Review" },
-    { variant: "high",     icon: Flame,         value: dashboard.high_priority_subtasks, label: "High Priority" },
-    { variant: "critical", icon: Zap,           value: dashboard.critical_subtasks,      label: "Critical" },
-    { variant: "today",    icon: CalendarClock, value: dashboard.upcoming_deadlines.length, label: "Due Soon" },
-  ], [dashboard]);
+  const statusDistribution = useMemo(() => {
+    const counts = { todo: 0, in_progress: 0, review: 0, done: 0 };
+    subtasksList.forEach((s) => {
+      const status = s.status || "todo";
+      if (counts[status] !== undefined) counts[status]++;
+    });
+    return [
+      { name: "Todo", value: counts.todo, color: "#a3a6af" },
+      { name: "In Progress", value: counts.in_progress, color: "#3b82f6" },
+      { name: "Review", value: counts.review, color: "#8b5cf6" },
+      { name: "Completed", value: counts.done, color: "#16a34a" },
+    ];
+  }, [subtasksList]);
+
+  const priorityDistribution = useMemo(() => {
+    const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+    subtasksList.forEach((s) => {
+      const p = (s.priority || "medium").toLowerCase();
+      if (counts[p] !== undefined) counts[p]++;
+    });
+    return [
+      { name: "Critical", count: counts.critical, color: "#dc2626" },
+      { name: "High", count: counts.high, color: "#f97316" },
+      { name: "Medium", count: counts.medium, color: "#3b82f6" },
+      { name: "Low", count: counts.low, color: "#a3a6af" },
+    ];
+  }, [subtasksList]);
 
   const activityPreview = useMemo(
     () => activityFeed.slice(0, 5),
     [activityFeed]
   );
 
-  /* Simulate activity feed from recent_subtasks for realtime-ready design */
-  // const activityFeed = useMemo(() =>
-  //   dashboard.recent_subtasks.slice(0, 6).map((s, i) => ({
-  //     id: s.id || i,
-  //     text: `Subtask "${s.title}" assigned to you`,
-  //     time: formatRelative(s.created_at || null),
-  //     color: ["#6C53B3","#3B82F6","#16A34A","#F59E0B","#8B5CF6","#EF4444"][i % 6],
-  //   }))
-  // , [dashboard]);
-
   const quickActions = [
-    { icon: MessageSquarePlus, iconBg: "#F5DDD6", iconColor: "#A34A30", label: "Raise Issue" },
-    { icon: FileEdit,          iconBg: "#D6E4F0", iconColor: "#3D6E8E", label: "Update Task" },
-    { icon: StickyNote,        iconBg: "#F5E6DA", iconColor: "#C96442", label: "Add Note" },
-    { icon: Upload,            iconBg: "#E8F5ED", iconColor: "#3D9A5F", label: "Upload Work" },
-    { icon: LayoutList,        iconBg: "#E8E0F0", iconColor: "#6B5D8A", label: "View Tasks" },
+    { icon: MessageSquarePlus, iconBg: "rgba(251, 225, 209, 0.4)", iconColor: "#d97706", label: "Raise Issue" },
+    { icon: FileEdit,          iconBg: "rgba(211, 227, 252, 0.3)", iconColor: "#3b82f6", label: "Update Task" },
+    { icon: StickyNote,        iconBg: "rgba(251, 225, 209, 0.4)", iconColor: "#d97706", label: "Add Note" },
+    { icon: Upload,            iconBg: "rgba(22, 163, 74, 0.1)", iconColor: "#16a34a", label: "Upload Work" },
+    { icon: LayoutList,        iconBg: "rgba(211, 227, 252, 0.3)", iconColor: "#3b82f6", label: "View Tasks" },
   ];
 
   /* Focus summary for hero */
@@ -312,15 +305,17 @@ export default function WorkspaceHome() {
       </div>
     );
   }
+
   const ACTIVITY_COLORS = {
-  task_create: "#5B8CB8",
-  task_update: "#5B8CB8",
-  task_complete: "#3D9A5F",
-  issue_create: "#C96442",
-  issue_assigned: "#A34A30",
-  subtask_updated: "#3D9A5F",
-  comment_added: "#5B8CB8",
-};
+    task_create: "#3b82f6",
+    task_update: "#3b82f6",
+    task_complete: "#16a34a",
+    issue_create: "#dc2626",
+    issue_assigned: "#f97316",
+    subtask_updated: "#16a34a",
+    comment_added: "#3b82f6",
+  };
+
   /* ── Render ───────────────────────────────────────────────────────────── */
   return (
     <div className="wh-page">
@@ -377,25 +372,112 @@ export default function WorkspaceHome() {
         </div>
       </section>
 
-      {/* ── 2. FOCUS GRID ────────────────────────────────────────────────── */}
-      <div className="wh-focus-grid">
-        {focusItems.map((item) => (
-          <FocusCard key={item.variant} {...item} />
-        ))}
-      </div>
-
-      {/* ── 3. STAT CARDS ────────────────────────────────────────────────── */}
+      {/* ── 2. STAT CARDS ────────────────────────────────────────────────── */}
       <div className="wh-stats-grid">
-        {statCards.map((card) => (
-          <StatCard key={card.label} {...card} />
-        ))}
+        {STAT_CARDS_CONFIG.map((card) => {
+          const Icon = card.icon;
+          const val = dashboard[card.key] ?? 0;
+          return (
+            <article key={card.label} className="wh-stat-card wh-glass" style={{ flexDirection: "column", padding: "18px", gap: "12px", minHeight: "108px", color: card.from }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span className="wh-stat-value" style={{ fontSize: "26px" }}>{val}{card.suffix}</span>
+                  <span className="wh-stat-label" style={{ fontSize: "11px" }}>{card.label}</span>
+                </div>
+                <div style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "8px",
+                  background: `linear-gradient(135deg, ${card.from}, ${card.to})`,
+                  boxShadow: `0 6px 12px ${card.shadow}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff"
+                }}>
+                  <Icon size={16} />
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
-      {/* ── 4 + 5. DEADLINES + ACTIVITY ──────────────────────────────────── */}
+      {/* ── 4. ANALYTICS DECK ── */}
+      <div className="wh-analytics-row">
+        {/* Status Donut Chart */}
+        <div className="wh-chart-card wh-glass">
+          <div className="wh-chart-header">
+            <div>
+              <h2 className="wh-section-title">Status Distribution</h2>
+              <p className="wh-section-sub">Subtasks by status</p>
+            </div>
+          </div>
+          <div className="wh-donut-body">
+            <ResponsiveContainer width={110} height={110}>
+              <PieChart>
+                <Pie
+                  data={statusDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={30}
+                  outerRadius={48}
+                  dataKey="value"
+                  strokeWidth={2}
+                  stroke="#ffffff"
+                >
+                  {statusDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<GlassTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="wh-donut-legend">
+              {statusDistribution.map((s) => (
+                <div key={s.name} className="wh-legend-row">
+                  <div className="wh-legend-left">
+                    <span className="wh-legend-dot" style={{ background: s.color }} />
+                    <span>{s.name}</span>
+                  </div>
+                  <span className="wh-legend-val">{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Priority Bar Chart */}
+        <div className="wh-chart-card wh-glass">
+          <div className="wh-chart-header">
+            <div>
+              <h2 className="wh-section-title">Subtask Priorities</h2>
+              <p className="wh-section-sub">Assigned items by tier</p>
+            </div>
+          </div>
+          <div style={{ width: "100%", height: "110px", marginTop: "10px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={priorityDistribution} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(23,25,28,0.04)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#777b86" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "#777b86" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip content={<GlassTooltip />} />
+                <Bar dataKey="count" name="Subtasks" radius={[4, 4, 0, 0]}>
+                  {priorityDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5 + 6. DEADLINES + ACTIVITY ──────────────────────────────────── */}
       <div className="wh-two-col">
 
         {/* Upcoming Deadlines */}
-        <section className="wh-panel wh-glass">
+        <section className="wh-panel wh-glass wh-panel--fixed-height">
           <div className="wh-panel-header">
             <div>
               <h2 className="wh-section-title">Upcoming Deadlines</h2>
@@ -405,7 +487,10 @@ export default function WorkspaceHome() {
           </div>
 
           {dashboard.upcoming_deadlines.length === 0 ? (
-            <p className="wh-empty">No upcoming deadlines — you're clear! 🎉</p>
+            <div className="wh-empty-deadlines">
+              <img src={checkBoxesIllustration} alt="No deadlines" className="wh-empty-illustration" />
+              <p className="wh-empty">No upcoming deadlines — you're clear! 🎉</p>
+            </div>
           ) : (
             <div className="wh-deadline-list">
               {dashboard.upcoming_deadlines.map((subtask) => {
@@ -436,7 +521,7 @@ export default function WorkspaceHome() {
         </section>
 
         {/* Activity Feed */}
-        <section className="wh-panel wh-glass">
+        <section className="wh-panel wh-glass wh-panel--fixed-height">
           <div className="wh-panel-header">
             <div>
               <h2 className="wh-section-title">Activity Feed</h2>
@@ -472,7 +557,7 @@ export default function WorkspaceHome() {
         </section>
       </div>
 
-      {/* ── 6 + 7. QUICK ACTIONS + TASK PREVIEW ──────────────────────────── */}
+      {/* ── 7 + 8. QUICK ACTIONS + TASK PREVIEW ──────────────────────────── */}
       <div className="wh-two-col">
 
         {/* Task Preview */}
@@ -492,10 +577,10 @@ export default function WorkspaceHome() {
               {dashboard.recent_subtasks.map((subtask) => {
                 const statusKey = subtask.status || "todo";
                 const priorityColors = {
-                  critical: "#A34A30",
-                  high:     "#C96442",
-                  medium:   "#5B8CB8",
-                  low:      "#9E9E9E",
+                  critical: "#dc2626",
+                  high:     "#f97316",
+                  medium:   "#3b82f6",
+                  low:      "#a3a6af",
                 };
                 const dotColor = priorityColors[subtask.priority?.toLowerCase()] || "#8A87A0";
                 return (
@@ -547,7 +632,7 @@ export default function WorkspaceHome() {
 
           {/* Productivity Score */}
           <section className="wh-prod-card wh-glass">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", justifySpaceBetween: "space-between" }}>
               <h2 className="wh-section-title">Productivity Score</h2>
               <Sparkles size={15} style={{ color: "var(--text-3)" }} />
             </div>

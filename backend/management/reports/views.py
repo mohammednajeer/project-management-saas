@@ -103,6 +103,7 @@ class DashboardStatsView(APIView):
 
         project_breakdown = [
             {
+                "id": project.id,
                 "project": project.name,
                 "tasks": project.tasks.count(),
                 "completed": project.tasks.filter(status="done").count(),

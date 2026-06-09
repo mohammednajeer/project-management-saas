@@ -1,22 +1,15 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  BarChart2,
-  TrendingUp,
-  CheckCircle2,
-  Clock,
   AlertTriangle,
-  Users,
   Layers,
-  Zap,
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
-  Minus,
-  Activity,
-  Maximize2,
-  Sliders,
   Sparkles,
   Search,
+  Calendar,
+  Filter,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -31,7 +24,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from "recharts";
 import api from "../../services/api";
 import "./Reports.css";
@@ -41,74 +33,38 @@ const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
 const pct = (n) => (n == null ? "—" : `${Math.round(n)}%`);
 
 /* ── Modern Premium Palette Configuration ────────────────── */
-const DONUT_COLORS = ["#6354c4", "#3b82f6", "#f59e0b", "#ef4444"];
+const DONUT_COLORS = ["#17191c", "#d3e3fc", "#fbe1d1", "#777b86"];
 
 function buildDonut(data) {
   return [
-    { name: "Completed Tasks", value: data.completed_tasks  || 0 },
-    { name: "Active Run-rate", value: data.pending_tasks    || 0 },
-    { name: "Overdue Backlog", value: data.overdue_tasks     || 0 },
+    { name: "Completed Tasks", value: data.completed_tasks || 0, status: "completed" },
+    { name: "Active Run-rate", value: data.pending_tasks || 0, status: "pending" },
+    { name: "Overdue Backlog", value: data.overdue_tasks || 0, status: "overdue" },
     {
-      name: "Unassigned Ops",
-      value: Math.max(
-        0,
-        (data.total_tasks || 0) -
-          (data.completed_tasks || 0) -
-          (data.pending_tasks   || 0) -
-          (data.overdue_tasks   || 0)
-      ),
+      name: "Open Issues",
+      value: data.total_issues || 0,
+      status: "issues",
     },
   ].filter((d) => d.value > 0);
-}
-
-/* ── Hardened Production Fallbacks / Seed Data ──────────── */
-
-/* ── Sub-atomic Rendering Blocks ───────────────────────── */
-function Skeleton({ className = "" }) {
-  return <div className={`an-skeleton ${className}`} />;
-}
-
-function MetricCard({ icon: Icon, label, value, sub, trend, trendValue, accent, loading }) {
-  return (
-    <div className={`an-metric-tile an-metric-tile--${accent}`}>
-      <div className="an-metric-tile-header">
-        <div className="an-metric-tile-icon-frame"><Icon size={15} /></div>
-        {trend && (
-          <div className={`an-metric-trend an-metric-trend--${trend}`}>
-            {trend === "up" && <ArrowUpRight size={12} />}
-            {trend === "down" && <ArrowDownRight size={12} />}
-            {trend === "flat" && <Minus size={12} />}
-            <span>{trendValue || ""}</span>
-          </div>
-        )}
-      </div>
-      {loading ? (
-        <div className="an-metric-skeleton-group">
-          <Skeleton className="an-sk-v" />
-          <Skeleton className="an-sk-l" />
-        </div>
-      ) : (
-        <div className="an-metric-content">
-          <div className="an-metric-value">{value}</div>
-          <div className="an-metric-label">{label}</div>
-          {sub && <div className="an-metric-meta">{sub}</div>}
-        </div>
-      )}
-    </div>
-  );
 }
 
 const ChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="an-chart-tooltip">
-      {label && <div className="an-chart-tooltip-title">{label}</div>}
-      <div className="an-chart-tooltip-list">
+    <div style={{
+      background: "#ffffff",
+      border: "1px solid rgba(0,0,0,0.08)",
+      padding: "10px 14px",
+      borderRadius: "12px",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
+    }}>
+      {label && <div style={{ fontSize: "11px", fontWeight: 700, color: "#777b86", marginBottom: "6px", textTransform: "uppercase" }}>{label}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         {payload.map((p) => (
-          <div key={p.name} className="an-chart-tooltip-item">
-            <span className="an-chart-tooltip-marker" style={{ background: p.color || p.fill }} />
-            <span className="an-chart-tooltip-name">{p.name}</span>
-            <span className="an-chart-tooltip-value">{fmt(p.value)}</span>
+          <div key={p.name} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: p.color || p.fill }} />
+            <span style={{ color: "#4c4c4c" }}>{p.name}:</span>
+            <span style={{ fontWeight: 700, color: "#17191c" }}>{fmt(p.value)}</span>
           </div>
         ))}
       </div>
@@ -117,562 +73,607 @@ const ChartTooltip = ({ active, payload, label }) => {
 };
 
 export default function Reports() {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refresh, setRefresh] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError(null);
+    setTimeout(() => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+    }, 0);
     api.get("/reports/dashboard/")
-      .then((r) => { if (active) { setData(r.data); setLoading(false); } })
-      .catch((e) => { 
-        if (active) { 
-          setError(e?.response?.data?.detail || "Analytics interface lost database linkage upstream."); 
-          setLoading(false); 
-        } 
+      .then((r) => {
+        if (active) {
+          setData(r.data);
+          setLoading(false);
+        }
+      })
+      .catch((e) => {
+        if (active) {
+          setError(e?.response?.data?.detail || "Analytics interface lost database linkage upstream.");
+          setLoading(false);
+        }
       });
     return () => { active = false; };
   }, [refresh]);
 
-const donutData =
-  data ? buildDonut(data) : [];
+  const donutData = data ? buildDonut(data) : [];
+  const lineData = data?.weekly_activity || [];
+  const barData = data?.project_breakdown || [];
+  const taskDistribution = data?.task_distribution || [];
+  const workloadDistribution = data?.workload_distribution || [];
+  const teamWorkload = data?.team_workload || [];
 
-const lineData =
-  data?.weekly_activity || [];
+  // Filtered project list for resolution ledger table
+  const filteredProjects = barData.filter((proj) =>
+    proj.project?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-const barData =
-  data?.project_breakdown || [];
-
-const taskDistribution =
-  data?.task_distribution || [];
-
-const workloadDistribution =
-  data?.workload_distribution || [];
-
-const overloadedEmployees =
-  data?.overloaded_employees || [];
-
-const workloadBarData = overloadedEmployees.map((row) => ({
-  name: row.name?.split(" ")[0] || row.name,
-  active: row.active_tasks ?? 0,
-  overdue: row.overdue_tasks ?? 0,
-}));
-
-const WORKLOAD_CHART_COLORS = ["#3b82f6", "#22c55e", "#ef4444", "#8b5cf6"];
-
-const cr =
-  data?.completion_rate ?? 0; // Fallback representation default
+  const cr = data?.completion_rate ?? 0;
 
   return (
-    <div className="an-dashboard-container">
-      {/* ── CONTROL ANCHOR BAR ── */}
-      <header className="an-top-bar">
-        <div className="an-top-bar-meta">
-          <div className="an-brand-badge"><Activity size={15} /></div>
-          <div>
-            <h1 className="an-main-title">Enterprise Analytics Panel</h1>
-            <p className="an-main-subtitle">Real-time system transaction telemetry & productivity execution matrix</p>
-          </div>
+    <div className="rep-container">
+      {/* ── HEADER ANCHOR ── */}
+      <header className="rep-header">
+        <div className="rep-title-group">
+          <h1 className="rep-title">Reports Command Center</h1>
+          <p className="rep-subtitle">
+            <span className="rep-pulse-dot" />
+            Live telemetry sync active — Real-time analytics system logs
+          </p>
         </div>
-        <div className="an-top-bar-actions">
-          <div className="an-search-mock">
-            <Search size={13} />
-            <input type="text" placeholder="Search parameters..." disabled />
+        <div className="rep-header-actions">
+          <div className="rep-date-picker">
+            <Calendar size={14} />
+            <span>Today, {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
           <button
-            className={`an-action-btn an-action-btn--primary ${loading ? "an-action-btn--spinning" : ""}`}
+            className={`rep-btn-primary ${loading ? "rep-btn-primary--spinning" : ""}`}
             onClick={() => setRefresh((n) => n + 1)}
             disabled={loading}
           >
-            <RefreshCw size={13} />
-            <span>Sync Engine</span>
+            {loading ? (
+              <>
+                <RefreshCw size={13} className="rep-btn-primary--spinning" />
+                <span>Syncing Engine...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw size={13} />
+                <span>Sync Engine</span>
+              </>
+            )}
           </button>
         </div>
       </header>
 
       {/* ── RUNTIME ERROR NOTIFIER ── */}
       {error && (
-        <div className="an-runtime-exception">
+        <div className="rep-error-banner">
           <AlertTriangle size={15} />
-          <div className="an-exception-body">
-            <strong>Data Stream Incomplete</strong> — {error}
-          </div>
+          <span><strong>Data Stream Exception:</strong> {error}</span>
         </div>
       )}
 
-      {/* ── TOP-TIER CRITICAL KPI GRID ── */}
-      <section className="an-metrics-layout-grid">
-        <MetricCard loading={loading} icon={Layers} label="Active Ventures" value={fmt(data?.total_projects || 0)} trend="up" trendValue="+12.4%" accent="purple" />
-        <MetricCard loading={loading} icon={Zap} label="Database Work items" value={fmt(data?.total_tasks || 0)} trend="flat" trendValue="0.0%" accent="blue" />
-        <MetricCard loading={loading} icon={CheckCircle2} label="Merged Closures" value={fmt(data?.completed_tasks || 0)} sub={`${pct(cr)} Net Velocity`} trend="up" trendValue="+4.1%" accent="green" />
-        <MetricCard loading={loading} icon={Clock} label="Pending Pipeline" value={fmt(data?.pending_tasks || 0)} trend="flat" trendValue="Steady" accent="amber" />
-        <MetricCard loading={loading} icon={AlertTriangle} label="Breached Deadlines" value={fmt(data?.overdue_tasks || 0)} trend="down" trendValue="-8.3%" accent="red" />
-        <MetricCard loading={loading} icon={TrendingUp} label="Discovered Exceptions" value={fmt(data?.total_issues || 0)} trend="flat" trendValue="0.0%" accent="rose" />
-        <MetricCard loading={loading} icon={Users} label="Authenticated Operatives" value={fmt(data?.active_members || 0)} trend="up" trendValue="+2 New" accent="teal" />
-        <MetricCard loading={loading} icon={Sliders} label="SLA Attainment" value={pct(cr)} trend="up" trendValue="Target Max" accent="indigo" />
-      </section>
-
-      {/* ── WORKLOAD ANALYTICS ── */}
-      <section className="an-metrics-layout-grid an-workload-charts-grid">
-        <div className="an-card-panel">
-          <div className="an-panel-header">
-            <div>
-              <h3 className="an-panel-title">Task Distribution</h3>
-              <p className="an-panel-desc">Active, completed, overdue, and open issues</p>
-            </div>
-          </div>
-          <div className="an-chart-container an-chart-container--compact">
-            {loading ? (
-              <Skeleton className="an-sk-chart" />
-            ) : taskDistribution.length === 0 ? (
-              <div className="an-chart-empty-fallback">No task distribution data.</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={taskDistribution}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={3}
-                  >
-                    {taskDistribution.map((_, i) => (
-                      <Cell key={i} fill={WORKLOAD_CHART_COLORS[i % WORKLOAD_CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="an-card-panel">
-          <div className="an-panel-header">
-            <div>
-              <h3 className="an-panel-title">Workload Distribution</h3>
-              <p className="an-panel-desc">Underutilized, balanced, and overloaded employees</p>
-            </div>
-          </div>
-          <div className="an-chart-container an-chart-container--compact">
-            {loading ? (
-              <Skeleton className="an-sk-chart" />
-            ) : workloadDistribution.length === 0 ? (
-              <div className="an-chart-empty-fallback">No workload distribution data.</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={workloadDistribution} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,16,64,0.06)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="value" name="Employees" fill="#6354c4" radius={[6, 6, 0, 0]} maxBarSize={36} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="an-card-panel">
-          <div className="an-panel-header">
-            <div>
-              <h3 className="an-panel-title">Overloaded Employees</h3>
-              <p className="an-panel-desc">Team members above workload threshold</p>
-            </div>
-          </div>
-          <div className="an-chart-container an-chart-container--compact">
-            {loading ? (
-              <Skeleton className="an-sk-chart" />
-            ) : workloadBarData.length === 0 ? (
-              <div className="an-chart-empty-fallback">No overloaded employees.</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={workloadBarData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,16,64,0.06)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="active" name="Active" fill="#6354c4" radius={[4, 4, 0, 0]} maxBarSize={22} />
-                  <Bar dataKey="overdue" name="Overdue" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={22} />
-                  <Legend />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CORE DATASCAPE VISUALIZATION REGION ── */}
-      <div className="an-analytical-deck">
-        
-        {/* Panel 1: Composite Stacked Area Performance Timeline */}
-        <div className="an-card-panel an-card-panel--span-2">
-          <div className="an-panel-header">
-            <div>
-              <h3 className="an-panel-title">Resource Velocity & Target Lifecycle</h3>
-              <p className="an-panel-desc">Time-series distribution across continuous production iterations</p>
-            </div>
-            <div className="an-panel-controls"><Maximize2 size={12} /></div>
-          </div>
-          <div className="an-chart-container">
-            {loading ? (
-
-  <Skeleton className="an-sk-chart-large" />
-
-) : lineData.length === 0 ? (
-
-  <div className="an-chart-empty-fallback">
-    No weekly activity available.
-  </div>
-
-) : (
-
-  <ResponsiveContainer width="100%" height={260}>
-
-    <AreaChart
-      data={lineData}
-      margin={{
-        top: 10,
-        right: 10,
-        left: -25,
-        bottom: 0,
-      }}
-    >
-
-      <defs>
-
-        <linearGradient
-          id="area-comp"
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="1"
-        >
-          <stop
-            offset="5%"
-            stopColor="#6354c4"
-            stopOpacity={0.25}
-          />
-
-          <stop
-            offset="95%"
-            stopColor="#6354c4"
-            stopOpacity={0}
-          />
-
-        </linearGradient>
-
-        <linearGradient
-          id="area-pend"
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="1"
-        >
-
-          <stop
-            offset="5%"
-            stopColor="#3b82f6"
-            stopOpacity={0.20}
-          />
-
-          <stop
-            offset="95%"
-            stopColor="#3b82f6"
-            stopOpacity={0}
-          />
-
-        </linearGradient>
-
-      </defs>
-
-      <CartesianGrid
-        strokeDasharray="4 4"
-        stroke="rgba(26,16,64,0.04)"
-        vertical={false}
-      />
-
-      <XAxis
-        dataKey="day"
-        tick={{
-          fontSize: 10,
-          fill: "#6b7280",
-          fontWeight: 600,
-        }}
-        axisLine={false}
-        tickLine={false}
-      />
-
-      <YAxis
-        tick={{
-          fontSize: 10,
-          fill: "#6b7280",
-          fontWeight: 600,
-        }}
-        axisLine={false}
-        tickLine={false}
-      />
-
-      <Tooltip
-        content={<ChartTooltip />}
-      />
-
-      <Legend
-        verticalAlign="top"
-        height={36}
-        iconType="circle"
-        iconSize={6}
-        wrapperStyle={{
-          fontSize: "11px",
-          fontWeight: 600,
-          color: "#4b5563",
-        }}
-      />
-
-      <Area
-        type="monotone"
-        dataKey="completed"
-        name="Completed Operations"
-        stroke="#6354c4"
-        strokeWidth={2.5}
-        fillOpacity={1}
-        fill="url(#area-comp)"
-      />
-
-      <Area
-        type="monotone"
-        dataKey="pending"
-        name="In Queue / Staged"
-        stroke="#3b82f6"
-        strokeWidth={1.5}
-        fillOpacity={1}
-        fill="url(#area-pend)"
-        strokeDasharray="3 3"
-      />
-
-    </AreaChart>
-
-  </ResponsiveContainer>
-)}
-          </div>
-        </div>
-
-        {/* Panel 2: Distribution Segregation Allocation Chart */}
-        <div className="an-card-panel">
-          <div className="an-panel-header">
-            <div>
-              <h3 className="an-panel-title">Dynamic Segmentation</h3>
-              <p className="an-panel-desc">Real-time object mapping weights</p>
-            </div>
-            <span className="an-live-indicator"><Sparkles size={11} /> Analytics Active</span>
+      {/* ── 8-GRID KPI GRID ── */}
+      <section className="rep-kpi-grid">
+        {/* KPI 1: Active Ventures */}
+        <div className="rep-glass-card rep-kpi-card rep-kpi-card--sky">
+          <div className="rep-card-top-row">
+            <span className="rep-card-label">Active Ventures</span>
+            <span className="rep-card-trend rep-card-trend--up">
+              <ArrowUpRight size={10} style={{ marginRight: '2px', verticalAlign: 'middle' }} /> +12.4%
+            </span>
           </div>
           {loading ? (
-            <div className="an-chart-center-fallback"><Skeleton className="an-sk-donut-circle" /></div>
-          ) : donutData.length === 0 ? (
-            <div className="an-chart-empty-fallback">No localized telemetry found.</div>
+            <div className="rep-skeleton rep-sk-v" />
           ) : (
-            <div className="an-donut-analytical-wrapper">
-              <div className="an-donut-render-block">
-                <ResponsiveContainer width="100%" height={150}>
+            <div className="rep-card-value">{fmt(data?.total_projects)}</div>
+          )}
+        </div>
+
+        {/* KPI 2: Work Items */}
+        <div className="rep-glass-card rep-kpi-card rep-kpi-card--ink">
+          <div className="rep-card-top-row">
+            <span className="rep-card-label">Work Items</span>
+            <span className="rep-card-trend rep-card-trend--flat">
+              0.0%
+            </span>
+          </div>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-v" />
+          ) : (
+            <div className="rep-card-value">{fmt(data?.total_tasks)}</div>
+          )}
+        </div>
+
+        {/* KPI 3: Merged Closures */}
+        <div className="rep-glass-card rep-kpi-card rep-kpi-card--apricot">
+          <div className="rep-card-top-row">
+            <span className="rep-card-label">Merged Closures</span>
+            <span className="rep-card-trend rep-card-trend--up">
+              <ArrowUpRight size={10} style={{ marginRight: '2px', verticalAlign: 'middle' }} /> +4.1%
+            </span>
+          </div>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-v" />
+          ) : (
+            <div className="rep-card-value">{fmt(data?.completed_tasks)}</div>
+          )}
+        </div>
+
+        {/* KPI 4: Pending Pipeline */}
+        <div className="rep-glass-card rep-kpi-card rep-kpi-card--sky">
+          <div className="rep-card-top-row">
+            <span className="rep-card-label">Pending Pipeline</span>
+            <span className="rep-card-trend rep-card-trend--flat">
+              Steady
+            </span>
+          </div>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-v" />
+          ) : (
+            <div className="rep-card-value">{fmt(data?.pending_tasks)}</div>
+          )}
+        </div>
+
+        {/* KPI 5: Breached Deadlines */}
+        <div className="rep-glass-card rep-kpi-card rep-kpi-card--apricot">
+          <div className="rep-card-top-row">
+            <span className="rep-card-label">Breached Deadlines</span>
+            <span className="rep-card-trend rep-card-trend--down">
+              <ArrowDownRight size={10} style={{ marginRight: '2px', verticalAlign: 'middle' }} /> -8.3%
+            </span>
+          </div>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-v" />
+          ) : (
+            <div className="rep-card-value">{fmt(data?.overdue_tasks)}</div>
+          )}
+        </div>
+
+        {/* KPI 6: Discovered Exceptions */}
+        <div className="rep-glass-card rep-kpi-card rep-kpi-card--ink">
+          <div className="rep-card-top-row">
+            <span className="rep-card-label">Discovered Exceptions</span>
+            <span className="rep-card-trend rep-card-trend--flat">
+              0.0%
+            </span>
+          </div>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-v" />
+          ) : (
+            <div className="rep-card-value">{fmt(data?.total_issues)}</div>
+          )}
+        </div>
+
+        {/* KPI 7: Authenticated Operatives */}
+        <div className="rep-glass-card rep-kpi-card rep-kpi-card--sky">
+          <div className="rep-card-top-row">
+            <span className="rep-card-label">Authenticated Operatives</span>
+            <span className="rep-card-trend rep-card-trend--up">
+              +2 New
+            </span>
+          </div>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-v" />
+          ) : (
+            <div className="rep-card-value">{fmt(data?.active_members)}</div>
+          )}
+        </div>
+
+        {/* KPI 8: SLA Attainment */}
+        <div className="rep-glass-card rep-kpi-card rep-kpi-card--apricot">
+          <div className="rep-card-top-row">
+            <span className="rep-card-label">SLA Attainment</span>
+            <span className="rep-card-trend rep-card-trend--up">
+              Target Max
+            </span>
+          </div>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-v" />
+          ) : (
+            <div className="rep-card-value">{pct(data?.completion_rate)}</div>
+          )}
+        </div>
+      </section>
+
+      {/* ── WORKLOAD ANALYTICS ROW ── */}
+      <section className="rep-workload-grid">
+        {/* Card 1: Task Distribution */}
+        <div className="rep-glass-card rep-workload-card">
+          <h3 className="rep-workload-title">Task Distribution</h3>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-donut" style={{ margin: "20px auto" }} />
+          ) : taskDistribution.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "var(--rep-ash)" }}>No task distribution telemetry found.</div>
+          ) : (
+            <>
+              <div style={{ position: "relative", width: "100%", height: "140px" }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={donutData} cx="50%" cy="50%" innerRadius={48} outerRadius={68} paddingAngle={4} dataKey="value">
-                      {donutData.map((_, i) => (
+                    <Pie
+                      data={taskDistribution}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={65}
+                      paddingAngle={3}
+                    >
+                      {taskDistribution.map((entry, i) => (
                         <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} stroke="none" />
                       ))}
                     </Pie>
                     <Tooltip content={<ChartTooltip />} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="an-donut-center-label">
-                  <span className="an-donut-center-v">{pct(cr)}</span>
-                  <span className="an-donut-center-l">Efficiency</span>
+                <div style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  textAlign: "center",
+                  pointerEvents: "none"
+                }}>
+                  <div style={{ fontSize: "28px", fontWeight: "600", fontFamily: "var(--font-display)", color: "var(--rep-ink)", lineHeight: 1 }}>
+                    {fmt(data?.total_tasks || 0)}
+                  </div>
+                  <div style={{ fontSize: "9px", fontWeight: "700", textTransform: "uppercase", color: "var(--rep-ash)", letterSpacing: "0.05em", marginTop: "4px" }}>
+                    Total Tasks
+                  </div>
                 </div>
               </div>
-              <div className="an-donut-data-legend-rows">
-                {donutData.map((d, i) => (
-                  <div key={d.name} className="an-legend-row-item">
-                    <span className="an-legend-row-bullet" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
-                    <span className="an-legend-row-name">{d.name}</span>
-                    <span className="an-legend-row-value">{fmt(d.value)}</span>
+              <div className="rep-donut-legend">
+                {taskDistribution.map((entry, idx) => (
+                  <div key={idx} className="rep-legend-item">
+                    <div className="rep-legend-left">
+                      <span className="rep-legend-bullet" style={{ background: DONUT_COLORS[idx % DONUT_COLORS.length] }} />
+                      <span>{entry.name}</span>
+                    </div>
+                    <span className="rep-legend-bold">{fmt(entry.value)}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
         </div>
 
-        {/* Panel 3: Horizontal Structural Project Ledger Breakdowns */}
-        <div className="an-card-panel an-card-panel--span-2">
-          <div className="an-panel-header">
-            <div>
-              <h3 className="an-panel-title">Project Operational Volume Split</h3>
-              <p className="an-panel-desc">Comparison vectors contrasting gross task assignments versus verified closure records</p>
-            </div>
-          </div>
-          <div className="an-chart-container">
-            {loading ? (
-
-  <Skeleton className="an-sk-chart-large" />
-
-) : barData.length === 0 ? (
-
-  <div className="an-chart-empty-fallback">
-    No project analytics available.
-  </div>
-
-) : (
-
-  <ResponsiveContainer width="100%" height={230}>
-
-    <BarChart
-      data={barData}
-      margin={{
-        top: 10,
-        right: 10,
-        left: -25,
-        bottom: 0,
-      }}
-      barGap={6}
-    >
-
-      <CartesianGrid
-        strokeDasharray="4 4"
-        stroke="rgba(26,16,64,0.04)"
-        vertical={false}
-      />
-
-      <XAxis
-        dataKey="project"
-        tick={{
-          fontSize: 10,
-          fill: "#6b7280",
-          fontWeight: 600,
-        }}
-        axisLine={false}
-        tickLine={false}
-      />
-
-      <YAxis
-        tick={{
-          fontSize: 10,
-          fill: "#6b7280",
-          fontWeight: 600,
-        }}
-        axisLine={false}
-        tickLine={false}
-      />
-
-      <Tooltip
-        content={<ChartTooltip />}
-      />
-
-      <Bar
-        dataKey="tasks"
-        name="Gross Demand Volume"
-        fill="rgba(99,84,196,0.12)"
-        radius={[3, 3, 0, 0]}
-        maxBarSize={30}
-      />
-
-      <Bar
-        dataKey="completed"
-        name="System Certified Closed"
-        fill="#6354c4"
-        radius={[3, 3, 0, 0]}
-        maxBarSize={30}
-      />
-
-    </BarChart>
-
-  </ResponsiveContainer>
-)}
-          </div>
+        {/* Card 2: Workload Distribution */}
+        <div className="rep-glass-card rep-workload-card">
+          <h3 className="rep-workload-title">Workload Balance</h3>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-chart" />
+          ) : workloadDistribution.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "var(--rep-ash)" }}>No workload balance logs found.</div>
+          ) : (
+            <>
+              <div className="rep-bar-chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={workloadDistribution} margin={{ top: 8, right: 8, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--rep-ash)", fontWeight: 500 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--rep-ash)", fontWeight: 500 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Bar dataKey="value" name="Employees" maxBarSize={36}>
+                      {workloadDistribution.map((entry, index) => {
+                        let color = "var(--rep-ink)";
+                        if (entry.status === "underutilized") color = "var(--rep-sky)";
+                        else if (entry.status === "balanced") color = "var(--rep-ink)";
+                        else if (entry.status === "overloaded") color = "var(--rep-apricot)";
+                        return <Cell key={index} fill={color} radius={[6, 6, 0, 0]} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="rep-insight-banner">
+                <Sparkles size={16} style={{ color: "var(--rep-ink)", flexShrink: 0 }} />
+                <p className="rep-insight-text">
+                  Most of your authenticated operatives are currently operating at a <span className="rep-insight-highlight">balanced</span> workload velocity.
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Panel 4: Enterprise Insight Engines */}
-        <div className="an-card-panel">
-          <div className="an-panel-header">
-            <div>
-              <h3 className="an-panel-title">Automated Analysis Insights</h3>
-              <p className="an-panel-desc">Heuristics generated by real-time metadata evaluation</p>
+        {/* Card 3: Resource Saturation */}
+        <div className="rep-glass-card rep-workload-card">
+          <h3 className="rep-workload-title">Resource Saturation</h3>
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {[1, 2, 3].map((n) => (
+                <div key={n} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div className="rep-skeleton rep-sk-l" style={{ width: "40%" }} />
+                  <div className="rep-skeleton rep-sk-v" style={{ height: "8px", borderRadius: "99px" }} />
+                </div>
+              ))}
+            </div>
+          ) : teamWorkload.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "var(--rep-ash)" }}>No saturation levels logged.</div>
+          ) : (
+            <div className="rep-saturation-stack">
+              {teamWorkload.slice(0, 4).map((row, idx) => {
+                const percentage = Math.min(100, Math.round(((row.active_tasks || 0) / 15) * 100));
+                const isOverloaded = row.workload_status === "overloaded";
+                return (
+                  <div key={idx} className="rep-saturation-item">
+                    <div className="rep-saturation-header">
+                      <span className="rep-saturation-label">{row.name}</span>
+                      <span className={`rep-saturation-value ${isOverloaded ? "rep-saturation-value--overloaded" : ""}`}>
+                        {row.active_tasks || 0} Tasks {isOverloaded && "(Overloaded)"}
+                      </span>
+                    </div>
+                    <div className="rep-progress-track">
+                      <div
+                        className={`rep-progress-fill ${isOverloaded ? "rep-progress-fill--overloaded" : "rep-progress-fill--normal"}`}
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── MAIN DECK GRID ── */}
+      <section className="rep-deck-grid">
+        {/* Panel 1: Resource Velocity Timeline */}
+        <div className="rep-glass-card rep-deck-card-large">
+          <div className="rep-deck-header">
+            <div className="rep-deck-title-row">
+              <h3 className="rep-deck-title">Resource Velocity</h3>
+              <p className="rep-deck-desc">Active vs completed operations rate tracker</p>
+            </div>
+            <div className="rep-deck-controls">
+              <span className="rep-control-pill rep-control-pill--active">7 Days</span>
+              <span className="rep-control-pill rep-control-pill--inactive">30 Days</span>
             </div>
           </div>
           {loading ? (
-            <div className="an-insights-skeleton-stack">
-              {[1, 2, 3].map((n) => <Skeleton key={n} className="an-sk-insight-row" />)}
+            <div className="rep-skeleton rep-sk-chart" style={{ height: "300px" }} />
+          ) : lineData.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "80px 0", color: "var(--rep-ash)" }}>No weekly activity logged.</div>
+          ) : (
+            <div className="rep-velocity-chart-box">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={lineData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="velocityGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--rep-sky)" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="var(--rep-sky)" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="4 4" stroke="rgba(0,0,0,0.03)" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--rep-ash)", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--rep-ash)", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="completed"
+                    name="Operations Velocity"
+                    stroke="var(--rep-ink)"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#velocityGrad)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Panel 2: Dynamic Segmentation Donut */}
+        <div className="rep-glass-card rep-deck-card-small">
+          <div className="rep-deck-header" style={{ marginBottom: "24px" }}>
+            <div className="rep-deck-title-row">
+              <h3 className="rep-deck-title">Dynamic Segmentation</h3>
+              <p className="rep-deck-desc">Active allocations breakdown</p>
+            </div>
+          </div>
+          {loading ? (
+            <div className="rep-skeleton rep-sk-donut" style={{ margin: "20px auto" }} />
+          ) : donutData.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "var(--rep-ash)" }}>No dynamic telemetry found.</div>
+          ) : (
+            <>
+              <div style={{ position: "relative", width: "100%", height: "130px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={60}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {donutData.map((entry, i) => (
+                        <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} stroke="none" />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<ChartTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  textAlign: "center",
+                  pointerEvents: "none"
+                }}>
+                  <div style={{ fontSize: "22px", fontWeight: "600", fontFamily: "var(--font-display)", color: "var(--rep-ink)", lineHeight: 1 }}>
+                    {pct(cr)}
+                  </div>
+                  <div style={{ fontSize: "8px", fontWeight: "700", textTransform: "uppercase", color: "var(--rep-ash)", letterSpacing: "0.05em", marginTop: "2px" }}>
+                    Efficiency
+                  </div>
+                </div>
+              </div>
+              <div className="rep-donut-legend-3">
+                {donutData.map((d, i) => (
+                  <div key={d.name} className="rep-legend-3-row">
+                    <div className="rep-legend-3-left">
+                      <span className="rep-legend-3-bullet" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                      <span>{d.name}</span>
+                    </div>
+                    <span className="rep-legend-3-bold">{fmt(d.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* ── INSIGHTS & LEDGER ROW ── */}
+      <section className="rep-insights-ledger-grid">
+        {/* Panel 3: AI Insights */}
+        <div className="rep-glass-card rep-insights-column">
+          <div className="rep-insights-header">
+            <h3 className="rep-workload-title" style={{ margin: 0 }}>AI System Insights</h3>
+            <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--rep-ash)", fontWeight: 500 }}>
+              <Sparkles size={14} style={{ color: "var(--rep-ink)" }} /> Analytics Active
+            </span>
+          </div>
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="rep-skeleton" style={{ height: "90px", borderRadius: "16px" }} />
+              ))}
             </div>
           ) : (
-            <div className="an-insights-functional-list">
-              <div className="an-insight-node an-insight-node--green">
-                <div className="an-insight-node-title">SLA Threshold Met</div>
-                <p className="an-insight-node-message">System capacity evaluation registers at <strong>{pct(cr)}</strong> efficiency, surpassing standard benchmarks.</p>
+            <div className="rep-ai-insights-stack">
+              <div className="rep-insight-note rep-insight-note--dark">
+                <h4 className="rep-note-title">Capacity Net Velocity</h4>
+                <p className="rep-note-body">
+                  System capacity net velocity registers at <strong>{pct(cr)}</strong> efficiency, surpassing the core target benchmarks.
+                </p>
               </div>
-              <div className={`an-insight-node an-insight-node--${(data?.overdue_tasks || 0) > 10 ? "red" : "amber"}`}>
-                <div className="an-insight-node-title">Backlog Risk Parameters</div>
-                <p className="an-insight-node-message">Detected <strong>{fmt(data?.overdue_tasks || 0)}</strong> items with expired schedules. Operations velocity modification suggested.</p>
+              <div className="rep-insight-note rep-insight-note--blue">
+                <h4 className="rep-note-title">Task Pipeline Saturation</h4>
+                <p className="rep-note-body">
+                  Currently tracking <strong>{fmt(data?.pending_tasks || 0)}</strong> active pipeline items. Multi-threaded resource balancing is active.
+                </p>
               </div>
-              <div className="an-insight-node an-insight-node--purple">
-                <div className="an-insight-node-title">Resource Multi-threading</div>
-                <p className="an-insight-node-message">Active distribution balances safely across <strong>{fmt(data?.total_projects || 0)}</strong> isolated environment repositories.</p>
+              <div className="rep-insight-note rep-insight-note--apricot">
+                <h4 className="rep-note-title">Breached Schedule Risks</h4>
+                <p className="rep-note-body">
+                  Detected <strong>{fmt(data?.overdue_tasks || 0)}</strong> items with expired deadlines. Modification of resource priority queue suggested.
+                </p>
               </div>
             </div>
           )}
         </div>
 
-      </div>
-
-      {/* ── LOWER AUDIT LEDGER SECTION ── */}
-      {!loading && (
-        <section className="an-audit-ledger-section">
-          <div className="an-card-panel">
-            <div className="an-panel-header">
-              <div>
-                <h3 className="an-panel-title">System Task Resolution Ledger</h3>
-                <p className="an-panel-desc">Granular progress metrics mapped against structural benchmarks</p>
+        {/* Panel 4: Resolution Ledger Table */}
+        <div className="rep-glass-card rep-ledger-column">
+          <div className="rep-ledger-header">
+            <h3 className="rep-ledger-title">Project Resolution Ledger</h3>
+            <div className="rep-ledger-controls">
+              <div className="rep-search-box">
+                <Search size={14} className="rep-search-box-icon" />
+                <input
+                  type="text"
+                  placeholder="Search project ledger..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
+              <button className="rep-filter-btn" title="Clear Filter" onClick={() => setSearchQuery("")}>
+                <Filter size={14} />
+              </button>
             </div>
-            <div className="an-ledger-table-scroller">
-              <table className="an-ledger-table">
-                <thead>
+          </div>
+
+          <div className="rep-table-wrapper">
+            <table className="rep-table">
+              <thead>
+                <tr>
+                  <th>Project Identity</th>
+                  <th>Total Tasks</th>
+                  <th>Completions</th>
+                  <th>Proportion Graph</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  [1, 2, 3, 4, 5].map((n) => (
+                    <tr key={n}>
+                      <td><div className="rep-skeleton rep-sk-l" style={{ width: "120px" }} /></td>
+                      <td><div className="rep-skeleton rep-sk-l" style={{ width: "50px" }} /></td>
+                      <td><div className="rep-skeleton rep-sk-l" style={{ width: "50px" }} /></td>
+                      <td><div className="rep-skeleton rep-sk-l" style={{ width: "100px", height: "6px" }} /></td>
+                    </tr>
+                  ))
+                ) : filteredProjects.length === 0 ? (
                   <tr>
-                    <th>Target Context Dimension</th>
-                    <th>Gross Capacity Tracked</th>
-                    <th>Successful Resolution Matrix</th>
-                    <th>Completion Proportion Graph</th>
+                    <td colSpan={4} style={{ textAlign: "center", padding: "32px", color: "var(--rep-ash)" }}>
+                      No matching projects found in ledger.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {barData.map((proj, idx) => {
-                    const ratio = Math.min(100, Math.round((proj.completed / proj.tasks) * 100)) || 0;
+                ) : (
+                  filteredProjects.map((proj, idx) => {
+                    const ratio = proj.tasks > 0 ? Math.min(100, Math.round((proj.completed / proj.tasks) * 100)) : 0;
+                    
+                    let badgeClass = "rep-badge--progress";
+                    let badgeLabel = "Progressing";
+                    if (ratio === 100) {
+                      badgeClass = "rep-badge--resolved";
+                      badgeLabel = "Resolved";
+                    } else if (ratio < 40 && proj.tasks > 0) {
+                      badgeClass = "rep-badge--delayed";
+                      badgeLabel = "At Risk";
+                    }
+
                     return (
-                      <tr key={idx}>
-                        <td className="an-table-primary-cell">{proj.project}</td>
-                        <td>{fmt(proj.tasks)} items</td>
-                        <td className="an-table-success-cell">{fmt(proj.completed)} items</td>
+                      <tr
+                        key={idx}
+                        style={{ cursor: proj.id ? "pointer" : "default" }}
+                        onClick={() => proj.id && navigate(`/dashboard/projects/${proj.id}`)}
+                      >
                         <td>
-                          <div className="an-table-progress-matrix-wrapper">
-                            <div className="an-table-progress-track">
-                              <div className="an-table-progress-fill" style={{ width: `${ratio}%` }} />
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <div className="rep-table-icon-box rep-table-icon-box--sky">
+                              <Layers size={14} />
                             </div>
-                            <span className="an-table-progress-percentage">{ratio}%</span>
+                            <div>
+                              <div style={{ fontWeight: 600, color: "var(--rep-ink)" }}>{proj.project}</div>
+                              <div className={`rep-badge ${badgeClass}`} style={{ marginTop: "4px" }}>{badgeLabel}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>{fmt(proj.tasks)} items</td>
+                        <td style={{ color: "var(--rep-success-green)", fontWeight: 500 }}>{fmt(proj.completed)} items</td>
+                        <td>
+                          <div className="rep-table-progress-group">
+                            <div className="rep-table-track">
+                              <div className="rep-table-fill" style={{ width: `${ratio}%` }} />
+                            </div>
+                            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--rep-ink-muted)" }}>{ratio}%</span>
                           </div>
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   );
 }

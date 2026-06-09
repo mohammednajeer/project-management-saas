@@ -74,7 +74,7 @@
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: 50%;
   background: linear-gradient(135deg, #6354c4 0%, #9b7ff4 100%);
   display: flex;
   align-items: center;
@@ -301,7 +301,7 @@
 .sb-avatar {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: 50%;
   background: linear-gradient(135deg, #6354c4 0%, #9b7ff4 100%);
   color: #fff;
   font-size: 0.65rem;

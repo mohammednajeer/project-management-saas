@@ -17,7 +17,7 @@ import TaskDetails from "../pages/tasks/TaskDetails";
 import ActivityPage from "../pages/activity/ActivityPage";
 import IssuesPage from "../pages/issues/IssuesPage";
 import ProfilePage from "../pages/profile/ProfilePage";
-import SettingsPage from "../pages/settings/SettingsPage";
+import OrganizationPage from "../pages/organization/OrganizationPage";
 import LeavePage from "../pages/leave/LeavePage";
 import CalendarPage from "../pages/calendar/CalendarPage";
 import AIAssistantPage from "../pages/ai-assistant/AIAssistantPage";
@@ -95,8 +95,8 @@ function App() {
             <Route path="leave" element={<LeavePage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="ai-assistant" element={<AIAssistantPage />} />
-            <Route path="organization" element={<SettingsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+            <Route path="organization" element={<OrganizationPage />} />
+            <Route path="settings" element={<OrganizationPage />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

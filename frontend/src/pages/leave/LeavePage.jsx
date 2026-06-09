@@ -483,43 +483,18 @@ export default function LeavePage() {
 
   return (
     <div className="leave-page">
-      {/* HEADER TOP BAR */}
-      <header className="leave-top-bar">
-        <div className="leave-top-bar-left">
-          <h1 style={{ margin: 0, fontSize: "18px", fontWeight: 850 }}>ProManage</h1>
-          <nav className="leave-top-bar-nav">
-            <button
-              className={activeView === "resource_planning" ? "is-active" : ""}
-              onClick={() => setActiveView("resource_planning")}
-            >
-              Resource Planning
-            </button>
-            <button
-              className={activeView === "org_availability" ? "is-active" : ""}
-              onClick={() => setActiveView("org_availability")}
-            >
-              Org Availability
-            </button>
-            <button
-              className={activeView === "compliance" ? "is-active" : ""}
-              onClick={() => setActiveView("compliance")}
-            >
-              Compliance
-            </button>
-            {canReview && (
-              <button
-                className={activeView === "allocations" ? "is-active" : ""}
-                onClick={() => setActiveView("allocations")}
-              >
-                Allocations
-              </button>
-            )}
-          </nav>
+      {/* PAGE HEADER SECTION */}
+      <div className="leave-header-section">
+        <div className="leave-header-left">
+          <h2>Leave Management</h2>
+          <p className="leave-header-subtitle">
+            Manage organizational leave cycles with deep impact analysis and real-time availability intelligence.
+          </p>
         </div>
-        
-        <div className="leave-top-bar-right">
-          <div className="leave-top-bar-search">
-            <Search size={12} className="search-pill-icon" />
+
+        <div className="leave-header-right">
+          <div className="leave-search-pill">
+            <Search size={13} className="leave-search-icon" />
             <input
               type="text"
               placeholder="Search people, policies, or dates..."
@@ -528,30 +503,40 @@ export default function LeavePage() {
             />
           </div>
           <button className="leave-refresh-btn-round" onClick={handleRefresh} title="Refresh Data">
-            <RefreshCw size={12} />
+            <RefreshCw size={13} />
           </button>
-          
-          <div className="leave-profile-wrap">
-            <div className="leave-profile-info">
-              <p className="leave-profile-name">{user?.name || user?.email || "Marcus Vance"}</p>
-              <p className="leave-profile-role">
-                {user?.role === "admin" 
-                  ? "System Administrator" 
-                  : user?.role === "manager" 
-                    ? "Engineering Manager" 
-                    : "Software Engineer"}
-              </p>
-            </div>
-            {user?.profile_picture ? (
-              <img src={user.profile_picture} alt="User" className="leave-avatar" />
-            ) : (
-              <div className="leave-avatar" style={{ ...getAvatarStyle(user?.name || user?.email || "Marcus Vance"), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold' }}>
-                {getInitials(user?.name || user?.email || "Marcus Vance")}
-              </div>
-            )}
-          </div>
         </div>
-      </header>
+      </div>
+
+      {/* VIEW SWITCHER TABS */}
+      <div className="leave-nav-tabs">
+        <button
+          className={activeView === "resource_planning" ? "is-active" : ""}
+          onClick={() => setActiveView("resource_planning")}
+        >
+          Resource Planning
+        </button>
+        <button
+          className={activeView === "org_availability" ? "is-active" : ""}
+          onClick={() => setActiveView("org_availability")}
+        >
+          Org Availability
+        </button>
+        <button
+          className={activeView === "compliance" ? "is-active" : ""}
+          onClick={() => setActiveView("compliance")}
+        >
+          Compliance
+        </button>
+        {canReview && (
+          <button
+            className={activeView === "allocations" ? "is-active" : ""}
+            onClick={() => setActiveView("allocations")}
+          >
+            Allocations
+          </button>
+        )}
+      </div>
 
       {/* FEEDBACK ALERT MESSAGE */}
       {message && (
@@ -564,13 +549,6 @@ export default function LeavePage() {
       {/* VIEW CONTENT TOGGLES */}
       {activeView === "resource_planning" && (
         <>
-          <div className="leave-page-header">
-            <div className="leave-page-header-text">
-              <h2>Resource &amp; Availability Engine</h2>
-              <p>Manage organizational leave cycles with deep impact analysis and real-time availability intelligence.</p>
-            </div>
-          </div>
-
           <div className="leave-dashboard-grid">
             {/* Main column */}
             <div className="leave-main-column">

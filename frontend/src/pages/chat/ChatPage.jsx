@@ -1,19 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCheck,
   Clock3,
   MessageCircle,
   MoreVertical,
-  Paperclip,
   Phone,
   Plus,
   Search,
   Send,
   Smile,
   Video,
-  Wifi,
-  WifiOff,
   X,
+  FileText,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -215,6 +214,11 @@ export default function ChatPage() {
   const [error, setError] = useState("");
   const [typingUsers, setTypingUsers] = useState({});
   const [presence, setPresence] = useState({});
+  const [inputFocused, setInputFocused] = useState(false);
+  const [peerTasks, setPeerTasks] = useState([]);
+  const [loadingPeerTasks, setLoadingPeerTasks] = useState(false);
+
+  const navigate = useNavigate();
 
   const socketRef = useRef(null);
   const connectSocketRef = useRef(null);
@@ -579,6 +583,64 @@ export default function ChatPage() {
     });
   }, [messages, typingUsers]);
 
+  useEffect(() => {
+    let active = true;
+    const peerId = selected?.other_user?.id ? String(selected.other_user.id) : null;
+
+    if (!peerId) {
+      const timer = setTimeout(() => {
+        if (active) setPeerTasks([]);
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(timer);
+      };
+    }
+
+    async function loadPeerTasks() {
+      try {
+        const projectsRes = await api.get("/projects/");
+        if (!active) return;
+
+        let allPeerTasks = [];
+        for (const project of projectsRes.data) {
+          const res = await api.get(`/tasks/project/${project.id}/`);
+          if (!active) return;
+          
+          const filtered = res.data.filter((task) =>
+            task.assigned_users?.some((u) => String(u.id) === peerId)
+          ).map((task) => ({
+            ...task,
+            project_name: project.name,
+            project_id: project.id
+          }));
+
+          allPeerTasks = [...allPeerTasks, ...filtered];
+        }
+
+        if (active) {
+          setPeerTasks(allPeerTasks);
+          setLoadingPeerTasks(false);
+        }
+      } catch (err) {
+        console.error("Error loading peer tasks", err);
+        if (active) setLoadingPeerTasks(false);
+      }
+    }
+
+    const startTimer = setTimeout(() => {
+      if (active) {
+        setLoadingPeerTasks(true);
+        loadPeerTasks();
+      }
+    }, 0);
+
+    return () => {
+      active = false;
+      clearTimeout(startTimer);
+    };
+  }, [selected?.other_user?.id]);
+
   const openConversation = (conversation) => {
     setSelected(normalizeConversation(conversation));
     setDraft("");
@@ -715,37 +777,33 @@ export default function ChatPage() {
   const isPeerTyping = peer?.id && typingUsers[peer.id];
   const peerPresence = peer?.id ? presence[peer.id] : null;
   const peerOnline = peerPresence?.online ?? false;
-  const canSend = draft.trim().length > 0 && socketStatus === "open";
 
   return (
     <div className="cp-root">
+      {/* Column 1: Conversations List */}
       <aside className="cp-sidebar">
         <div className="cp-sidebar-header">
-          <div className="cp-sidebar-title">
-            <MessageCircle size={16} className="cp-sidebar-title-icon" />
-            <span>Messages</span>
-            <span className="cp-conv-count">{conversations.length}</span>
+          <div className="cp-sidebar-title-row">
+            <h1>Messages</h1>
+            <button
+              type="button"
+              className="cp-new-btn"
+              onClick={openNewChat}
+              title="New conversation"
+            >
+              <Plus size={16} />
+            </button>
           </div>
 
-          <button
-            type="button"
-            className="cp-new-btn"
-            onClick={openNewChat}
-            title="New conversation"
-          >
-            <Plus size={14} />
-            <span>New</span>
-          </button>
-        </div>
-
-        <div className="cp-search-wrap">
-          <Search size={13} className="cp-search-icon" />
-          <input
-            className="cp-search-input"
-            placeholder="Search conversations"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
+          <div className="cp-search-wrap">
+            <Search size={16} className="cp-search-icon" />
+            <input
+              className="cp-search-input"
+              placeholder="Search..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
         </div>
 
         <div className="cp-conv-list">
@@ -772,10 +830,10 @@ export default function ChatPage() {
                 onClick={() => openConversation(conversation)}
               >
                 <div className="cp-conv-avatar-wrap">
-                 <Avatar
-                      name={otherUser?.name}
-                      image={otherUser?.profile_picture}
-                      size={42}
+                  <Avatar
+                    name={otherUser?.name}
+                    image={otherUser?.profile_picture}
+                    size={48}
                   />
                   {online && <span className="cp-online-dot" />}
                 </div>
@@ -786,20 +844,20 @@ export default function ChatPage() {
                       {otherUser?.name || "Unknown"}
                     </span>
                     <span className="cp-conv-time">
-                      {fmtDate(conversation.last_message?.created_at)}
+                      {fmtDate(conversation.last_message?.created_at || conversation.updated_at)}
                     </span>
                   </div>
 
-                  <div className="cp-conv-row">
-                    <span className="cp-conv-preview">
+                  <div className="cp-conv-preview-row">
+                    <p className="cp-conv-preview">
                       {typingUsers[otherUser?.id]
                         ? "Typing..."
                         : conversation.last_message?.content || "No messages yet"}
-                    </span>
+                    </p>
 
                     {unreadCount > 0 && (
-                      <span className="cp-unread-count">
-                        {unreadCount > 9 ? "9+" : unreadCount}
+                      <span className="cp-unread-badge">
+                        {unreadCount}
                       </span>
                     )}
                   </div>
@@ -810,30 +868,33 @@ export default function ChatPage() {
         </div>
       </aside>
 
+      {/* Column 2: Chat Thread */}
       <main className="cp-main">
         {selected ? (
           <div className="cp-chat">
             <header className="cp-chat-header">
               <div className="cp-chat-header-left">
-                <Avatar
-                  name={peer?.name}
-                  image={peer?.profile_picture}
-                  size={40}
-                />
+                <div className="cp-conv-avatar-wrap">
+                  <Avatar
+                    name={peer?.name}
+                    image={peer?.profile_picture}
+                    size={40}
+                  />
+                  {peerOnline && <span className="cp-online-dot" />}
+                </div>
                 <div className="cp-chat-peer-info">
-                  <span className="cp-chat-peer-name">
+                  <h2 className="cp-chat-peer-name">
                     {peer?.name || "Unknown"}
-                  </span>
+                  </h2>
                   <span
                     className={`cp-chat-peer-status ${
                       peerOnline ? "cp-chat-peer-status--online" : ""
                     }`}
                   >
-                    <span className="cp-status-dot" />
                     {isPeerTyping
                       ? "Typing..."
                       : peerOnline
-                        ? "Online"
+                        ? "Active now"
                         : peerPresence?.last_seen
                           ? `Last seen ${fmtDate(peerPresence.last_seen)}`
                           : "Offline"}
@@ -842,8 +903,16 @@ export default function ChatPage() {
               </div>
 
               <div className="cp-chat-header-actions">
+                <button type="button" className="cp-header-btn" title="Voice call">
+                  <Phone size={18} />
+                </button>
+                <button type="button" className="cp-header-btn" title="Video call">
+                  <Video size={18} />
+                </button>
+                
+                <span className="cp-header-divider" />
+                
                 <span className={`cp-connection-pill cp-connection-pill--${socketStatus}`}>
-                  {socketStatus === "open" ? <Wifi size={13} /> : <WifiOff size={13} />}
                   {socketStatus === "open"
                     ? "Live"
                     : socketStatus === "reconnecting"
@@ -853,14 +922,8 @@ export default function ChatPage() {
                         : "Offline"}
                 </span>
 
-                <button type="button" className="cp-header-btn" title="Voice call">
-                  <Phone size={16} />
-                </button>
-                <button type="button" className="cp-header-btn" title="Video call">
-                  <Video size={16} />
-                </button>
-                <button type="button" className="cp-header-btn" title="More">
-                  <MoreVertical size={16} />
+                <button type="button" className="cp-header-btn" title="More options">
+                  <MoreVertical size={18} />
                 </button>
               </div>
             </header>
@@ -882,7 +945,7 @@ export default function ChatPage() {
                 {!loadingMessages && messages.length === 0 && (
                   <div className="cp-messages-empty">
                     <div className="cp-messages-empty-icon">
-                      <MessageCircle size={34} />
+                      <MessageCircle size={32} />
                     </div>
                     <p>Start the conversation with {peer?.name}.</p>
                   </div>
@@ -907,7 +970,7 @@ export default function ChatPage() {
                           <Avatar
                             name={sender}
                             image={message.sender_data?.profile_picture}
-                            size={30}
+                            size={32}
                             className="cp-msg-ava"
                           />
                         ) : (
@@ -919,20 +982,20 @@ export default function ChatPage() {
                           <span className="cp-msg-sender">{sender}</span>
                         )}
 
-                        <div className={`cp-bubble ${mine ? "cp-bubble--mine" : ""}`}>
-                          <span className="cp-bubble-text">{message.content}</span>
+                        <div className={`cp-bubble ${mine ? "cp-bubble-outgoing" : "cp-bubble-incoming"}`}>
+                          <p className="cp-bubble-text">{message.content}</p>
                         </div>
 
                         <span className={`cp-msg-time ${mine ? "cp-msg-time--mine" : ""}`}>
                           {fmtTime(message.created_at) || "Just now"}
                           {mine && message.delivery_status === "sending" && (
                             <>
-                              <Clock3 size={11} className="cp-pending-icon" />
-                              Sending
+                              <Clock3 size={10} className="cp-pending-icon" />
+                              {" "}Sending
                             </>
                           )}
                           {mine && message.delivery_status === "failed" && (
-                            <span className="cp-failed-label">Failed</span>
+                            <span className="cp-failed-label">{" "}Failed</span>
                           )}
                           {mine && !message.delivery_status && (
                             <CheckCheck
@@ -947,15 +1010,6 @@ export default function ChatPage() {
                           )}
                         </span>
                       </div>
-
-                      {mine && (
-                        <Avatar
-                          name={currentUserName}
-                          image={user?.profile_picture}
-                          size={30}
-                          className="cp-msg-ava"
-                        />
-                      )}
                     </div>
                   );
                 })}
@@ -965,7 +1019,7 @@ export default function ChatPage() {
                     <Avatar
                       name={peer?.name}
                       image={peer?.profile_picture}
-                      size={30}
+                      size={32}
                       className="cp-msg-ava"
                     />
                     <div className="cp-typing-bubble" aria-label="Typing">
@@ -982,39 +1036,39 @@ export default function ChatPage() {
 
             {error && <div className="cp-error-line">{error}</div>}
 
-            <div className="cp-input-area">
-              <button type="button" className="cp-input-side-btn" title="Attach">
-                <Paperclip size={17} />
-              </button>
-
-              <div className="cp-input-wrap">
+            <div className="cp-input-footer">
+              <div className={`cp-input-area ${inputFocused ? "cp-input-area--focused" : ""}`}>
+                <button type="button" className="cp-input-side-btn" title="Attach files">
+                  <Plus size={20} />
+                </button>
                 <input
                   ref={inputRef}
                   className="cp-input"
                   placeholder={
                     socketStatus === "open"
-                      ? "Type a message"
+                      ? "Type a message..."
                       : "Connecting to chat..."
                   }
                   value={draft}
                   onChange={handleDraftChange}
                   onKeyDown={handleKeyDown}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
                   disabled={socketStatus !== "open" && socketStatus !== "reconnecting"}
                 />
-                <button type="button" className="cp-emoji-btn" title="Emoji">
-                  <Smile size={17} />
+                <button type="button" className="cp-emoji-btn" title="Select emoji">
+                  <Smile size={20} />
+                </button>
+                <button
+                  type="button"
+                  className="cp-send-btn"
+                  onClick={sendMessage}
+                  disabled={!draft.trim() || socketStatus !== "open"}
+                  title="Send message"
+                >
+                  <Send size={16} />
                 </button>
               </div>
-
-              <button
-                type="button"
-                className={`cp-send-btn ${canSend ? "cp-send-btn--active" : ""}`}
-                onClick={sendMessage}
-                disabled={!draft.trim()}
-                title="Send"
-              >
-                <Send size={16} />
-              </button>
             </div>
           </div>
         ) : (
@@ -1024,7 +1078,7 @@ export default function ChatPage() {
             </div>
             <h2 className="cp-welcome-title">Your Messages</h2>
             <p className="cp-welcome-sub">
-              Select a conversation or start a new one.
+              Select a conversation or start a new one to start writing.
             </p>
             <button type="button" className="cp-welcome-btn" onClick={openNewChat}>
               <Plus size={14} />
@@ -1033,6 +1087,93 @@ export default function ChatPage() {
           </div>
         )}
       </main>
+
+      {/* Column 3: Asset & Profile Info */}
+      {selected && (
+        <section className="cp-info-panel">
+          {/* Profile Info */}
+          <div className="cp-profile-card">
+            <div className="cp-profile-avatar-wrap">
+              <Avatar
+                name={peer?.name}
+                image={peer?.profile_picture}
+                size={96}
+                className="cp-profile-avatar"
+              />
+              {peerOnline && <span className="cp-profile-online-dot" />}
+            </div>
+            <h3 className="cp-profile-name">{peer?.name || "Unknown"}</h3>
+            <p className="cp-profile-role">{peer?.role || "Team Member"}</p>
+            {peer?.email && <p className="cp-profile-email">{peer.email}</p>}
+            
+            <div className="cp-profile-actions">
+              <button 
+                type="button" 
+                className="cp-profile-btn"
+                onClick={() => navigate("/dashboard/team")}
+              >
+                View Full Team
+              </button>
+              <button type="button" className="cp-mute-btn">
+                Mute Conversation
+              </button>
+            </div>
+          </div>
+
+          {/* Active Tasks Panel */}
+          <div className="cp-assets-card">
+            <div className="cp-assets-header">
+              <h4 className="cp-assets-title">Active Tasks ({peerTasks.length})</h4>
+              <button 
+                type="button" 
+                className="cp-assets-view-all"
+                onClick={() => navigate("/dashboard/tasks")}
+              >
+                Board
+              </button>
+            </div>
+            
+            <div className="cp-assets-content">
+              {loadingPeerTasks && (
+                <div className="cp-list-state">Loading tasks...</div>
+              )}
+
+              {!loadingPeerTasks && peerTasks.length === 0 && (
+                <div className="cp-feed-empty">
+                  <p>No active tasks assigned.</p>
+                </div>
+              )}
+
+              {!loadingPeerTasks && peerTasks.length > 0 && (
+                <div className="cp-docs-list">
+                  {peerTasks.slice(0, 5).map((task) => {
+                    const isUrgent = task.priority === "critical" || task.priority === "high";
+                    const isDone = task.status === "done";
+                    
+                    return (
+                      <div 
+                        key={task.id} 
+                        className="cp-doc-item"
+                        onClick={() => navigate(`/dashboard/tasks/${task.id}`)}
+                      >
+                        <div className={`cp-doc-icon-wrap ${isDone ? "cp-doc-icon-wrap--sky" : isUrgent ? "cp-doc-icon-wrap--apricot" : "cp-doc-icon-wrap--gray"}`}>
+                          <FileText size={18} />
+                        </div>
+                        <div className="cp-doc-info">
+                          <p className="cp-doc-name">{task.title}</p>
+                          <p className="cp-doc-meta">
+                            {task.project_name} • <span className={`cp-task-priority-label cp-task-priority-label--${task.priority}`}>{task.priority}</span>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {showModal && (
         <NewChatModal

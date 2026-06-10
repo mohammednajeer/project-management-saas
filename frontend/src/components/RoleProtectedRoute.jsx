@@ -6,6 +6,7 @@ const defaultRedirectByRole = {
   admin: "/dashboard",
   manager: "/dashboard",
   employee: "/workspace",
+  platform_admin: "/platform",
 };
 
 export default function RoleProtectedRoute({

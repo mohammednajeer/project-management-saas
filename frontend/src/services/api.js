@@ -13,12 +13,9 @@ const refreshClient = axios.create({
 let refreshRequest = null;
 
 const isProtectedAppPath = () =>
-  window.location.pathname.startsWith(
-    "/dashboard"
-  ) ||
-  window.location.pathname.startsWith(
-    "/workspace"
-  );
+  window.location.pathname.startsWith("/dashboard") ||
+  window.location.pathname.startsWith("/workspace") ||
+  window.location.pathname.startsWith("/platform");
 
 const refreshAccessToken = () => {
   if (!refreshRequest) {

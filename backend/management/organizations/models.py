@@ -105,6 +105,12 @@ class Organization(models.Model):
         default=True
     )
 
+    subscription_tier = models.CharField(
+        max_length=20,
+        choices=[("starter", "Starter"), ("pro", "Pro"), ("enterprise", "Enterprise")],
+        default="pro"
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )

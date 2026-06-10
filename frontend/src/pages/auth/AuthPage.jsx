@@ -14,6 +14,7 @@ const panelPathByRole = {
   admin: "/dashboard",
   manager: "/dashboard",
   employee: "/workspace",
+  platform_admin: "/platform",
 };
 
 function getPanelPath(role) {

@@ -39,6 +39,12 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        if user.organization and not user.organization.is_active:
+            return Response(
+                {"message": "Your organization workspace has been suspended. Please contact the administrator."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 

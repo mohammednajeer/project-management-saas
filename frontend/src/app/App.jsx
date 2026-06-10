@@ -32,10 +32,16 @@ import PublicRoute from "../components/PublicRoute";
 import RoleProtectedRoute from "../components/RoleProtectedRoute";
 import AppLayout from "../layout/AppLayout";
 import WorkspaceLayout from "../layout/WorkspaceLayout";
+import PlatformLayout from "../layout/PlatformLayout";
+import PlatformDashboard from "../pages/platform/PlatformDashboard";
+import PlatformOrganizations from "../pages/platform/PlatformOrganizations";
+import PlatformMaintenance from "../pages/platform/PlatformMaintenance";
+import PlatformUsers from "../pages/platform/PlatformUsers";
 import { AuthProvider } from "../context/AuthContext";
 import MyTasks from "../pages/workspace/Mytasks";
 import ChatPage from "../pages/chat/ChatPage";
 import Reports from "../pages/Reports/Reports";
+
 
 function App() {
   return (
@@ -127,6 +133,24 @@ function App() {
             {/* ── Employee subtask workspace ── */}
             <Route path="subtask/:subtaskId" element={<SubtaskDetails />} />
             <Route path="*" element={<Navigate to="/workspace" replace />} />
+          </Route>
+
+          <Route
+            path="/platform"
+            element={
+              <RoleProtectedRoute
+                allowedRoles={["platform_admin"]}
+                fallbackPath="/signin"
+              >
+                <PlatformLayout />
+              </RoleProtectedRoute>
+            }
+          >
+            <Route index element={<PlatformDashboard />} />
+            <Route path="organizations" element={<PlatformOrganizations />} />
+            <Route path="users" element={<PlatformUsers />} />
+            <Route path="maintenance" element={<PlatformMaintenance />} />
+            <Route path="*" element={<Navigate to="/platform" replace />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

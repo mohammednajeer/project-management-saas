@@ -35,13 +35,17 @@ class Activity(models.Model):
     organization = models.ForeignKey(
         "organizations.Organization",
         on_delete=models.CASCADE,
-        related_name="activities"
+        related_name="activities",
+        null=True,
+        blank=True
     )
 
     user = models.ForeignKey(
         "accounts.User",
         on_delete=models.CASCADE,
-        related_name="activities"
+        related_name="activities",
+        null=True,
+        blank=True
     )
 
     project = models.ForeignKey(
@@ -85,7 +89,8 @@ class Activity(models.Model):
 
     def __str__(self):
 
+        name = self.user.name if self.user else "System"
         return (
-            f"{self.user.name} - "
+            f"{name} - "
             f"{self.action}"
         )

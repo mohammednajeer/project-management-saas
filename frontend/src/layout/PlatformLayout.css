@@ -1,0 +1,280 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   PLATFORM LAYOUT  —  ProjectFlow Platform Owner Design System
+   Palette: Ink #17191c · Apricot #fbe1d1 · Sky #d3e3fc · Fog #f7f7f8
+   ═══════════════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
+:root {
+  --ink:          #17191c;
+  --ink-muted:    #4c4c4c;
+  --ash:          #4c4c4c;
+  --graphite:     #777b86;
+  --slate:        #8b8c8d;
+  --dove:         #a3a6af;
+  --fog:          #f7f7f8;
+  --white:        #ffffff;
+  --obsidian:     #000000;
+  
+  --apricot:      #fbe1d1;
+  --apricot-mid:  #f5c9af;
+  --sky:          #d3e3fc;
+  --sky-mid:      #a8c8f8;
+  
+  --font-serif:   'Lora', Georgia, serif;
+  --font-sans:    'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  24px;
+  --r-pill: 9999px;
+
+  --sh-xs:  0 1px 3px rgba(23,25,28,0.04);
+  --sh-sm:  0 2px 8px rgba(23,25,28,0.05);
+  --sh-md:  0 4px 16px rgba(23,25,28,0.08);
+  --sh-lg:  0 8px 28px rgba(23,25,28,0.10);
+}
+
+.platform-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--fog);
+  background-image: 
+    radial-gradient(circle at 10% -10%, rgba(251, 225, 209, 0.2) 0%, transparent 60%),
+    radial-gradient(circle at 100% 20%, rgba(211, 227, 252, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 50% 110%, rgba(251, 225, 209, 0.1) 0%, transparent 50%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  position: relative;
+}
+
+/* Floating Capsule Header */
+.platform-header {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 1440px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.platform-navbar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(23, 25, 28, 0.08);
+  box-shadow: var(--sh-md);
+  transition: all 0.25s ease;
+}
+
+.platform-navbar:hover {
+  box-shadow: var(--sh-lg);
+  border-color: rgba(23, 25, 28, 0.14);
+}
+
+/* Brand Logo */
+.platform-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.platform-logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--apricot);
+  color: var(--ink);
+  box-shadow: var(--sh-xs);
+  transition: transform 0.2s ease;
+}
+
+.platform-navbar:hover .platform-logo-icon {
+  transform: scale(1.05) rotate(-4deg);
+}
+
+.platform-brand-text {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.platform-badge {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--r-pill);
+  background: var(--sky);
+  color: var(--ink);
+  border: 1px solid rgba(23, 25, 28, 0.06);
+}
+
+/* Navigation Links */
+.platform-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--fog);
+  padding: 0.2rem;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(23, 25, 28, 0.05);
+}
+
+.platform-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  border-radius: var(--r-pill);
+  color: var(--graphite);
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.platform-nav-item svg {
+  color: var(--graphite);
+}
+
+.platform-nav-item:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.platform-nav-item.active {
+  color: var(--ink);
+  background: var(--white);
+  font-weight: 600;
+  box-shadow: var(--sh-xs);
+  border: 1px solid rgba(23, 25, 28, 0.05);
+}
+
+.platform-nav-item.active svg {
+  color: var(--ink);
+}
+
+/* User Profile & Actions */
+.platform-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.platform-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.2rem;
+  border-radius: var(--r-pill);
+  background: var(--fog);
+  border: 1px solid rgba(23, 25, 28, 0.04);
+}
+
+.platform-avatar {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--sky-mid);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.platform-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.platform-user-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.platform-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid rgba(23, 25, 28, 0.08);
+  background: var(--white);
+  color: var(--ash);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.platform-logout-btn:hover {
+  background: var(--ink);
+  color: var(--white);
+  border-color: var(--ink);
+}
+
+/* Main Content Container */
+.platform-content-container {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  max-width: 1440px;
+  margin: 6.5rem auto 3rem auto;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .platform-header {
+    top: 1rem;
+    width: 95%;
+  }
+
+  .platform-navbar {
+    padding: 0.4rem 0.6rem;
+  }
+
+  .platform-brand-text,
+  .platform-user-profile {
+    display: none;
+  }
+
+  .platform-nav-item span {
+    display: none;
+  }
+
+  .platform-nav-item {
+    padding: 0.45rem 0.6rem;
+  }
+
+  .platform-content-container {
+    margin-top: 5.5rem;
+  }
+}

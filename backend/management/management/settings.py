@@ -67,7 +67,7 @@ INSTALLED_APPS = [
     "leave_management",
     "company_calendar",
     "ai_assistant",
-    
+    "platform_admin",
 ]
 
 MIDDLEWARE = [

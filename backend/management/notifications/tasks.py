@@ -3,6 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import models
 from django.db.models import Q
+from django.core.mail import send_mail
 
 from accounts.models import User
 from organizations.models import Organization
@@ -72,6 +73,26 @@ def check_deadlines_and_remind():
                     type="subtask_reminder",
                     category="task"
                 )
+                if days_left == 1:
+                    try:
+                        subject = f"Warning: Subtask '{subtask.title}' is due tomorrow!"
+                        body = (
+                            f"Hello {user.name or 'Team Member'},\n\n"
+                            f"This is an automated warning reminder that your assigned subtask '{subtask.title}' "
+                            f"(parent task: '{subtask.task.title}') is due tomorrow on {subtask.due_date}.\n\n"
+                            f"Please ensure the subtask is completed or updated on your workspace board.\n\n"
+                            f"Best regards,\n"
+                            f"ProjectFlow System"
+                        )
+                        send_mail(
+                            subject=subject,
+                            message=body,
+                            from_email="mohammednajeer785@gmail.com",
+                            recipient_list=[user.email],
+                            fail_silently=True
+                        )
+                    except Exception as email_err:
+                        print(f"Failed to send subtask warning email to {user.email}: {email_err}")
         elif days_left < 0 and not subtask.is_overdue:
             subtask.is_overdue = True
             subtask.save()

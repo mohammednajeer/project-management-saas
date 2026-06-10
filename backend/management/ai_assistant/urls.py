@@ -6,6 +6,7 @@ from .views import (
     TaskBreakdownView,
     WeeklySummaryView,
     WorkloadInsightsView,
+    AIChatView,
 )
 
 
@@ -34,5 +35,10 @@ urlpatterns = [
         "workload-insights/",
         WorkloadInsightsView.as_view(),
         name="ai-workload-insights",
+    ),
+    path(
+        "chat/",
+        AIChatView.as_view(),
+        name="ai-chat",
     ),
 ]

@@ -1107,3 +1107,42 @@
     margin-top: 10px;
   }
 }
+
+/* ── PAGINATION ── */
+.pu-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.pu-pagination-btn {
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pu-pagination-btn:hover:not(:disabled) {
+  border-color: var(--border-mid);
+  background: var(--fog);
+}
+
+.pu-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pu-pagination-info {
+  font-size: 0.82rem;
+  color: var(--ash);
+  font-weight: 500;
+}
+

@@ -5,7 +5,26 @@ from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import BaseUserManager
 
 
+class UserQuerySet(models.QuerySet):
+
+    def active_recently(self):
+        from django.utils import timezone
+        return self.filter(last_login__gt=timezone.now() - timezone.timedelta(hours=2))
+
+    def platform_admins(self):
+        return self.filter(role="platform_admin")
+
+
 class UserManager(BaseUserManager):
+
+    def get_queryset(self):
+        return UserQuerySet(self.model, using=self._db)
+
+    def active_recently(self):
+        return self.get_queryset().active_recently()
+
+    def platform_admins(self):
+        return self.get_queryset().platform_admins()
 
     def create_user(self, email, password=None, **extra_fields):
 
@@ -28,6 +47,7 @@ class UserManager(BaseUserManager):
 
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_email_verified", True)
 
         return self.create_user(
             email,
@@ -62,7 +82,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,
-        default="employee"
+        default="employee",
+        db_index=True
     )
 
     organization = models.ForeignKey(
@@ -74,7 +95,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     is_active = models.BooleanField(
-        default=True
+        default=True,
+        db_index=True
+    )
+
+    is_email_verified = models.BooleanField(
+        default=False
     )
 
     is_staff = models.BooleanField(
@@ -82,7 +108,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
+        db_index=True
     )
     PROFILE_STATUS_CHOICES = [
 
@@ -139,6 +166,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["last_login"]),
+        ]
 
     def __str__(self):
         return self.email

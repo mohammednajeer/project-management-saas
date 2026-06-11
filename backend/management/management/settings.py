@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -30,15 +31,12 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "0.0.0.0",
 ]
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-# ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
-# Application definition
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -103,7 +101,6 @@ ASGI_APPLICATION = "management.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -126,7 +123,6 @@ AUTH_USER_MODEL = "accounts.User"
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -142,34 +138,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = 'static/'
+
 from datetime import timedelta
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "accounts.authentication.CookieJWTAuthentication",
-    ),
-}
-
-# Workload classification thresholds (active assignments + open issues)
-WORKLOAD_UNDERUTILIZED_MAX = int(os.getenv("WORKLOAD_UNDERUTILIZED_MAX", "3"))
-WORKLOAD_OVERLOADED_MIN = int(os.getenv("WORKLOAD_OVERLOADED_MIN", "15"))
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
@@ -177,24 +155,44 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://redis:6379/1",
+    }
+}
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "accounts.authentication.CookieJWTAuthentication",
+    ),
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",
+        "user": "1000/hour",
+        "auth": "10/minute",
+    }
+}
+
+# Workload classification thresholds (active assignments + open issues)
+WORKLOAD_UNDERUTILIZED_MAX = int(os.getenv("WORKLOAD_UNDERUTILIZED_MAX", "3"))
+WORKLOAD_OVERLOADED_MIN = int(os.getenv("WORKLOAD_OVERLOADED_MIN", "15"))
+
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
 EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS") == "True"
-
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
-
 CELERY_BROKER_URL = "redis://redis:6379/0"
-
 CELERY_ACCEPT_CONTENT = ["json"]
-
 CELERY_TASK_SERIALIZER = "json"
 
 from celery.schedules import crontab
-
 CELERY_BEAT_SCHEDULE = {
     "check-deadlines-daily": {
         "task": "notifications.tasks.check_deadlines_and_remind",
@@ -210,51 +208,26 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-
-AWS_ACCESS_KEY_ID = os.getenv(
-    "AWS_ACCESS_KEY_ID"
-)
-
-AWS_SECRET_ACCESS_KEY = os.getenv(
-    "AWS_SECRET_ACCESS_KEY"
-)
-
-AWS_STORAGE_BUCKET_NAME = os.getenv(
-    "AWS_STORAGE_BUCKET_NAME"
-)
-
-AWS_S3_REGION_NAME = os.getenv(
-    "AWS_S3_REGION_NAME"
-)
-
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
 AWS_QUERYSTRING_AUTH = False
-
 AWS_DEFAULT_ACL = None
 
 STORAGES = {
     "default": {
-        "BACKEND":
-        "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
-
     "staticfiles": {
-        "BACKEND":
-        "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
-} 
-
-
-
+}
 
 CHANNEL_LAYERS = {
-
     "default": {
-
-        "BACKEND":
-            "channels_redis.core.RedisChannelLayer",
-
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-
             "hosts": [("redis", 6379)],
         },
     },

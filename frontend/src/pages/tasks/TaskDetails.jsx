@@ -169,11 +169,11 @@ export default function TaskDetails() {
 
   const fetchTask = async () => {
     try {
-      const projectsRes = await api.get("/projects/");
+      const projectsRes = await api.get("/projects/?pagination=false");
       let foundTask = null;
 
       for (const project of projectsRes.data) {
-        const tasksRes = await api.get(`/tasks/project/${project.id}/`);
+        const tasksRes = await api.get(`/tasks/project/${project.id}/?pagination=false`);
         const taskMatch = tasksRes.data.find((t) => t.id === taskId);
         if (taskMatch) {
           foundTask = { ...taskMatch, project_name: project.name };

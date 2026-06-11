@@ -228,4 +228,23 @@ class PlatformAdminTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_custom_user_manager(self):
+        from django.utils import timezone
+        
+        # Test active_recently
+        self.platform_admin.last_login = timezone.now()
+        self.platform_admin.save()
+        
+        self.employee.last_login = timezone.now() - timezone.timedelta(hours=5)
+        self.employee.save()
+        
+        active_users = User.objects.active_recently()
+        self.assertIn(self.platform_admin, active_users)
+        self.assertNotIn(self.employee, active_users)
+        
+        # Test platform_admins
+        admins = User.objects.platform_admins()
+        self.assertIn(self.platform_admin, admins)
+        self.assertNotIn(self.employee, admins)
+
 

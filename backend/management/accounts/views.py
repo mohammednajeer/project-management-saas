@@ -10,6 +10,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny
 from accounts.models import User
+from django.core.cache import cache
+from accounts.emails import generate_otp, send_otp_email
+from accounts.throttling import AuthRateThrottle
 from accounts.auth_cookies import (
     ACCESS_COOKIE_MAX_AGE,
     AUTH_COOKIE_SAMESITE,
@@ -186,7 +189,8 @@ class InviteRegisterView(APIView):
             password=password,
             name=name,
             role=invitation.role,
-            organization=invitation.organization
+            organization=invitation.organization,
+            is_email_verified=True
         )
 
         from notifications.models import Notification
@@ -266,3 +270,136 @@ class ProfileUpdateView(APIView):
         serializer = UserSerializer(user)
 
         return Response(serializer.data)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SendVerificationOTPView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email and request.user.is_authenticated:
+            email = request.user.email
+            name = request.user.name
+        elif email:
+            try:
+                user = User.objects.get(email=email)
+                name = user.name
+            except User.DoesNotExist:
+                name = "User"
+        else:
+            return Response(
+                {"message": "Email is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        otp = generate_otp()
+        cache.set(f"email_otp_{email}", otp, timeout=600)
+
+        send_otp_email(email, otp, subject_type="verification", user_name=name)
+
+        return Response({"message": "Verification OTP sent successfully."})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class VerifyEmailView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email and request.user.is_authenticated:
+            email = request.user.email
+        
+        otp = request.data.get("otp")
+
+        if not email or not otp:
+            return Response(
+                {"message": "Email and OTP are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        cached_otp = cache.get(f"email_otp_{email}")
+
+        if not cached_otp or cached_otp != str(otp).strip():
+            return Response(
+                {"message": "Invalid or expired OTP"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(email=email)
+            user.is_email_verified = True
+            user.save()
+            cache.delete(f"email_otp_{email}")
+            return Response({"message": "Email verified successfully."})
+        except User.DoesNotExist:
+            return Response(
+                {"message": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response(
+                {"message": "Email is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(email=email)
+            name = user.name
+        except User.DoesNotExist:
+            return Response({"message": "If this email is registered, a password reset OTP has been sent."})
+
+        otp = generate_otp()
+        cache.set(f"password_otp_{email}", otp, timeout=600)
+
+        send_otp_email(email, otp, subject_type="password_reset", user_name=name)
+
+        return Response({"message": "If this email is registered, a password reset OTP has been sent."})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request):
+        email = request.data.get("email")
+        otp = request.data.get("otp")
+        new_password = request.data.get("password")
+
+        if not email or not otp or not new_password:
+            return Response(
+                {"message": "Email, OTP, and new password are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        cached_otp = cache.get(f"password_otp_{email}")
+
+        if not cached_otp or cached_otp != str(otp).strip():
+            return Response(
+                {"message": "Invalid or expired OTP"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(email=email)
+            user.set_password(new_password)
+            user.save()
+            cache.delete(f"password_otp_{email}")
+            return Response({"message": "Password reset successfully. You can now login with your new password."})
+        except User.DoesNotExist:
+            return Response(
+                {"message": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )

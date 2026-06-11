@@ -7,6 +7,9 @@ import {
 
 import Homepage from "../pages/home/Homepage";
 import AuthPage from "../pages/auth/AuthPage";
+import VerifyEmailPage from "../pages/auth/VerifyEmailPage";
+import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import Dashboard from "../pages/dashboard/Dashboard";
 import Members from "../pages/Members/Members";
 import MemberDetails from "../pages/team/MemberDetails";
@@ -71,6 +74,31 @@ function App() {
             element={
               <PublicRoute>
                 <AuthPage />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/verify-email"
+            element={
+              <VerifyEmailPage />
+            }
+          />
+
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPasswordPage />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPasswordPage />
               </PublicRoute>
             }
           />

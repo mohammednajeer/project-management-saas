@@ -599,12 +599,12 @@ export default function ChatPage() {
 
     async function loadPeerTasks() {
       try {
-        const projectsRes = await api.get("/projects/");
+        const projectsRes = await api.get("/projects/?pagination=false");
         if (!active) return;
 
         let allPeerTasks = [];
         for (const project of projectsRes.data) {
-          const res = await api.get(`/tasks/project/${project.id}/`);
+          const res = await api.get(`/tasks/project/${project.id}/?pagination=false`);
           if (!active) return;
           
           const filtered = res.data.filter((task) =>

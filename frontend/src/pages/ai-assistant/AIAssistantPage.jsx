@@ -524,7 +524,7 @@ export default function AIAssistantPage() {
 
     async function loadProjects() {
       try {
-        const res = await api.get("/projects/");
+        const res = await api.get("/projects/?pagination=false");
         if (!mounted) return;
         setProjects(res.data || []);
         setSelectedProjectId((current) => current || res.data?.[0]?.id || "");

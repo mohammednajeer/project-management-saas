@@ -4,7 +4,7 @@ import subprocess
 from django.utils import timezone
 from django.core.cache import cache
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
@@ -18,6 +18,9 @@ from tasks.models import Task, SubTask
 from issues.models import Issue
 from activities.models import Activity
 from platform_admin.permissions import IsPlatformAdmin
+from platform_admin.services.stats_collector import collect_dashboard_stats
+from platform_admin.services.backups import list_backups, create_backup
+from management.pagination import StandardResultsSetPagination
 
 # Global in-memory list for backup logs
 MOCK_BACKUPS = [
@@ -42,149 +45,21 @@ class PlatformDashboardStatsView(APIView):
     permission_classes = [IsAuthenticated, IsPlatformAdmin]
 
     def get(self, request):
-        total_orgs = Organization.objects.count()
-        active_orgs = Organization.objects.filter(is_active=True).count()
-        
-        total_users = User.objects.count()
-        active_users = User.objects.filter(is_active=True).count()
-        
-        total_projects = Project.objects.count()
-        total_tasks = Task.objects.count() + SubTask.objects.count()
-        completed_tasks = Task.objects.filter(status="done").count() + SubTask.objects.filter(status="done").count()
-        
-        total_issues = Issue.objects.count()
-        open_issues = Issue.objects.filter(status__in=["open", "investigating"]).count()
-        
-        # Real system CPU and RAM usage via procfs filesystem parsing
-        cpu_usage = random.randint(12, 35)
-        ram_usage = random.randint(48, 62)
-        try:
-            if os.path.exists('/proc/meminfo'):
-                with open('/proc/meminfo', 'r') as f:
-                    lines = f.readlines()
-                total = 0
-                available = 0
-                for line in lines:
-                    if 'MemTotal' in line:
-                        total = int(line.split()[1])
-                    elif 'MemAvailable' in line:
-                        available = int(line.split()[1])
-                if total > 0:
-                    ram_usage = int((1 - (available / total)) * 100)
-        except Exception:
-            pass
-
-        try:
-            if os.path.exists('/proc/stat'):
-                with open('/proc/stat', 'r') as f:
-                    line = f.readline()
-                parts = line.strip().split()[1:]
-                fields = [float(p) for p in parts]
-                idle = fields[3]
-                total_time = sum(fields)
-                if total_time > 0:
-                    cpu_usage = int((1 - (idle / total_time)) * 100)
-        except Exception:
-            pass
-
-        # Estimate active WS connections by checking users active recently (last 2 hours)
-        ws_conn = min(100, max(1, User.objects.filter(last_login__gt=timezone.now() - timezone.timedelta(hours=2)).count()))
-
-        # Check real Redis connection status
-        try:
-            cache.set("platform_ping", "pong", timeout=5)
-            ping = cache.get("platform_ping")
-            redis_status = "Healthy" if ping == "pong" else "Degraded"
-        except Exception:
-            redis_status = "Unreachable"
-
-        growth_data = [
-            {"week": "W20", "workspaces": total_orgs - 4 if total_orgs > 4 else 1},
-            {"week": "W21", "workspaces": total_orgs - 3 if total_orgs > 3 else 2},
-            {"week": "W22", "workspaces": total_orgs - 2 if total_orgs > 2 else 3},
-            {"week": "W23", "workspaces": total_orgs - 1 if total_orgs > 1 else 4},
-            {"week": "W24", "workspaces": total_orgs},
-        ]
-
-        # Real PostgreSQL tables physical storage distribution
-        db_table_sizes = []
-        tables_to_check = [
-            ("activities_activity", Activity.objects.count()),
-            ("accounts_user", User.objects.count()),
-            ("organizations_organization", Organization.objects.count()),
-            ("tasks_task", Task.objects.count()),
-            ("projects_project", Project.objects.count()),
-        ]
-        with connection.cursor() as cursor:
-            for table_name, count in tables_to_check:
-                try:
-                    cursor.execute(f"SELECT pg_total_relation_size('{table_name}');")
-                    size_bytes = cursor.fetchone()[0]
-                    if size_bytes >= 1024 * 1024:
-                        size_str = f"{round(size_bytes / (1024 * 1024), 2)} MB"
-                    else:
-                        size_str = f"{round(size_bytes / 1024, 2)} KB"
-                except Exception:
-                    size_str = "0.0 KB"
-                
-                db_table_sizes.append({
-                    "table": table_name,
-                    "size": size_str,
-                    "records": count
-                })
-
-        # API Status response distribution
-        api_status_codes = [
-            {"status": "2xx OK", "count": 2450, "percentage": 94},
-            {"status": "4xx Client Error", "count": 120, "percentage": 5},
-            {"status": "5xx Server Error", "count": 22, "percentage": 1},
-        ]
-
-        # Incident status
-        recent_incidents = [
-            {"id": "i-103", "title": "Celery worker memory peak warning", "severity": "warning", "timestamp": (timezone.now() - timezone.timedelta(hours=2)).isoformat()},
-            {"id": "i-102", "title": "Database replication lag spike (0.4s)", "severity": "info", "timestamp": (timezone.now() - timezone.timedelta(days=1)).isoformat()},
-            {"id": "i-101", "title": "Redis failover triggered and resolved", "severity": "critical", "timestamp": (timezone.now() - timezone.timedelta(days=2)).isoformat()},
-        ]
-
-        return Response({
-            "totals": {
-                "organizations": total_orgs,
-                "active_organizations": active_orgs,
-                "users": total_users,
-                "active_users": active_users,
-                "projects": total_projects,
-                "tasks": total_tasks,
-                "completed_tasks": completed_tasks,
-                "issues": total_issues,
-                "open_issues": open_issues,
-            },
-            "system": {
-                "cpu_usage_pct": cpu_usage,
-                "ram_usage_pct": ram_usage,
-                "active_ws_connections": ws_conn,
-                "db_status": "Healthy",
-                "redis_status": redis_status,
-                "storage_provider": "AWS S3 Bucket",
-            },
-            "growth": growth_data,
-            "db_table_sizes": db_table_sizes,
-            "api_status_codes": api_status_codes,
-            "recent_incidents": recent_incidents
-        })
+        stats = collect_dashboard_stats()
+        return Response(stats)
 
 
 class PlatformOrganizationsView(APIView):
     permission_classes = [IsAuthenticated, IsPlatformAdmin]
 
     def get(self, request):
-        organizations = Organization.objects.all().order_by("-created_at")
+        organizations = Organization.objects.annotate(
+            users_count=Count('users', distinct=True),
+            projects_count=Count('projects', distinct=True),
+            tasks_count=Count('projects__tasks', distinct=True)
+        ).order_by("-created_at")
         data = []
         for org in organizations:
-            user_count = org.users.count()
-            project_count = org.projects.count()
-            tasks_count = Task.objects.filter(project__organization=org).count()
-            
             data.append({
                 "id": str(org.id),
                 "name": org.name,
@@ -197,9 +72,9 @@ class PlatformOrganizationsView(APIView):
                 "subscription_tier": org.subscription_tier,
                 "logo_url": org.logo.url if org.logo else None,
                 "created_at": org.created_at.isoformat(),
-                "users_count": user_count,
-                "projects_count": project_count,
-                "tasks_count": tasks_count,
+                "users_count": org.users_count,
+                "projects_count": org.projects_count,
+                "tasks_count": org.tasks_count,
             })
         return Response(data)
 
@@ -355,68 +230,21 @@ class PlatformBackupView(APIView):
     permission_classes = [IsAuthenticated, IsPlatformAdmin]
 
     def get(self, request):
-        backup_dir = os.path.join(settings.BASE_DIR, 'backups')
-        os.makedirs(backup_dir, exist_ok=True)
-        
-        backups_list = []
-        for f in os.listdir(backup_dir):
-            if f.endswith('.sql.gz'):
-                p = os.path.join(backup_dir, f)
-                stat = os.stat(p)
-                backups_list.append({
-                    "id": f,
-                    "filename": f,
-                    "size": f"{round(stat.st_size / (1024 * 1024), 2)} MB" if stat.st_size >= 1024 * 1024 else f"{round(stat.st_size / 1024, 2)} KB",
-                    "created_at": timezone.datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
-                    "status": "completed"
-                })
-        
-        backups_list.sort(key=lambda x: x["created_at"], reverse=True)
-        return Response(backups_list)
+        backups = list_backups()
+        return Response(backups)
 
     def post(self, request):
-        backup_dir = os.path.join(settings.BASE_DIR, 'backups')
-        os.makedirs(backup_dir, exist_ok=True)
-        
-        now = timezone.now()
-        timestamp_str = now.strftime("%Y-%m-%d_%H%M%S")
-        filename = f"projectflow_backup_{timestamp_str}.sql.gz"
-        filepath = os.path.join(backup_dir, filename)
-        
-        env = os.environ.copy()
-        env['PGPASSWORD'] = '1234567890'
-        
-        cmd = f"pg_dump -h db -U postgres -d project_management_db | gzip > {filepath}"
-        
-        try:
-            result = subprocess.run(cmd, shell=True, env=env, capture_output=True, text=True)
-            if result.returncode != 0:
-                raise Exception(f"pg_dump failed: {result.stderr}")
-                
-            stat = os.stat(filepath)
-            new_backup = {
-                "id": filename,
-                "filename": filename,
-                "size": f"{round(stat.st_size / (1024 * 1024), 2)} MB" if stat.st_size >= 1024 * 1024 else f"{round(stat.st_size / 1024, 2)} KB",
-                "created_at": now.isoformat(),
-                "status": "completed",
-            }
-            
-            Activity.objects.create(
-                user=request.user,
-                action="system_backup",
-                message=f"Platform Admin {request.user.email} triggered a physical database backup."
-            )
-            
-            return Response({
-                "message": "System database backup completed successfully.",
-                "backup": new_backup
-            })
-        except Exception as e:
+        success, result = create_backup(request.user)
+        if not success:
             return Response(
-                {"message": f"Failed to execute database backup: {str(e)}"},
+                {"message": result},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+        return Response({
+            "message": "System database backup completed successfully.",
+            "backup": result
+        })
 
 
 class PlatformOrganizationDetailsView(APIView):
@@ -446,21 +274,19 @@ class PlatformOrganizationDetailsView(APIView):
             })
 
         # Projects in organization
-        org_projects = org.projects.all().order_by("-created_at")
+        org_projects = org.projects.annotate(task_count=Count('tasks')).order_by("-created_at")
         projects_data = []
         for p in org_projects:
-            # Count tasks
-            task_count = Task.objects.filter(project=p).count()
             projects_data.append({
                 "id": str(p.id),
                 "name": p.name,
                 "priority": p.priority,
                 "due_date": p.due_date.isoformat() if p.due_date else None,
-                "task_count": task_count,
+                "task_count": p.task_count,
             })
 
         # Activities in organization
-        org_activities = org.activities.all().order_by("-created_at")[:10]
+        org_activities = org.activities.select_related('user').order_by("-created_at")[:10]
         activities_data = []
         for act in org_activities:
             activities_data.append({
@@ -502,7 +328,7 @@ class PlatformUsersListView(APIView):
         search_query = request.query_params.get("search", "")
         role_filter = request.query_params.get("role", "all")
         
-        users = User.objects.all().order_by("role", "name")
+        users = User.objects.select_related("organization").order_by("role", "name")
         
         if search_query:
             users = users.filter(
@@ -512,8 +338,12 @@ class PlatformUsersListView(APIView):
         if role_filter != "all":
             users = users.filter(role=role_filter)
             
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(users, request, view=self)
+        target_users = page if page is not None else users
+
         data = []
-        for u in users:
+        for u in target_users:
             data.append({
                 "id": str(u.id),
                 "name": u.name,
@@ -526,4 +356,7 @@ class PlatformUsersListView(APIView):
                 "organization_id": str(u.organization.id) if u.organization else None,
                 "organization_name": u.organization.name if u.organization else "Platform Administrator Team",
             })
+
+        if page is not None:
+            return paginator.get_paginated_response(data)
         return Response(data)

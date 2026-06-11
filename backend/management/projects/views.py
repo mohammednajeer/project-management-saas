@@ -16,6 +16,7 @@ from .permissions import (
 from analytics.workload import get_project_team_workload, get_thresholds
 
 from .serializers import ProjectMilestoneSerializer, ProjectSerializer
+from management.pagination import StandardResultsSetPagination
 
 
 def get_org_projects_queryset(user):
@@ -51,11 +52,36 @@ class ProjectListCreateView(APIView):
         for project in projects:
             refresh_project_health(project)
 
+        # Filter by status
+        status_filter = request.query_params.get("status")
+        if status_filter and status_filter != "All":
+            status_map = {
+                "In Progress": "active",
+                "Review": "on_hold",
+                "Backlog": "planning",
+                "Done": "completed"
+            }
+            db_status = status_map.get(status_filter)
+            if db_status:
+                projects = projects.filter(status=db_status)
+
+        # Filter by search
+        search_query = request.query_params.get("search")
+        if search_query:
+            projects = projects.filter(name__icontains=search_query)
+
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(projects, request, view=self)
+        target_projects = page if page is not None else projects
+
         serializer = ProjectSerializer(
-            projects,
+            target_projects,
             many=True,
             context={"request": request},
         )
+        
+        if page is not None:
+            return paginator.get_paginated_response(serializer.data)
         return Response(serializer.data)
 
     def post(self, request):

@@ -13,70 +13,66 @@ from .serializers import (
 )
 from rest_framework.permissions import IsAuthenticated
 
-
-
 class RegisterOrganizationView(APIView):
-
     permission_classes = [AllowAny]
 
     def post(self, request):
-
         serializer = RegisterOrganizationSerializer(data=request.data)
 
         if serializer.is_valid():
-
             organization = serializer.save()
-
-             
             user = organization.users.filter(role="admin").first()
+
+            # Generate and cache OTP
+            from django.core.cache import cache
+            from accounts.emails import generate_otp, send_otp_email
+            otp = generate_otp()
+            cache.set(f"email_otp_{user.email}", otp, timeout=600)
+            send_otp_email(user.email, otp, subject_type="verification", user_name=user.name)
 
             refresh = RefreshToken.for_user(user)
 
-            response = Response(
-                {
-                    "message": "Organization registered successfully",
-                    "user": {
-                        "email": user.email,
-                        "name": user.name,
-                        "role": user.role,
-                        "organization": organization.name,
-                    },
+            res_data = {
+                "message": "Organization registered successfully",
+                "user": {
+                    "email": user.email,
+                    "name": user.name,
+                    "role": user.role,
+                    "organization": organization.name,
                 },
+            }
+
+            response = Response(
+                res_data,
                 status=status.HTTP_201_CREATED,
             )
 
             set_auth_cookies(response, refresh)
-
             return response
 
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST,
         )
-    
 
 class OrganizationTeamView(APIView):
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
 
     def get(self, request):
-
         users = User.objects.filter(
             organization=request.user.organization
         )
 
         data = [
-
             {
                 "id": str(user.id),
                 "name": user.name,
                 "email": user.email,
             }
-
             for user in users
         ]
 
         return Response(data)
-
 
 class OrganizationProfileView(APIView):
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
@@ -85,7 +81,6 @@ class OrganizationProfileView(APIView):
         serializer = OrganizationProfileSerializer(
             request.user.organization
         )
-
         return Response(serializer.data)
 
     def patch(self, request):

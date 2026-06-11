@@ -24,6 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
             "work_status",
             "joined_at",
             "company_information",
+            "is_email_verified",
         ]
 
     def get_company_information(self, obj):

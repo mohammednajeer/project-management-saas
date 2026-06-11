@@ -8,6 +8,9 @@ from notifications.models import Notification
 from projects.models import Project
 from accounts.permissions import IsManagerOrAdmin
 from activities.utils import create_activity
+from django.core.exceptions import ValidationError
+from management.validators import validate_file
+from management.pagination import StandardResultsSetPagination
 from .models import (
     TaskAttachment,
     SubTaskAttachment,
@@ -24,11 +27,17 @@ class ProjectTaskListCreateView(APIView):
                 request.user.organization
         )
 
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(tasks, request, view=self)
+        target_tasks = page if page is not None else tasks
+
         serializer = TaskSerializer(
-            tasks,
+            target_tasks,
             many=True
         )
 
+        if page is not None:
+            return paginator.get_paginated_response(serializer.data)
         return Response(serializer.data)
 
     def post(self, request, project_id):
@@ -658,6 +667,14 @@ class TaskAttachmentUploadView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        try:
+            validate_file(uploaded_file)
+        except ValidationError as e:
+            return Response(
+                {"message": e.message},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         attachment = (
             TaskAttachment.objects.create(
                 task=task,
@@ -821,6 +838,14 @@ class SubTaskAttachmentUploadView(APIView):
                 {
                     "message": "No file uploaded"
                 },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            validate_file(uploaded_file)
+        except ValidationError as e:
+            return Response(
+                {"message": e.message},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

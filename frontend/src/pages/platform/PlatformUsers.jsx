@@ -1,77 +1,33 @@
-import { useState, useEffect } from "react";
 import { 
   Search, ShieldAlert, Users, Calendar, 
-  Building2, ShieldCheck, Mail, UserRound, RefreshCw,
-  Coins, Award
+  Building2, Mail, RefreshCw
 } from "lucide-react";
-import api from "../../services/api";
+import { usePlatformUsers } from "../../hooks/usePlatformUsers";
 import "./PlatformUsers.css";
 
 export default function PlatformUsers() {
-  const [usersList, setUsersList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  
-  // Modal states for selected user details
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedOrgDetails, setSelectedOrgDetails] = useState(null);
-  const [loadingOrg, setLoadingOrg] = useState(false);
-  const [showColleagues, setShowColleagues] = useState(false);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api.get("/platform/users/", {
-        params: {
-          search: searchQuery,
-          role: roleFilter
-        }
-      });
-      setUsersList(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to retrieve users directory.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [searchQuery, roleFilter]);
-
-  // Fetch organization profile details when user is selected
-  const handleSelectUser = async (user) => {
-    setSelectedUser(user);
-    setShowColleagues(false);
-    if (!user.organization_id) {
-      setSelectedOrgDetails(null);
-      return;
-    }
-
-    setLoadingOrg(true);
-    try {
-      const response = await api.get(`/platform/organizations/${user.organization_id}/`);
-      setSelectedOrgDetails(response.data);
-    } catch (err) {
-      console.error("Failed to load organization profile for user:", err);
-      setSelectedOrgDetails(null);
-    } finally {
-      setLoadingOrg(false);
-    }
-  };
-
-  const getRoleLabel = (role) => {
-    switch (role) {
-      case "platform_admin": return "Platform Administrator";
-      case "admin": return "Workspace Owner";
-      case "manager": return "Manager";
-      case "employee": return "Employee";
-      default: return role;
-    }
-  };
+  const {
+    usersList,
+    loading,
+    error,
+    searchQuery,
+    setSearchQuery,
+    roleFilter,
+    setRoleFilter,
+    page,
+    setPage,
+    totalCount,
+    totalPages,
+    selectedUser,
+    setSelectedUser,
+    selectedOrgDetails,
+    loadingOrg,
+    showColleagues,
+    setShowColleagues,
+    fetchUsers,
+    handleSelectUser,
+    getRoleLabel
+  } = usePlatformUsers();
 
   return (
     <div className="pu-container">
@@ -208,6 +164,29 @@ export default function PlatformUsers() {
           </table>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && !error && usersList.length > 0 && totalPages > 1 && (
+        <div className="pu-pagination">
+          <button 
+            disabled={page === 1} 
+            onClick={() => setPage(page - 1)}
+            className="pu-pagination-btn"
+          >
+            Previous
+          </button>
+          <span className="pu-pagination-info">
+            Page {page} of {totalPages} ({totalCount} users)
+          </span>
+          <button 
+            disabled={page === totalPages} 
+            onClick={() => setPage(page + 1)}
+            className="pu-pagination-btn"
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Centered User Detail Modal (Privacy Shielded) */}
       {selectedUser && (

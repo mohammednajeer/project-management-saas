@@ -168,7 +168,7 @@ function SigninForm({ onSwitchToSignup }) {
       <label className="ap-field">
         <span className="ap-label-row">
           <span className="ap-label">Password</span>
-          <button type="button" className="ap-link-btn">
+          <button type="button" className="ap-link-btn" onClick={() => window.location.href = '/forgot-password'}>
             Forgot password?
           </button>
         </span>

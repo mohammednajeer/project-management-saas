@@ -119,59 +119,74 @@ export default function InviteSignup({ token }) {
   };
 
   return (
-    <main className="inv-root">
-      <div className="inv-shell">
+    <main className="ap-root">
+      <div className="ap-shell">
 
         {/* LEFT PANEL */}
-        <aside className="inv-brand">
-          <a href="/" className="inv-brand-logo">
-            <span className="inv-logo-icon">
+        <aside className="ap-brand ap-brand-left">
+          <a href="/" className="ap-brand-logo">
+            <span className="ap-logo-icon">
               <Zap size={20} />
             </span>
             <span>ProjectFlow</span>
           </a>
 
-          <div className="inv-brand-body">
-            <div className="inv-company-card">
-              <span className="inv-company-logo">
+          <div className="ap-brand-body">
+            <div className="ap-company-card">
+              <span className="ap-company-logo">
                 {company?.logo ? (
                   <img src={company.logo} alt="" />
                 ) : (
                   getCompanyInitials(company, "PF")
                 )}
               </span>
-              <span>
-                <small>Invitation to join</small>
-                <strong>{companyName}</strong>
-              </span>
+              <div className="ap-company-info">
+                <small className="ap-company-card-lbl">Invitation to join</small>
+                <strong className="ap-company-card-val">{companyName}</strong>
+              </div>
             </div>
 
-            <h1>You're invited to join {companyName}</h1>
-            <p>Create your account to start collaborating with your team.</p>
+            <h1 className="ap-brand-title">You're invited to join {companyName}</h1>
+            <p className="ap-brand-desc">Create your account to start collaborating with your team.</p>
 
-            <ul className="inv-benefits">
-              <li><Check size={12}/> Real-time collaboration</li>
-              <li><Check size={12}/> Role-based access</li>
-              <li><Check size={12}/> Team productivity tools</li>
+            <ul className="ap-benefits">
+              <li className="ap-benefit">
+                <span className="ap-benefit-dot">
+                  <Check size={12}/>
+                </span>
+                Real-time collaboration
+              </li>
+              <li className="ap-benefit">
+                <span className="ap-benefit-dot">
+                  <Check size={12}/>
+                </span>
+                Role-based access
+              </li>
+              <li className="ap-benefit">
+                <span className="ap-benefit-dot">
+                  <Check size={12}/>
+                </span>
+                Team productivity tools
+              </li>
             </ul>
           </div>
         </aside>
 
         {/* RIGHT PANEL */}
-        <div className="inv-form-panel">
+        <div className="ap-form-container ap-signin-container is-active">
 
           {/* LOADING */}
           {validating && (
-            <div className="inv-loading">
-              <span className="inv-spinner" />
+            <div className="ap-loading">
+              <span className="ap-spinner" />
               <p>Validating invitation...</p>
             </div>
           )}
 
           {/* INVALID */}
           {!validating && inviteError && (
-            <div className="inv-invalid">
-              <span className="inv-invalid-icon-wrap">
+            <div className="ap-invalid">
+              <span className="ap-invalid-icon-wrap">
                 <ShieldX size={30} />
               </span>
               <div>
@@ -179,12 +194,12 @@ export default function InviteSignup({ token }) {
                 <p>{inviteError}</p>
               </div>
 
-              <div className="inv-invalid-actions">
-                <button className="inv-submit" onClick={() => navigate("/signup")}>
+              <div className="ap-invalid-actions">
+                <button className="ap-submit" onClick={() => navigate("/signup")}>
                   Go to Signup
                 </button>
 
-                <button className="inv-btn-secondary" onClick={() => navigate("/signin")}>
+                <button className="ap-btn-secondary" onClick={() => navigate("/signin")}>
                   Sign in
                 </button>
               </div>
@@ -193,35 +208,35 @@ export default function InviteSignup({ token }) {
 
           {/* VALID */}
           {!validating && !inviteError && inviteData && (
-            <form className="inv-form" onSubmit={handleSubmit}>
+            <form className="ap-form" onSubmit={handleSubmit}>
 
-              <div className="inv-form-head">
+              <div className="ap-form-head">
                 <h2>Complete your account</h2>
                 <p>You are joining {companyName} as {inviteData.role}.</p>
               </div>
 
               {submitError && (
-                <p className="inv-error">
-                  <AlertCircle size={16} className="inv-error-icon" />
+                <p className="ap-error">
+                  <AlertCircle size={16} className="ap-error-icon" />
                   {submitError}
                 </p>
               )}
 
-              <div className="inv-fields">
-                <label className="inv-field">
-                  <span className="inv-label">Email</span>
+              <div className="ap-fields">
+                <label className="ap-field">
+                  <span className="ap-label">Email</span>
                   <input
-                    className="inv-input"
+                    className="ap-input"
                     type="email"
                     value={inviteData.email}
                     readOnly
                   />
                 </label>
 
-                <label className="inv-field">
-                  <span className="inv-label">Full name</span>
+                <label className="ap-field">
+                  <span className="ap-label">Full name</span>
                   <input
-                    className="inv-input"
+                    className="ap-input"
                     type="text"
                     placeholder="Full name"
                     value={name}
@@ -229,18 +244,18 @@ export default function InviteSignup({ token }) {
                   />
                 </label>
 
-                <label className="inv-field">
-                  <span className="inv-label">Password</span>
-                  <div className="inv-input-wrap">
+                <label className="ap-field">
+                  <span className="ap-label">Password</span>
+                  <div className="ap-input-wrap">
                     <input
-                      className="inv-input"
+                      className="ap-input ap-input-has-icon"
                       type={showPassword ? "text" : "password"}
                       placeholder="Password (min 8 chars)"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <button
-                      className="inv-eye-btn"
+                      className="ap-eye-btn"
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? "Hide password" : "Show password"}
@@ -251,7 +266,7 @@ export default function InviteSignup({ token }) {
                 </label>
               </div>
 
-              <button className="inv-submit" type="submit" disabled={submitting}>
+              <button className="ap-submit" type="submit" disabled={submitting}>
                 {submitting ? "Joining..." : "Join Workspace"}
                 <ArrowRight size={16} />
               </button>

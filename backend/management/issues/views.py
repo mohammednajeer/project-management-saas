@@ -16,6 +16,8 @@ from notifications.models import Notification
 from notifications.realtime import (
     send_realtime_notification
 )
+from django.core.exceptions import ValidationError
+from management.validators import validate_file
 from activities.utils import create_activity
 
 
@@ -168,6 +170,20 @@ class IssueListCreateView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
+        uploaded_files = (
+            request.FILES.getlist("attachments") or
+            request.FILES.getlist("attachment")
+        )
+
+        for uploaded_file in uploaded_files:
+            try:
+                validate_file(uploaded_file)
+            except ValidationError as e:
+                return Response(
+                    {"message": e.message},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         issue = Issue.objects.create(
             title=request.data.get("title"),
             description=request.data.get("description"),
@@ -179,11 +195,6 @@ class IssueListCreateView(APIView):
                 "priority",
                 "medium"
             ),
-        )
-
-        uploaded_files = (
-            request.FILES.getlist("attachments") or
-            request.FILES.getlist("attachment")
         )
 
         for uploaded_file in uploaded_files:

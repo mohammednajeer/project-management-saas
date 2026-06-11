@@ -83,10 +83,32 @@ export default function Projects() {
   const [modalOpen, setModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [allProjects, setAllProjects] = useState([]);
+
   const fetchProjects = async () => {
+    setLoading(true);
     try {
-      const res = await api.get("/projects/");
-      setProjects(res.data);
+      const res = await api.get("/projects/", {
+        params: {
+          page: page,
+          status: activeFilter,
+          search: search,
+        }
+      });
+      const data = res.data;
+      if (data && data.results !== undefined) {
+        setProjects(data.results);
+        setTotalCount(data.count);
+        setTotalPages(Math.ceil(data.count / 10));
+      } else {
+        setProjects(data);
+        setTotalCount(data.length);
+        setTotalPages(1);
+      }
     } catch (err) {
       console.log(err);
     } finally {
@@ -94,27 +116,46 @@ export default function Projects() {
     }
   };
 
+  const fetchAllProjectsForKPIs = async () => {
+    try {
+      const res = await api.get("/projects/?pagination=false");
+      setAllProjects(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [page, search, activeFilter]);
 
-  const filtered = projects.filter((p) => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = activeFilter === "All" || p.status === activeFilter;
-    return matchSearch && matchFilter;
-  });
+  useEffect(() => {
+    fetchAllProjectsForKPIs();
+  }, [projects]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+    setPage(1);
+  };
+
+  const filtered = projects;
 
   const kpis = useMemo(() => {
-    const activeCount = projects.filter((p) => p.status === "In Progress" || p.status === "active").length;
-    const completedCount = projects.filter((p) => p.status === "Done" || p.status === "completed").length;
-    const totalTasks = projects.reduce((a, p) => a + (p.total_tasks || 0), 0);
+    const activeCount = allProjects.filter((p) => p.status === "In Progress" || p.status === "active").length;
+    const completedCount = allProjects.filter((p) => p.status === "Done" || p.status === "completed").length;
+    const totalTasks = allProjects.reduce((a, p) => a + (p.total_tasks || 0), 0);
     return {
-      total: projects.length,
+      total: allProjects.length,
       active: activeCount,
       completed: completedCount,
       tasks: totalTasks,
     };
-  }, [projects]);
+  }, [allProjects]);
 
   return (
     <div className="projects-page">
@@ -165,7 +206,7 @@ export default function Projects() {
             className="projects-search"
             placeholder="Search projects..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleSearchChange}
           />
         </div>
         <div className="toolbar-divider" />
@@ -175,7 +216,7 @@ export default function Projects() {
               key={f}
               type="button"
               className={`filter-btn ${activeFilter === f ? "filter-btn--active" : ""}`}
-              onClick={() => setActiveFilter(f)}
+              onClick={() => handleFilterChange(f)}
             >
               {f}
             </button>
@@ -507,6 +548,29 @@ export default function Projects() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && projects.length > 0 && totalPages > 1 && (
+        <div className="pu-pagination" style={{ margin: "24px auto 0 auto" }}>
+          <button 
+            disabled={page === 1} 
+            onClick={() => setPage(page - 1)}
+            className="pu-pagination-btn"
+          >
+            Previous
+          </button>
+          <span className="pu-pagination-info">
+            Page {page} of {totalPages} ({totalCount} projects)
+          </span>
+          <button 
+            disabled={page === totalPages} 
+            onClick={() => setPage(page + 1)}
+            className="pu-pagination-btn"
+          >
+            Next
+          </button>
         </div>
       )}
 

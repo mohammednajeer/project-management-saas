@@ -24,7 +24,7 @@ export function IssueProvider({ children }) {
   const fetchSupportingData = useCallback(async () => {
     if (canManageIssues) {
       const [projectsRes, teamRes] = await Promise.all([
-        api.get("/projects/"),
+        api.get("/projects/?pagination=false"),
         api.get("/organizations/team/"),
       ]);
 
@@ -95,7 +95,7 @@ export function IssueProvider({ children }) {
       return workspaceTasks.filter((task) => String(task.project) === String(projectId));
     }
 
-    const response = await api.get(`/tasks/project/${projectId}/`);
+    const response = await api.get(`/tasks/project/${projectId}/?pagination=false`);
     return response.data || [];
   }, [canManageIssues, workspaceTasks]);
 

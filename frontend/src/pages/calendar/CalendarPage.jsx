@@ -226,7 +226,7 @@ export default function CalendarPage() {
 
       const [membersRes, projectsRes] = await Promise.all([
         api.get(teamEndpoint),
-        api.get("/projects/"),
+        api.get("/projects/?pagination=false"),
       ]);
 
       let membersList = Array.isArray(membersRes.data) ? membersRes.data : [];

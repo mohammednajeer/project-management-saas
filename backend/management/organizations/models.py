@@ -102,7 +102,8 @@ class Organization(models.Model):
     )
 
     is_active = models.BooleanField(
-        default=True
+        default=True,
+        db_index=True
     )
 
     subscription_tier = models.CharField(
@@ -112,7 +113,8 @@ class Organization(models.Model):
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
+        db_index=True
     )
 
     updated_at = models.DateTimeField(

@@ -159,6 +159,15 @@
   color: var(--ink);
 }
 
+.ap-brand-logo--dark {
+  color: var(--ink) !important;
+}
+
+.ap-logo-icon--dark {
+  background: var(--ink) !important;
+  color: var(--white) !important;
+}
+
 /* Brand Body */
 .ap-brand-body {
   display: flex;

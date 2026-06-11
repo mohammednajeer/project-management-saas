@@ -95,6 +95,9 @@ export default function ProjectDetails() {
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskPage, setTaskPage] = useState(1);
+  const [taskTotalCount, setTaskTotalCount] = useState(0);
+  const [taskTotalPages, setTaskTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState("");
@@ -113,10 +116,21 @@ export default function ProjectDetails() {
     return [...project.milestones].sort((a, b) => new Date(a.target_date) - new Date(b.target_date));
   }, [project]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (page = taskPage) => {
     try {
-      const tasksRes = await api.get(`/tasks/project/${projectId}/`);
-      setTasks(tasksRes.data);
+      const tasksRes = await api.get(`/tasks/project/${projectId}/`, {
+        params: { page }
+      });
+      const data = tasksRes.data;
+      if (data && data.results !== undefined) {
+        setTasks(data.results);
+        setTaskTotalCount(data.count);
+        setTaskTotalPages(Math.ceil(data.count / 10));
+      } else {
+        setTasks(data);
+        setTaskTotalCount(data.length);
+        setTaskTotalPages(1);
+      }
     } catch (err) {
       console.log(err);
     }
@@ -131,7 +145,6 @@ export default function ProjectDetails() {
       setStatus(res.data.status);
       setPriority(res.data.priority);
       setProjectLeadId(res.data.project_lead || "");
-      await fetchTasks();
       const [membersRes, workloadRes] = await Promise.all([
         api.get("/organizations/team/"),
         api.get(`/projects/${projectId}/team-workload/`),
@@ -146,8 +159,13 @@ export default function ProjectDetails() {
   };
 
   useEffect(() => {
+    setTaskPage(1);
     fetchProject();
   }, [projectId]);
+
+  useEffect(() => {
+    fetchTasks(taskPage);
+  }, [projectId, taskPage]);
 
   const handleSave = async () => {
     try {
@@ -560,7 +578,7 @@ export default function ProjectDetails() {
               <div className="pd-task-header-left">
                 <h2 className="pd-section-title">Project Tasks</h2>
                 <p className="pd-section-sub">
-                  {tasks.length} task{tasks.length !== 1 ? "s" : ""} total
+                  {taskTotalCount} task{taskTotalCount !== 1 ? "s" : ""} total
                 </p>
               </div>
               {canManage && !isLocked && (
@@ -639,6 +657,28 @@ export default function ProjectDetails() {
                     </Link>
                   );
                 })}
+              </div>
+            )}
+
+            {!loading && tasks.length > 0 && taskTotalPages > 1 && (
+              <div className="pu-pagination" style={{ margin: "24px auto 0 auto" }}>
+                <button
+                  disabled={taskPage === 1}
+                  onClick={() => setTaskPage(taskPage - 1)}
+                  className="pu-pagination-btn"
+                >
+                  Previous
+                </button>
+                <span className="pu-pagination-info">
+                  Page {taskPage} of {taskTotalPages} ({taskTotalCount} tasks)
+                </span>
+                <button
+                  disabled={taskPage === taskTotalPages}
+                  onClick={() => setTaskPage(taskPage + 1)}
+                  className="pu-pagination-btn"
+                >
+                  Next
+                </button>
               </div>
             )}
           </section>

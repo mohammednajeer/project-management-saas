@@ -200,7 +200,7 @@ export default function Tasks() {
       try {
 
         const projectsRes =
-          await api.get("/projects/");
+          await api.get("/projects/?pagination=false");
 
         setProjects(
           projectsRes.data
@@ -215,7 +215,7 @@ export default function Tasks() {
 
           const res =
             await api.get(
-              `/tasks/project/${project.id}/`
+              `/tasks/project/${project.id}/?pagination=false`
             );
 
           const tasksWithProject =

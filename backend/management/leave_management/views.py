@@ -22,7 +22,7 @@ def notify_user(user, title, message, notification_type):
 
 
 def ensure_balances_exist_for_organization(organization):
-    users = User.objects.filter(organization=organization)
+    users = User.objects.filter(organization=organization).exclude(role="platform_admin")
     leave_types = ["annual", "sick", "casual", "personal"]
     for u in users:
         for lt in leave_types:
@@ -295,6 +295,9 @@ class LeaveBalanceListUpdateView(APIView):
             balances = LeaveBalance.objects.filter(
                 employee=request.user
             ).select_related("employee")
+
+        # Prefetch used days to optimize performance and prevent N+1 queries
+        balances = LeaveBalance.prefetch_used_days(balances)
 
         serializer = LeaveBalanceSerializer(balances, many=True)
         return Response(serializer.data)

@@ -13,6 +13,8 @@ import {
   Video,
   X,
   FileText,
+  Hash,
+  UserPlus,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -199,15 +201,226 @@ function NewChatModal({ members, onStart, onClose }) {
   );
 }
 
+function NewChannelModal({
+  name,
+  setName,
+  desc,
+  setDesc,
+  projects,
+  selectedProjectId,
+  setSelectedProjectId,
+  onSubmit,
+  onClose,
+}) {
+  return (
+    <div className="cp-modal-backdrop" onClick={onClose}>
+      <form className="cp-modal" onSubmit={onSubmit} onClick={(event) => event.stopPropagation()}>
+        <div className="cp-modal-head">
+          <h2>Create Channel</h2>
+          <button className="cp-modal-close" onClick={onClose} type="button">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="cp-modal-field">
+          <label htmlFor="channel-name">Channel Name</label>
+          <input
+            id="channel-name"
+            autoFocus
+            placeholder="e.g. dev-team"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <small>Names must be lowercase kebab-case (e.g. general, marketing-sync)</small>
+        </div>
+
+        <div className="cp-modal-field">
+          <label htmlFor="channel-desc">Description (Optional)</label>
+          <textarea
+            id="channel-desc"
+            placeholder="Describe the purpose of this room..."
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+          />
+        </div>
+
+        <div className="cp-modal-field">
+          <label htmlFor="channel-project">Link to Project (Optional)</label>
+          <select
+            id="channel-project"
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            className="cp-modal-select"
+            style={{
+              width: "100%",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "1px solid var(--cp-border)",
+              backgroundColor: "var(--cp-surface)",
+              color: "var(--cp-on-surface)",
+              outline: "none",
+              fontSize: "14px",
+              marginTop: "4px"
+            }}
+          >
+            <option value="">-- No Project (Custom Channel) --</option>
+            {projects.map((proj) => (
+              <option key={proj.id} value={proj.id}>
+                {proj.name}
+              </option>
+            ))}
+          </select>
+          <small>If linked, project members will automatically have access to this channel.</small>
+        </div>
+
+        <div className="cp-modal-actions">
+          <button className="cp-modal-btn cp-modal-btn--cancel" onClick={onClose} type="button">
+            Cancel
+          </button>
+          <button className="cp-modal-btn cp-modal-btn--submit" type="submit">
+            Create
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function InviteChannelModal({
+  members,
+  currentMembers,
+  selectedUsers,
+  setSelectedUsers,
+  searchQuery,
+  setSearchQuery,
+  onInvite,
+  onClose,
+}) {
+  const currentMemberIds = new Set(currentMembers.map((m) => String(m.id)));
+  
+  const filtered = members.filter((member) => {
+    const isAlreadyMember = currentMemberIds.has(String(member.id));
+    const matchesSearch = `${member.name} ${member.email}`
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    return !isAlreadyMember && matchesSearch;
+  });
+
+  const toggleUserSelection = (userId) => {
+    setSelectedUsers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  return (
+    <div className="cp-modal-backdrop" onClick={onClose}>
+      <div className="cp-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="cp-modal-head">
+          <h2>Invite Members</h2>
+          <button className="cp-modal-close" onClick={onClose} type="button">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="cp-modal-search">
+          <Search size={14} className="cp-modal-search-icon" />
+          <input
+            autoFocus
+            placeholder="Search workspace members..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+        </div>
+
+        <div className="cp-modal-list" style={{ maxHeight: "250px", overflowY: "auto" }}>
+          {filtered.length === 0 && (
+            <p className="cp-modal-empty">No eligible team members found.</p>
+          )}
+
+          {filtered.map((member) => {
+            const isChecked = selectedUsers.includes(member.id);
+            return (
+              <div
+                key={member.id}
+                className="cp-modal-member-invite-row"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  transition: "background-color 0.2s",
+                }}
+                onClick={() => toggleUserSelection(member.id)}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Avatar name={member.name} image={member.profile_picture} size={34} />
+                  <div className="cp-modal-member-info" style={{ display: "flex", flexDirection: "column" }}>
+                    <strong style={{ fontSize: "13px" }}>{member.name}</strong>
+                    <small style={{ fontSize: "11px", color: "gray" }}>{member.email}</small>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleUserSelection(member.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ width: "auto", cursor: "pointer" }}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="cp-modal-actions" style={{ marginTop: "16px" }}>
+          <button className="cp-modal-btn cp-modal-btn--cancel" onClick={onClose} type="button">
+            Cancel
+          </button>
+          <button
+            className="cp-modal-btn cp-modal-btn--submit"
+            onClick={onInvite}
+            type="button"
+            disabled={selectedUsers.length === 0}
+          >
+            Invite ({selectedUsers.length})
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
+  const [channels, setChannels] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [selectedChannel, setSelectedChannel] = useState(null);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
+  
   const [showModal, setShowModal] = useState(false);
+  const [showChannelModal, setShowChannelModal] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [newChannelDesc, setNewChannelDesc] = useState("");
+  
+  const [mentionSuggestions, setMentionSuggestions] = useState([]);
+  const [showMentionList, setShowMentionList] = useState(false);
+  const [mentionIndex, setMentionIndex] = useState(-1);
+
   const [members, setMembers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteChannelMembers, setInviteChannelMembers] = useState([]);
+  const [selectedInviteUsers, setSelectedInviteUsers] = useState([]);
+  const [inviteQuery, setInviteQuery] = useState("");
+
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [socketStatus, setSocketStatus] = useState("idle");
@@ -226,6 +439,7 @@ export default function ChatPage() {
   const reconnectAttemptRef = useRef(0);
   const shouldReconnectRef = useRef(false);
   const selectedIdRef = useRef(null);
+  const selectedChannelIdRef = useRef(null);
   const messagesEndRef = useRef(null);
   const messagesPaneRef = useRef(null);
   const inputRef = useRef(null);
@@ -301,15 +515,45 @@ export default function ChatPage() {
     [user]
   );
 
+  const applyChannelMessage = useCallback(
+    (message) => {
+      const channelId = String(message.channel || selectedChannelIdRef.current || "");
+      setChannels((prev) =>
+        prev.map((ch) => {
+          if (String(ch.id) !== channelId) return ch;
+          return {
+            ...ch,
+            updated_at: message.created_at || new Date().toISOString(),
+            last_message: {
+              id: message.id,
+              content: message.content,
+              sender_id: message.sender_data?.id || message.sender,
+              sender_name: message.sender_data?.name || "",
+              created_at: message.created_at || new Date().toISOString(),
+            },
+          };
+        })
+      );
+    },
+    []
+  );
+
   const handleIncomingMessage = useCallback(
     (message) => {
       const conversationId = String(message.conversation || "");
+      const channelId = String(message.channel || "");
       const activeConversation = String(selectedIdRef.current || "");
+      const activeChannel = String(selectedChannelIdRef.current || "");
 
       markPendingResolved(message.client_id);
-      applyConversationMessage(message);
-
-      if (conversationId && conversationId !== activeConversation) return;
+      
+      if (conversationId) {
+        applyConversationMessage(message);
+        if (conversationId !== activeConversation) return;
+      } else if (channelId) {
+        applyChannelMessage(message);
+        if (channelId !== activeChannel) return;
+      }
 
       setMessages((prev) => {
         if (message.client_id) {
@@ -334,11 +578,11 @@ export default function ChatPage() {
         return [...prev, message];
       });
 
-      if (!isCurrentUserMessage(message, user)) {
+      if (conversationId && !isCurrentUserMessage(message, user)) {
         sendSocketEvent({ type: "seen" });
       }
     },
-    [applyConversationMessage, markPendingResolved, sendSocketEvent, user]
+    [applyConversationMessage, applyChannelMessage, markPendingResolved, sendSocketEvent, user]
   );
 
   const handleSocketPayload = useCallback(
@@ -353,10 +597,15 @@ export default function ChatPage() {
       if (payloadType === "typing") {
         if (sameUser(payload.sender_id, user?.id)) return;
 
-        setTypingUsers((prev) => ({
-          ...prev,
-          [payload.sender_id]: Boolean(payload.is_typing),
-        }));
+        const conversationMatch = payload.conversation_id && String(payload.conversation_id) === String(selectedIdRef.current);
+        const channelMatch = payload.channel_id && String(payload.channel_id) === String(selectedChannelIdRef.current);
+
+        if (conversationMatch || channelMatch) {
+          setTypingUsers((prev) => ({
+            ...prev,
+            [payload.sender_id]: Boolean(payload.is_typing),
+          }));
+        }
         return;
       }
 
@@ -406,7 +655,7 @@ export default function ChatPage() {
         socketRef.current.readyState === WebSocket.OPEN ||
         socketRef.current.readyState === WebSocket.CONNECTING
       ) {
-        socketRef.current.close(1000, "Conversation changed");
+        socketRef.current.close(1000, "Room changed");
       }
     }
 
@@ -415,13 +664,14 @@ export default function ChatPage() {
   }, []);
 
   const connectSocket = useCallback(
-    (conversationId) => {
-      if (!conversationId) return;
+    (targetId, isChannel = false) => {
+      if (!targetId) return;
 
       const currentSocket = socketRef.current;
       if (
         currentSocket &&
-        currentSocket.conversationId === conversationId &&
+        currentSocket.targetId === targetId &&
+        currentSocket.isChannel === isChannel &&
         (currentSocket.readyState === WebSocket.OPEN ||
           currentSocket.readyState === WebSocket.CONNECTING)
       ) {
@@ -430,21 +680,28 @@ export default function ChatPage() {
 
       if (currentSocket) {
         currentSocket.onclose = null;
-        currentSocket.close(1000, "Switching conversation");
+        currentSocket.close(1000, "Switching room");
       }
 
       shouldReconnectRef.current = true;
       setSocketStatus("connecting");
 
-      const socket = new WebSocket(`${wsBaseUrl}/ws/chat/${conversationId}/`);
-      socket.conversationId = conversationId;
+      const wsUrl = isChannel
+        ? `${wsBaseUrl}/ws/chat/group-channel/${targetId}/`
+        : `${wsBaseUrl}/ws/chat/${targetId}/`;
+
+      const socket = new WebSocket(wsUrl);
+      socket.targetId = targetId;
+      socket.isChannel = isChannel;
       socketRef.current = socket;
 
       socket.onopen = () => {
         reconnectAttemptRef.current = 0;
         setSocketStatus("open");
         setError("");
-        sendSocketEvent({ type: "seen" });
+        if (!isChannel) {
+          sendSocketEvent({ type: "seen" });
+        }
       };
 
       socket.onmessage = (event) => {
@@ -464,7 +721,8 @@ export default function ChatPage() {
           socketRef.current = null;
         }
 
-        if (!shouldReconnectRef.current || selectedIdRef.current !== conversationId) {
+        const activeId = isChannel ? selectedChannelIdRef.current : selectedIdRef.current;
+        if (!shouldReconnectRef.current || activeId !== targetId) {
           setSocketStatus("idle");
           return;
         }
@@ -476,8 +734,9 @@ export default function ChatPage() {
         setSocketStatus("reconnecting");
 
         reconnectTimerRef.current = window.setTimeout(() => {
-          if (shouldReconnectRef.current && selectedIdRef.current === conversationId) {
-            connectSocketRef.current?.(conversationId);
+          const currentActiveId = isChannel ? selectedChannelIdRef.current : selectedIdRef.current;
+          if (shouldReconnectRef.current && currentActiveId === targetId) {
+            connectSocketRef.current?.(targetId, isChannel);
           }
         }, delay);
       };
@@ -507,7 +766,29 @@ export default function ChatPage() {
       }
     }
 
+    async function loadChannels() {
+      try {
+        const response = await api.get("/chat/channels/");
+        if (!active) return;
+        setChannels(response.data);
+      } catch (loadError) {
+        console.error("Could not load channels", loadError);
+      }
+    }
+
+    async function loadProjects() {
+      try {
+        const response = await api.get("/projects/?pagination=false");
+        if (!active) return;
+        setProjects(response.data || []);
+      } catch (loadError) {
+        console.error("Could not load projects", loadError);
+      }
+    }
+
     loadConversations();
+    loadChannels();
+    loadProjects();
 
     return () => {
       active = false;
@@ -519,7 +800,11 @@ export default function ChatPage() {
   }, [selected?.id]);
 
   useEffect(() => {
-    if (!selected?.id) {
+    selectedChannelIdRef.current = selectedChannel?.id ? String(selectedChannel.id) : null;
+  }, [selectedChannel?.id]);
+
+  useEffect(() => {
+    if (!selected?.id && !selectedChannel?.id) {
       const resetTimer = window.setTimeout(() => {
         closeSocket();
         setMessages([]);
@@ -529,7 +814,8 @@ export default function ChatPage() {
     }
 
     let active = true;
-    const conversationId = String(selected.id);
+    const isChannel = !!selectedChannel;
+    const targetId = isChannel ? String(selectedChannel.id) : String(selected.id);
 
     async function loadMessages() {
       setLoadingMessages(true);
@@ -537,16 +823,21 @@ export default function ChatPage() {
       setTypingUsers({});
 
       try {
-        const response = await api.get(`/chat/${conversationId}/messages/`);
+        const url = isChannel
+          ? `/chat/channels/${targetId}/messages/`
+          : `/chat/${targetId}/messages/`;
+        const response = await api.get(url);
         if (!active) return;
         setMessages(response.data);
-        setConversations((prev) =>
-          prev.map((conversation) =>
-            String(conversation.id) === conversationId
-              ? { ...conversation, unread_count: 0 }
-              : conversation
-          )
-        );
+        if (!isChannel) {
+          setConversations((prev) =>
+            prev.map((conversation) =>
+              String(conversation.id) === targetId
+                ? { ...conversation, unread_count: 0 }
+                : conversation
+            )
+          );
+        }
       } catch (loadError) {
         console.error(loadError);
         if (active) setError("Could not load messages.");
@@ -557,14 +848,14 @@ export default function ChatPage() {
 
     document.activeElement?.blur?.();
     loadMessages();
-    connectSocket(conversationId);
+    connectSocket(targetId, isChannel);
     window.setTimeout(() => inputRef.current?.focus(), 120);
 
     return () => {
       active = false;
       clearTyping();
     };
-  }, [clearTyping, closeSocket, connectSocket, selected?.id]);
+  }, [clearTyping, closeSocket, connectSocket, selected?.id, selectedChannel?.id]);
 
   useEffect(() => {
     const pendingTimers = pendingTimersRef.current;
@@ -643,6 +934,13 @@ export default function ChatPage() {
 
   const openConversation = (conversation) => {
     setSelected(normalizeConversation(conversation));
+    setSelectedChannel(null);
+    setDraft("");
+  };
+
+  const openChannel = (channel) => {
+    setSelectedChannel(channel);
+    setSelected(null);
     setDraft("");
   };
 
@@ -676,11 +974,51 @@ export default function ChatPage() {
     }
   };
 
+  const fetchMentionSuggestions = async (q) => {
+    try {
+      const res = await api.get(`/chat/mentions-search/?q=${encodeURIComponent(q)}`);
+      setMentionSuggestions(res.data);
+    } catch (err) {
+      console.error("Error fetching mentions suggestions", err);
+    }
+  };
+
+  const handleSelectMention = (suggestion) => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const cursorPosition = input.selectionStart;
+    const textBeforeCursor = draft.slice(0, cursorPosition);
+    const textAfterCursor = draft.slice(cursorPosition);
+    const lastAtIdx = textBeforeCursor.lastIndexOf("@");
+
+    if (lastAtIdx === -1) return;
+
+    let mentionTag = "";
+    if (suggestion.type === "task") {
+      mentionTag = `[task:${suggestion.id}:${suggestion.title}] `;
+    } else {
+      mentionTag = `[subtask:${suggestion.id}:${suggestion.title}:${suggestion.parent_task_title}] `;
+    }
+
+    const newDraft = draft.slice(0, lastAtIdx) + mentionTag + textAfterCursor;
+    setDraft(newDraft);
+    setShowMentionList(false);
+    
+    setTimeout(() => {
+      input.focus();
+      const newCursorPos = lastAtIdx + mentionTag.length;
+      input.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
   const handleDraftChange = (event) => {
-    const nextValue = event.target.value.slice(0, MAX_MESSAGE_LENGTH);
+    const value = event.target.value;
+    const nextValue = value.slice(0, MAX_MESSAGE_LENGTH);
     setDraft(nextValue);
 
-    if (!selected?.id || socketStatus !== "open") return;
+    const targetId = selectedChannel?.id || selected?.id;
+    if (!targetId || socketStatus !== "open") return;
 
     if (!isTypingRef.current) {
       sendSocketEvent({ type: "typing", is_typing: true });
@@ -695,11 +1033,35 @@ export default function ChatPage() {
       sendSocketEvent({ type: "typing", is_typing: false });
       isTypingRef.current = false;
     }, 900);
+
+    // Mentions logic
+    const selectionStart = event.target.selectionStart;
+    const textBeforeCursor = value.slice(0, selectionStart);
+    const lastAtIdx = textBeforeCursor.lastIndexOf("@");
+    
+    if (lastAtIdx !== -1 && lastAtIdx === textBeforeCursor.length - 1) {
+      setShowMentionList(true);
+      setMentionQuery("");
+      setMentionIndex(0);
+      fetchMentionSuggestions("");
+    } else if (showMentionList && lastAtIdx !== -1 && lastAtIdx < selectionStart) {
+      const query = textBeforeCursor.slice(lastAtIdx + 1);
+      if (query.includes(" ")) {
+        setShowMentionList(false);
+      } else {
+        setMentionQuery(query);
+        fetchMentionSuggestions(query);
+      }
+    } else {
+      setShowMentionList(false);
+    }
   };
 
   const sendMessage = () => {
     const content = draft.trim();
-    if (!content || !selected?.id) return;
+    const isChannel = !!selectedChannel;
+    const targetId = isChannel ? selectedChannel.id : selected?.id;
+    if (!content || !targetId) return;
 
     if (socketStatus !== "open") {
       setError("Reconnecting to chat. Try again in a moment.");
@@ -708,10 +1070,24 @@ export default function ChatPage() {
 
     const clientId = `client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const now = new Date().toISOString();
-    const optimisticMessage = {
+    
+    const optimisticMessage = isChannel ? {
       id: clientId,
       client_id: clientId,
-      conversation: selected.id,
+      channel: targetId,
+      content,
+      created_at: now,
+      sender_data: {
+        id: user?.id,
+        name: currentUserName,
+        email: user?.email,
+        role: user?.role,
+        profile_picture: user?.profile_picture,
+      },
+    } : {
+      id: clientId,
+      client_id: clientId,
+      conversation: targetId,
       content,
       created_at: now,
       is_seen: false,
@@ -726,7 +1102,13 @@ export default function ChatPage() {
     };
 
     setMessages((prev) => [...prev, optimisticMessage]);
-    applyConversationMessage(optimisticMessage);
+    
+    if (isChannel) {
+      applyChannelMessage(optimisticMessage);
+    } else {
+      applyConversationMessage(optimisticMessage);
+    }
+    
     setDraft("");
     clearTyping();
     setError("");
@@ -763,10 +1145,137 @@ export default function ChatPage() {
   };
 
   const handleKeyDown = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (showMentionList && mentionSuggestions.length > 0) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setMentionIndex((prev) => (prev + 1) % mentionSuggestions.length);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setMentionIndex((prev) => (prev - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        handleSelectMention(mentionSuggestions[mentionIndex]);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        setShowMentionList(false);
+      }
+    } else if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleCreateChannelSubmit = async (e) => {
+    e.preventDefault();
+    const name = newChannelName.trim();
+    if (!name) return;
+
+    try {
+      const response = await api.post("/chat/channels/", {
+        name,
+        description: newChannelDesc,
+        project_id: selectedProjectId || null,
+      });
+      setChannels((prev) => [...prev, response.data]);
+      setShowChannelModal(false);
+      setNewChannelName("");
+      setNewChannelDesc("");
+      setSelectedProjectId("");
+      openChannel(response.data);
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Could not create channel.");
+    }
+  };
+
+  const openInviteModal = async () => {
+    if (!selectedChannel) return;
+    try {
+      const usersResponse = await api.get("/chat/users/");
+      setMembers(usersResponse.data || []);
+
+      const membersResponse = await api.get(`/chat/channels/${selectedChannel.id}/members/`);
+      setInviteChannelMembers(membersResponse.data || []);
+      
+      setSelectedInviteUsers([]);
+      setInviteQuery("");
+      setShowInviteModal(true);
+    } catch (err) {
+      console.error("Error opening invite modal:", err);
+      setError("Could not load channel members.");
+    }
+  };
+
+  const handleInviteSubmit = async () => {
+    if (!selectedChannel || selectedInviteUsers.length === 0) return;
+    try {
+      await api.post(`/chat/channels/${selectedChannel.id}/invite/`, {
+        user_ids: selectedInviteUsers,
+      });
+      setShowInviteModal(false);
+      setSelectedInviteUsers([]);
+    } catch (err) {
+      console.error("Error inviting members:", err);
+      setError(err.response?.data?.message || "Could not invite members.");
+    }
+  };
+
+  const renderMessageContent = (content) => {
+    if (!content) return null;
+
+    const regex = /\[(task|subtask):([a-f0-9-]+):([^\]]+)\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      const matchIndex = match.index;
+
+      if (matchIndex > lastIndex) {
+        parts.push(content.substring(lastIndex, matchIndex));
+      }
+
+      const type = match[1];
+      const id = match[2];
+      const detailsStr = match[3];
+
+      if (type === "task") {
+        parts.push(
+          <span
+            key={`task-${id}-${matchIndex}`}
+            className="cp-mention-link"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/dashboard/tasks/${id}`);
+            }}
+          >
+            @{detailsStr}
+          </span>
+        );
+      } else {
+        const [title, parentTitle] = detailsStr.split(":");
+        parts.push(
+          <span
+            key={`subtask-${id}-${matchIndex}`}
+            className="cp-mention-link"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/dashboard/tasks/${id}`);
+            }}
+          >
+            @{title} ({parentTitle || "Subtask"})
+          </span>
+        );
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : content;
   };
 
   const filteredConversations = conversations.filter((conversation) => {
@@ -774,32 +1283,30 @@ export default function ChatPage() {
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
+  const filteredChannels = channels.filter((channel) => {
+    return channel.name.toLowerCase().includes(search.toLowerCase());
+  });
+
   const isPeerTyping = peer?.id && typingUsers[peer.id];
   const peerPresence = peer?.id ? presence[peer.id] : null;
   const peerOnline = peerPresence?.online ?? false;
 
+  const currentRoomName = selectedChannel ? `#${selectedChannel.name}` : peer?.name || "Chat Room";
+
   return (
     <div className="cp-root">
-      {/* Column 1: Conversations List */}
+      {/* Column 1: Channels & Conversations List */}
       <aside className="cp-sidebar">
         <div className="cp-sidebar-header">
           <div className="cp-sidebar-title-row">
-            <h1>Messages</h1>
-            <button
-              type="button"
-              className="cp-new-btn"
-              onClick={openNewChat}
-              title="New conversation"
-            >
-              <Plus size={16} />
-            </button>
+            <h1>Workspace Chat</h1>
           </div>
 
           <div className="cp-search-wrap">
             <Search size={16} className="cp-search-icon" />
             <input
               className="cp-search-input"
-              placeholder="Search..."
+              placeholder="Search chat or channel..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -807,11 +1314,56 @@ export default function ChatPage() {
         </div>
 
         <div className="cp-conv-list">
+          {/* Channels Section */}
+          <div className="cp-section-header">
+            <span>Channels</span>
+            {user?.role in { admin: true, manager: true } && (
+              <button
+                type="button"
+                className="cp-section-add-btn"
+                onClick={() => setShowChannelModal(true)}
+                title="Create Group Channel"
+              >
+                <Plus size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="cp-channels-sublist">
+            {filteredChannels.map((channel) => {
+              const isActive = String(selectedChannel?.id) === String(channel.id);
+              return (
+                <button
+                  key={channel.id}
+                  type="button"
+                  className={`cp-channel-item ${isActive ? "cp-channel-item--active" : ""}`}
+                  onClick={() => openChannel(channel)}
+                >
+                  <Hash size={16} className="cp-channel-hash" />
+                  <span className="cp-channel-name">{channel.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Direct Messages Section */}
+          <div className="cp-section-header">
+            <span>Direct Messages</span>
+            <button
+              type="button"
+              className="cp-section-add-btn"
+              onClick={openNewChat}
+              title="New DM"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
           {loadingConversations && (
-            <div className="cp-list-state">Loading conversations...</div>
+            <div className="cp-list-state">Loading messages...</div>
           )}
 
-          {!loadingConversations && filteredConversations.length === 0 && (
+          {!loadingConversations && filteredConversations.length === 0 && filteredChannels.length === 0 && (
             <div className="cp-conv-empty">No conversations yet</div>
           )}
 
@@ -833,7 +1385,7 @@ export default function ChatPage() {
                   <Avatar
                     name={otherUser?.name}
                     image={otherUser?.profile_picture}
-                    size={48}
+                    size={40}
                   />
                   {online && <span className="cp-online-dot" />}
                 </div>
@@ -870,47 +1422,70 @@ export default function ChatPage() {
 
       {/* Column 2: Chat Thread */}
       <main className="cp-main">
-        {selected ? (
+        {selected || selectedChannel ? (
           <div className="cp-chat">
             <header className="cp-chat-header">
               <div className="cp-chat-header-left">
-                <div className="cp-conv-avatar-wrap">
-                  <Avatar
-                    name={peer?.name}
-                    image={peer?.profile_picture}
-                    size={40}
-                  />
-                  {peerOnline && <span className="cp-online-dot" />}
-                </div>
+                {selectedChannel ? (
+                  <div className="cp-channel-header-avatar">
+                    <Hash size={20} />
+                  </div>
+                ) : (
+                  <div className="cp-conv-avatar-wrap">
+                    <Avatar
+                      name={peer?.name}
+                      image={peer?.profile_picture}
+                      size={40}
+                    />
+                    {peerOnline && <span className="cp-online-dot" />}
+                  </div>
+                )}
+                
                 <div className="cp-chat-peer-info">
                   <h2 className="cp-chat-peer-name">
-                    {peer?.name || "Unknown"}
+                    {currentRoomName}
                   </h2>
                   <span
                     className={`cp-chat-peer-status ${
-                      peerOnline ? "cp-chat-peer-status--online" : ""
+                      !selectedChannel && peerOnline ? "cp-chat-peer-status--online" : ""
                     }`}
                   >
-                    {isPeerTyping
-                      ? "Typing..."
-                      : peerOnline
-                        ? "Active now"
-                        : peerPresence?.last_seen
-                          ? `Last seen ${fmtDate(peerPresence.last_seen)}`
-                          : "Offline"}
+                    {selectedChannel
+                      ? selectedChannel.description || "Group channel room"
+                      : isPeerTyping
+                        ? "Typing..."
+                        : peerOnline
+                          ? "Active now"
+                          : peerPresence?.last_seen
+                            ? `Last seen ${fmtDate(peerPresence.last_seen)}`
+                            : "Offline"}
                   </span>
                 </div>
               </div>
 
               <div className="cp-chat-header-actions">
-                <button type="button" className="cp-header-btn" title="Voice call">
-                  <Phone size={18} />
-                </button>
-                <button type="button" className="cp-header-btn" title="Video call">
-                  <Video size={18} />
-                </button>
-                
-                <span className="cp-header-divider" />
+                {!selectedChannel && (
+                  <>
+                    <button type="button" className="cp-header-btn" title="Voice call">
+                      <Phone size={18} />
+                    </button>
+                    <button type="button" className="cp-header-btn" title="Video call">
+                      <Video size={18} />
+                    </button>
+                    <span className="cp-header-divider" />
+                  </>
+                )}
+
+                {selectedChannel && !selectedChannel.is_general && !selectedChannel.project && (
+                  <button
+                    type="button"
+                    className="cp-header-btn"
+                    onClick={openInviteModal}
+                    title="Invite Members to Channel"
+                  >
+                    <UserPlus size={18} />
+                  </button>
+                )}
                 
                 <span className={`cp-connection-pill cp-connection-pill--${socketStatus}`}>
                   {socketStatus === "open"
@@ -947,7 +1522,11 @@ export default function ChatPage() {
                     <div className="cp-messages-empty-icon">
                       <MessageCircle size={32} />
                     </div>
-                    <p>Start the conversation with {peer?.name}.</p>
+                    <p>
+                      {selectedChannel
+                        ? `This is the start of the channel discussion in #${selectedChannel.name}.`
+                        : `Start the conversation with ${peer?.name}.`}
+                    </p>
                   </div>
                 )}
 
@@ -983,7 +1562,7 @@ export default function ChatPage() {
                         )}
 
                         <div className={`cp-bubble ${mine ? "cp-bubble-outgoing" : "cp-bubble-incoming"}`}>
-                          <p className="cp-bubble-text">{message.content}</p>
+                          <p className="cp-bubble-text">{renderMessageContent(message.content)}</p>
                         </div>
 
                         <span className={`cp-msg-time ${mine ? "cp-msg-time--mine" : ""}`}>
@@ -997,7 +1576,7 @@ export default function ChatPage() {
                           {mine && message.delivery_status === "failed" && (
                             <span className="cp-failed-label">{" "}Failed</span>
                           )}
-                          {mine && !message.delivery_status && (
+                          {mine && !selectedChannel && !message.delivery_status && (
                             <CheckCheck
                               size={12}
                               className={`cp-read-icon ${
@@ -1037,37 +1616,58 @@ export default function ChatPage() {
             {error && <div className="cp-error-line">{error}</div>}
 
             <div className="cp-input-footer">
-              <div className={`cp-input-area ${inputFocused ? "cp-input-area--focused" : ""}`}>
-                <button type="button" className="cp-input-side-btn" title="Attach files">
-                  <Plus size={20} />
-                </button>
-                <input
-                  ref={inputRef}
-                  className="cp-input"
-                  placeholder={
-                    socketStatus === "open"
-                      ? "Type a message..."
-                      : "Connecting to chat..."
-                  }
-                  value={draft}
-                  onChange={handleDraftChange}
-                  onKeyDown={handleKeyDown}
-                  onFocus={() => setInputFocused(true)}
-                  onBlur={() => setInputFocused(false)}
-                  disabled={socketStatus !== "open" && socketStatus !== "reconnecting"}
-                />
-                <button type="button" className="cp-emoji-btn" title="Select emoji">
-                  <Smile size={20} />
-                </button>
-                <button
-                  type="button"
-                  className="cp-send-btn"
-                  onClick={sendMessage}
-                  disabled={!draft.trim() || socketStatus !== "open"}
-                  title="Send message"
-                >
-                  <Send size={16} />
-                </button>
+              <div className="cp-input-area-wrap">
+                {showMentionList && mentionSuggestions.length > 0 && (
+                  <div className="cp-mention-dropdown">
+                    {mentionSuggestions.map((suggestion, idx) => (
+                      <button
+                        key={suggestion.id}
+                        type="button"
+                        className={`cp-mention-item ${mentionIndex === idx ? "cp-mention-item--selected" : ""}`}
+                        onClick={() => handleSelectMention(suggestion)}
+                      >
+                        <span className="cp-mention-display">{suggestion.display}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className={`cp-input-area ${inputFocused ? "cp-input-area--focused" : ""}`}>
+                  <button type="button" className="cp-input-side-btn" title="Attach files">
+                    <Plus size={20} />
+                  </button>
+                  <input
+                    ref={inputRef}
+                    className="cp-input"
+                    placeholder={
+                      socketStatus === "open"
+                        ? "Type a message, use @ to mention a task or subtask..."
+                        : "Connecting to chat..."
+                    }
+                    value={draft}
+                    onChange={handleDraftChange}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setInputFocused(true)}
+                    onBlur={() => {
+                      setInputFocused(false);
+                      // Delayed hiding to allow click actions
+                      setTimeout(() => setShowMentionList(false), 200);
+                    }}
+                    disabled={socketStatus !== "open" && socketStatus !== "reconnecting"}
+                  />
+                  <button type="button" className="cp-emoji-btn" title="Select emoji">
+                    <Smile size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    className="cp-send-btn"
+                    onClick={sendMessage}
+                    disabled={!draft.trim() || socketStatus !== "open"}
+                    title="Send message"
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1076,22 +1676,29 @@ export default function ChatPage() {
             <div className="cp-welcome-icon-wrap">
               <MessageCircle size={32} />
             </div>
-            <h2 className="cp-welcome-title">Your Messages</h2>
+            <h2 className="cp-welcome-title">Your Workspace Chat</h2>
             <p className="cp-welcome-sub">
-              Select a conversation or start a new one to start writing.
+              Select a project group channel or a direct message thread to start writing.
             </p>
-            <button type="button" className="cp-welcome-btn" onClick={openNewChat}>
-              <Plus size={14} />
-              New Conversation
-            </button>
+            <div className="cp-welcome-actions">
+              {user?.role in { admin: true, manager: true } && (
+                <button type="button" className="cp-welcome-btn" onClick={() => setShowChannelModal(true)}>
+                  <Plus size={14} />
+                  Create Channel
+                </button>
+              )}
+              <button type="button" className="cp-welcome-btn cp-welcome-btn--secondary" onClick={openNewChat}>
+                <MessageCircle size={14} />
+                Direct Message
+              </button>
+            </div>
           </div>
         )}
       </main>
 
-      {/* Column 3: Asset & Profile Info */}
+      {/* Column 3: Direct chat information sidebar */}
       {selected && (
         <section className="cp-info-panel">
-          {/* Profile Info */}
           <div className="cp-profile-card">
             <div className="cp-profile-avatar-wrap">
               <Avatar
@@ -1120,7 +1727,6 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Active Tasks Panel */}
           <div className="cp-assets-card">
             <div className="cp-assets-header">
               <h4 className="cp-assets-title">Active Tasks ({peerTasks.length})</h4>
@@ -1180,6 +1786,33 @@ export default function ChatPage() {
           members={members}
           onStart={startConversation}
           onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {showChannelModal && (
+        <NewChannelModal
+          name={newChannelName}
+          setName={setNewChannelName}
+          desc={newChannelDesc}
+          setDesc={setNewChannelDesc}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          setSelectedProjectId={setSelectedProjectId}
+          onSubmit={handleCreateChannelSubmit}
+          onClose={() => setShowChannelModal(false)}
+        />
+      )}
+
+      {showInviteModal && (
+        <InviteChannelModal
+          members={members}
+          currentMembers={inviteChannelMembers}
+          selectedUsers={selectedInviteUsers}
+          setSelectedUsers={setSelectedInviteUsers}
+          searchQuery={inviteQuery}
+          setSearchQuery={setInviteQuery}
+          onInvite={handleInviteSubmit}
+          onClose={() => setShowInviteModal(false)}
         />
       )}
     </div>

@@ -124,8 +124,36 @@ class LeaveBalance(models.Model):
     class Meta:
         unique_together = ("employee", "leave_type")
 
+    @classmethod
+    def prefetch_used_days(cls, queryset):
+        balances = list(queryset)
+        employee_ids = {b.employee_id for b in balances}
+        if not employee_ids:
+            return balances
+
+        from collections import defaultdict
+        requests = LeaveRequest.objects.filter(
+            employee_id__in=employee_ids,
+            status="approved"
+        )
+        employee_leave_days = defaultdict(lambda: defaultdict(int))
+        for r in requests:
+            duration = (r.end_date - r.start_date).days + 1
+            leave_type = r.leave_type
+            if leave_type == "vacation":
+                leave_type = "annual"
+            employee_leave_days[r.employee_id][leave_type] += duration
+
+        for b in balances:
+            b._precalculated_used_days = employee_leave_days[b.employee_id][b.leave_type]
+
+        return balances
+
     @property
     def used_days(self):
+        if hasattr(self, "_precalculated_used_days"):
+            return self._precalculated_used_days
+
         types_to_query = [self.leave_type]
         if self.leave_type == "annual":
             types_to_query.append("vacation")

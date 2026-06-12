@@ -241,11 +241,13 @@ export default function IssueDetailsModal({ issue, onClose, onUpdate }) {
                     onChange={(event) => setForm({ ...form, assigned_to: event.target.value })}
                   >
                     <option value="">Unassigned</option>
-                    {teamMembers.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}
-                      </option>
-                    ))}
+                    {teamMembers
+                      .filter(member => member.role !== "admin" && member.role !== "manager")
+                      .map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name}
+                        </option>
+                      ))}
                   </select>
                 </label>
                 <button type="button" className="issue-primary-button" disabled={!dirty || saving} onClick={handleUpdate}>

@@ -84,3 +84,49 @@ def refresh_health_on_milestone_save(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=ProjectMilestone)
 def refresh_health_on_milestone_delete(sender, instance, **kwargs):
     _refresh_for_project_id(instance.project_id)
+
+
+@receiver(post_save, sender="projects.Project")
+def auto_create_project_channel(sender, instance, created, **kwargs):
+    if created:
+        if getattr(instance, "_skip_channel_creation", False):
+            return
+        from chat.models import GroupChannel
+        import re
+        name = instance.name.strip().lower()
+        name = re.sub(r'[^a-z0-9\s-]', '', name)
+        name = re.sub(r'[\s_]+', '-', name)
+        name = name[:50]
+        if not name:
+            name = f"project-{instance.id.hex[:6]}"
+
+        original_name = name
+        counter = 1
+        while GroupChannel.objects.filter(organization=instance.organization, name=name).exists():
+            name = f"{original_name}-{counter}"
+            counter += 1
+
+        GroupChannel.objects.create(
+            organization=instance.organization,
+            project=instance,
+            name=name,
+            description=f"Group discussion channel for project '{instance.name}'",
+            created_by=instance.created_by
+        )
+
+
+@receiver(post_save, sender="tasks.SubTask")
+def sync_issue_status_on_subtask_save(sender, instance, **kwargs):
+    from issues.models import Issue
+    
+    if instance.status == "in_progress":
+        issues_to_update = Issue.objects.filter(subtask=instance, status="open")
+        for issue in issues_to_update:
+            issue.status = "investigating"
+            issue.save(update_fields=["status"])
+    elif instance.status == "done":
+        issues_to_update = Issue.objects.filter(subtask=instance, status__in=["open", "investigating"])
+        for issue in issues_to_update:
+            issue.status = "resolved"
+            issue.save(update_fields=["status"])
+

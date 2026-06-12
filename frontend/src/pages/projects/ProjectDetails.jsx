@@ -18,6 +18,7 @@ import {
   Flag,
   Target,
   Activity,
+  Lock,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -44,21 +45,21 @@ const AVATAR_COLORS = [
 ];
 
 const TASK_STATUS_STYLES = {
-  backlog: { bg: "#f1f5f9", color: "#64748b" },
-  todo: { bg: "#f1f5f9", color: "#64748b" },
-  pending: { bg: "#fef9c3", color: "#a16207" },
-  in_progress: { bg: "#dbeafe", color: "#1d4ed8" },
-  inprogress: { bg: "#dbeafe", color: "#1d4ed8" },
-  review: { bg: "#ede9fe", color: "#6d28d9" },
-  done: { bg: "#dcfce7", color: "#15803d" },
-  completed: { bg: "#dcfce7", color: "#15803d" },
+  backlog: { bg: "#F8FAFC", color: "#475569" },
+  todo: { bg: "#F8FAFC", color: "#475569" },
+  pending: { bg: "#FEF3C7", color: "#D97706" },
+  in_progress: { bg: "#EFF6FF", color: "#2563EB" },
+  inprogress: { bg: "#EFF6FF", color: "#2563EB" },
+  review: { bg: "#F5F3FF", color: "#7C3AED" },
+  done: { bg: "#ECFDF5", color: "#059669" },
+  completed: { bg: "#ECFDF5", color: "#059669" },
 };
 
 const TASK_PRIORITY_STYLES = {
-  critical: { bg: "#fee2e2", color: "#b91c1c" },
-  high: { bg: "#ffedd5", color: "#c2410c" },
-  medium: { bg: "#dbeafe", color: "#1d4ed8" },
-  low: { bg: "#f1f5f9", color: "#64748b" },
+  critical: { bg: "#FFF1F2", color: "#E11D48" },
+  high: { bg: "#FEF3C7", color: "#D97706" },
+  medium: { bg: "#EFF6FF", color: "#2563EB" },
+  low: { bg: "#F8FAFC", color: "#475569" },
 };
 
 function avatarColor(seed = "") {
@@ -90,9 +91,8 @@ export default function ProjectDetails() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const canManage = user?.role === "admin" || user?.role === "manager";
-
   const [project, setProject] = useState(null);
+  const canManage = user?.role === "admin" || user?.role === "manager" || (project && project.project_lead_data?.id === user?.id);
   const [tasks, setTasks] = useState([]);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [taskPage, setTaskPage] = useState(1);
@@ -185,7 +185,7 @@ export default function ProjectDetails() {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
       await api.delete(`/projects/${projectId}/`);
-      navigate("/dashboard/projects");
+      navigate(user?.role === "employee" ? "/workspace/projects" : "/dashboard/projects");
     } catch (err) {
       console.log(err);
     }
@@ -296,7 +296,7 @@ export default function ProjectDetails() {
   return (
     <div className="project-details-page">
       <nav className="pd-breadcrumb">
-        <Link to="/dashboard/projects">Projects</Link>
+        <Link to={user?.role === "employee" ? "/workspace/projects" : "/dashboard/projects"}>Projects</Link>
         <ChevronRight size={13} className="pd-breadcrumb-sep" />
         <span className="pd-breadcrumb-current">{project.name}</span>
       </nav>
@@ -364,7 +364,7 @@ export default function ProjectDetails() {
         <div className="pd-actions">
           {editMode ? (
             <>
-              {canManage && (
+              {(user?.role === "admin" || user?.role === "manager") && (
                 <select
                   className="pd-status-select"
                   value={projectLeadId}
@@ -407,7 +407,7 @@ export default function ProjectDetails() {
                   Edit
                 </button>
               )}
-              {canManage && (
+              {(user?.role === "admin" || user?.role === "manager") && (
                 <button type="button" className="pd-btn pd-btn--danger" onClick={handleDelete}>
                   <Trash2 size={14} />
                   Delete
@@ -609,22 +609,31 @@ export default function ProjectDetails() {
                   const priorityStyle = taskBadgeStyle(TASK_PRIORITY_STYLES, task.priority);
                   const taskDue = formatDueDate(task.due_date);
 
+                  const isTaskBlocked = task.blocked_by_data?.some(d => d.status !== 'done');
+
                   return (
-                    <Link to={`/dashboard/tasks/${task.id}`} key={task.id} className="pd-task-card-link">
+                    <Link to={`${user?.role === "employee" ? "/workspace/task" : "/dashboard/tasks"}/${task.id}`} key={task.id} className="pd-task-card-link">
                       <article className="pd-task-card">
                         <div className="pd-task-top">
-                          <span
-                            className="pd-task-status"
-                            style={{ background: statusStyle.bg, color: statusStyle.color }}
-                          >
-                            {formatStatusLabel(task.status)}
-                          </span>
-                          <span
-                            className="pd-task-priority"
-                            style={{ background: priorityStyle.bg, color: priorityStyle.color }}
-                          >
-                            {formatStatusLabel(task.priority)}
-                          </span>
+                          <div className="pd-task-top-tags">
+                            <span
+                              className="pd-task-status"
+                              style={{ background: statusStyle.bg, color: statusStyle.color }}
+                            >
+                              {formatStatusLabel(task.status)}
+                            </span>
+                            <span
+                              className="pd-task-priority"
+                              style={{ background: priorityStyle.bg, color: priorityStyle.color }}
+                            >
+                              {formatStatusLabel(task.priority)}
+                            </span>
+                          </div>
+                          {isTaskBlocked && (
+                            <span className="pd-task-blocked-lock" title="This task is blocked by unresolved blockers">
+                              <Lock size={12} />
+                            </span>
+                          )}
                         </div>
 
                         <h3>{task.title}</h3>

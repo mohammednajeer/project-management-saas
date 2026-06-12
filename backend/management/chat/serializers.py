@@ -3,6 +3,8 @@ from rest_framework import serializers
 from .models import (
     Conversation,
     Message,
+    GroupChannel,
+    ChannelMessage,
 )
 
 
@@ -155,4 +157,86 @@ class MessageSerializer( serializers.ModelSerializer):
         if not request:
             return False
 
+        return obj.sender == request.user
+
+
+class GroupChannelSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(source="created_by.name", read_only=True)
+    last_message = serializers.SerializerMethodField()
+    project_name = serializers.CharField(source="project.name", read_only=True)
+
+    class Meta:
+        model = GroupChannel
+        fields = [
+            "id",
+            "name",
+            "description",
+            "project",
+            "project_name",
+            "is_general",
+            "created_by",
+            "created_by_name",
+            "created_at",
+            "updated_at",
+            "last_message",
+        ]
+        read_only_fields = [
+            "id",
+            "is_general",
+            "created_by",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_last_message(self, obj):
+        last_message = obj.messages.last()
+        if not last_message:
+            return None
+        return {
+            "id": str(last_message.id),
+            "content": last_message.content,
+            "sender_id": str(last_message.sender.id),
+            "sender_name": last_message.sender.name,
+            "created_at": last_message.created_at,
+        }
+
+
+class ChannelMessageSerializer(serializers.ModelSerializer):
+    sender_data = serializers.SerializerMethodField()
+    is_mine = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChannelMessage
+        fields = [
+            "id",
+            "channel",
+            "sender",
+            "sender_data",
+            "content",
+            "created_at",
+            "is_mine",
+        ]
+        read_only_fields = [
+            "id",
+            "sender",
+            "created_at",
+        ]
+
+    def get_sender_data(self, obj):
+        return {
+            "id": str(obj.sender.id),
+            "name": obj.sender.name,
+            "email": obj.sender.email,
+            "role": obj.sender.role,
+            "profile_picture": (
+                obj.sender.profile_picture.url
+                if obj.sender.profile_picture
+                else None
+            ),
+        }
+
+    def get_is_mine(self, obj):
+        request = self.context.get("request")
+        if not request:
+            return False
         return obj.sender == request.user

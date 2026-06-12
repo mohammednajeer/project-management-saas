@@ -36,37 +36,38 @@ import {
 
 import api from "../../services/api";
 import { IssueProvider } from "../../context/issues/IssueContext";
+import useIssues from "../../context/issues/useIssues";
 import IssueDetailsModal from "../../components/issues/IssueDetailsModal";
 import successIllustration from "../../assets/images/undraw_successful_rtc4.svg";
 import "./MyTasks.css";
 
 /* ─── CONSTANTS ─────────────────────────────────────────────────────────── */
 const STATUS_CONFIG = {
-  todo:        { label: "Todo",        color: "#B45309", bg: "#fbe1d1", border: "rgba(180,83,9,0.18)",  accent: "#D4835E" },
-  in_progress: { label: "In Progress", color: "#1E3A8A", bg: "#d3e3fc", border: "rgba(30,58,138,0.18)",   accent: "#5B8CB8" },
-  review:      { label: "Review",      color: "#5B21B6", bg: "#e8def8", border: "rgba(91,33,182,0.18)",  accent: "#8B7BA8" },
-  done:        { label: "Done",        color: "#166534", bg: "#d8f3dc", border: "rgba(22,101,52,0.18)",   accent: "#3D9A5F" },
+  todo:        { label: "Todo",        color: "#D97706", bg: "#FEF3C7", border: "rgba(217,119,6,0.15)",  accent: "#F59E0B" },
+  in_progress: { label: "In Progress", color: "#2563EB", bg: "#EFF6FF", border: "rgba(37,99,235,0.15)",   accent: "#3B82F6" },
+  review:      { label: "Review",      color: "#7C3AED", bg: "#F5F3FF", border: "rgba(124,58,237,0.15)",  accent: "#8B5CF6" },
+  done:        { label: "Done",        color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.15)",   accent: "#10B981" },
 };
 
 const ISSUE_STATUS_CONFIG = {
-  open:          { label: "Open",          color: "#991B1B", bg: "#f8d7da", border: "rgba(153,27,27,0.22)",  accent: "#A34A30" },
-  investigating: { label: "Investigating", color: "#854D0E", bg: "#fff3cd", border: "rgba(133,77,14,0.18)",   accent: "#D4835E" },
-  resolved:      { label: "Resolved",      color: "#166534", bg: "#d8f3dc", border: "rgba(22,101,52,0.18)",   accent: "#3D9A5F" },
-  closed:        { label: "Closed",        color: "#374151", bg: "#F1F5F9", border: "rgba(55,65,81,0.18)",  accent: "#94A3B8" },
+  open:          { label: "Open",          color: "#E11D48", bg: "#FFF1F2", border: "rgba(225,29,72,0.15)",  accent: "#F43F5E" },
+  investigating: { label: "Investigating", color: "#D97706", bg: "#FEF3C7", border: "rgba(217,119,6,0.15)",   accent: "#F59E0B" },
+  resolved:      { label: "Resolved",      color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.15)",   accent: "#10B981" },
+  closed:        { label: "Closed",        color: "#475569", bg: "#F8FAFC", border: "rgba(71,85,105,0.15)",  accent: "#64748B" },
 };
 
 const PRIORITY_CONFIG = {
-  critical: { label: "Critical", color: "#991B1B", bg: "#f8d7da",  border: "rgba(153,27,27,0.2)",   dot: "#A34A30",  cardTint: "rgba(248,215,218,0.6)"  },
-  high:     { label: "High",     color: "#854D0E", bg: "#fff3cd",  border: "rgba(133,77,14,0.2)",   dot: "#D4835E",  cardTint: "rgba(255,243,205,0.6)"  },
-  medium:   { label: "Medium",   color: "#1E3A8A", bg: "#d3e3fc",  border: "rgba(30,58,138,0.2)",  dot: "#5B8CB8",  cardTint: "rgba(211,227,252,0.5)"  },
-  low:      { label: "Low",      color: "#374151", bg: "#F1F5F9",  border: "rgba(55,65,81,0.15)", dot: "#94A3B8",  cardTint: "rgba(241,245,249,0.5)"  },
+  critical: { label: "Critical", color: "#E11D48", bg: "#FFF1F2",  border: "rgba(225,29,72,0.15)",   dot: "#F43F5E",  cardTint: "rgba(255,241,242,0.4)"  },
+  high:     { label: "High",     color: "#D97706", bg: "#FEF3C7",  border: "rgba(217,119,6,0.15)",   dot: "#F59E0B",  cardTint: "rgba(254,243,199,0.4)"  },
+  medium:   { label: "Medium",   color: "#2563EB", bg: "#EFF6FF",  border: "rgba(37,99,235,0.15)",  dot: "#3B82F6",  cardTint: "rgba(239,246,255,0.4)"  },
+  low:      { label: "Low",      color: "#475569", bg: "#F8FAFC",  border: "rgba(71,85,105,0.15)", dot: "#64748B",  cardTint: "rgba(248,250,252,0.4)"  },
 };
 
 const CARD_PALETTE = {
-  todo:        "#fbe1d1",
-  in_progress: "#d3e3fc",
-  review:      "#e8def8",
-  done:        "#d8f3dc",
+  todo:        "#FEF3C7",
+  in_progress: "#EFF6FF",
+  review:      "#F5F3FF",
+  done:        "#ECFDF5",
 };
 
 const STATUS_TABS = [
@@ -335,7 +336,7 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
                 <div className="mt-card-menu">
                   {allowedMenuOptions.map(([k, v]) => (
                     <button key={k} className="mt-card-menu-item"
-                      onClick={() => { onStatusChange?.(task.id, k, task.is_issue); setMenuOpen(false); }}>
+                      onClick={() => { onStatusChange?.(task.id, k, task.is_issue, task.is_parent_task); setMenuOpen(false); }}>
                       <span className="mt-menu-dot" style={{ background: v.accent }} />
                       Mark as {v.label}
                     </button>
@@ -364,7 +365,7 @@ function TaskCard({ task, onStatusChange, onRaiseIssue, onOpenTask }) {
       {/* Priority + Status badges */}
       <div className="mt-card-badges">
         <PriorityBadge priority={task.priority} />
-        <StatusPill status={task.status} isIssue={task.is_issue} onChange={(s) => onStatusChange?.(task.id, s, task.is_issue)} />
+        <StatusPill status={task.status} isIssue={task.is_issue} onChange={(s) => onStatusChange?.(task.id, s, task.is_issue, task.is_parent_task)} />
       </div>
 
       {/* Progress bar (visual indicator based on status) */}
@@ -452,7 +453,7 @@ function TaskRow({ task, onStatusChange, onOpenTask }) {
 
       <div className="mt-row-meta">
         <PriorityBadge priority={task.priority} />
-        <StatusPill status={task.status} isIssue={task.is_issue} onChange={(s) => onStatusChange?.(task.id, s, task.is_issue)} />
+        <StatusPill status={task.status} isIssue={task.is_issue} onChange={(s) => onStatusChange?.(task.id, s, task.is_issue, task.is_parent_task)} />
         <div className="mt-row-due">
           {!task.is_issue && <CalendarDays size={10} />}
           {!task.is_issue && <DueBadge due_date={task.due_date} status={task.status} />}
@@ -674,6 +675,7 @@ function Sidebar({ tasks, activities = [] }) {
    ═══════════════════════════════════════════════════════════════════════════ */
 function MyTasksContent() {
   const navigate = useNavigate();
+  const { issues } = useIssues();
   const [tasks,            setTasks]          = useState([]);
   const [loading,          setLoading]        = useState(true);
   const [error,            setError]          = useState("");
@@ -692,7 +694,8 @@ function MyTasksContent() {
     (async () => {
       try {
         const res = await api.get("/workspace/my-tasks/");
-        setTasks(Array.isArray(res.data) ? res.data : res.data.results || []);
+        const items = Array.isArray(res.data) ? res.data : res.data.results || [];
+        setTasks(items.filter((t) => !t.is_parent_task));
       } catch (err) {
         setError(err.response?.data?.message || "Could not load your tasks.");
       } finally {
@@ -711,7 +714,7 @@ function MyTasksContent() {
   }, []);
 
   /* ── Status update ── */
-  const handleStatusChange = useCallback(async (taskId, newStatus, isIssue = false) => {
+  const handleStatusChange = useCallback(async (taskId, newStatus, isIssue = false, isParentTask = false) => {
     let oldStatus = null;
     setTasks((prev) => prev.map((t) => {
       if (t.id === taskId) {
@@ -723,6 +726,8 @@ function MyTasksContent() {
     try {
       if (isIssue) {
         await api.patch(`/issues/${taskId}/`, { status: newStatus });
+      } else if (isParentTask) {
+        await api.patch(`/tasks/task/${taskId}/`, { status: newStatus });
       } else {
         await api.patch(`/workspace/subtasks/${taskId}/`, { status: newStatus });
       }
@@ -735,16 +740,24 @@ function MyTasksContent() {
 
   const openTaskWorkspace = useCallback((task) => {
     if (task.is_issue) {
-      if (task.subtask?.id) {
-        navigate(`/workspace/task/${task.task.id}?subtask=${task.subtask.id}`);
+      const targetTaskId = task.task?.id || task.task;
+      const targetSubtaskId = task.subtask?.id || task.subtask;
+      if (targetTaskId) {
+        if (targetSubtaskId) {
+          navigate(`/workspace/task/${targetTaskId}?subtask=${targetSubtaskId}`);
+        } else {
+          navigate(`/workspace/task/${targetTaskId}`);
+        }
       } else {
-        const taskId = task?.task?.id;
-        if (taskId) navigate(`/workspace/task/${taskId}`);
+        const fullIssue = issues.find((i) => String(i.id) === String(task.id));
+        setSelectedIssue(fullIssue || task);
       }
+    } else if (task.is_parent_task) {
+      navigate(`/workspace/task/${task.id}`);
     } else {
       navigate(`/workspace/task/${task.task?.id}?subtask=${task.id}`);
     }
-  }, [navigate]);
+  }, [navigate, issues]);
 
   /* ── Derived ── */
   const projects = useMemo(() => {

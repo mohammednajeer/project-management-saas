@@ -30,7 +30,8 @@ def get_org_projects_queryset(user):
         "milestones",
     )
     if not user_can_manage_projects(user):
-        queryset = queryset.filter(members=user).distinct()
+        from django.db.models import Q
+        queryset = queryset.filter(Q(members=user) | Q(project_lead=user)).distinct()
     return queryset
 
 
@@ -143,9 +144,10 @@ class ProjectDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if not user_can_manage_projects(request.user):
+        from .permissions import user_can_manage_project_instance
+        if not user_can_manage_project_instance(request.user, project):
             return Response(
-                {"message": "Only admins and managers can update projects."},
+                {"message": "Only admins, managers, and the project lead can update projects."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -190,7 +192,7 @@ class ProjectDetailView(APIView):
 
 
 class ProjectMembersView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def post(self, request, project_id):
         try:
@@ -202,6 +204,13 @@ class ProjectMembersView(APIView):
             return Response(
                 {"message": "Project not found"},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+
+        from .permissions import user_can_manage_project_instance
+        if not user_can_manage_project_instance(request.user, project):
+            return Response(
+                {"message": "Only admins, managers, and the project lead can manage project members."},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         user_ids = request.data.get("members", [])
@@ -227,6 +236,13 @@ class ProjectMembersView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        from .permissions import user_can_manage_project_instance
+        if not user_can_manage_project_instance(request.user, project):
+            return Response(
+                {"message": "Only admins, managers, and the project lead can remove project members."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         user_id = request.data.get("user_id")
         try:
             user = User.objects.get(
@@ -240,6 +256,21 @@ class ProjectMembersView(APIView):
             )
 
         project.members.remove(user)
+        
+        # Clean up user's roles and assignments in this project
+        if project.project_lead == user:
+            project.project_lead = None
+            project.save(update_fields=["project_lead"])
+        
+        # Remove from tasks' and subtasks' assignees
+        for task in project.tasks.all():
+            task.assigned_to.remove(user)
+            for subtask in task.subtasks.all():
+                subtask.assigned_to.remove(user)
+        
+        # Remove from project issues' assignees
+        project.issues.filter(assigned_to=user).update(assigned_to=None)
+
         refresh_project_health(project)
         return Response(
             ProjectSerializer(project, context={"request": request}).data
@@ -262,17 +293,18 @@ class ProjectMilestoneListCreateView(APIView):
         return Response(serializer.data)
 
     def post(self, request, project_id):
-        if not user_can_manage_projects(request.user):
-            return Response(
-                {"message": "Only admins and managers can create milestones."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         project = get_project_or_404(request.user, project_id)
         if not project:
             return Response(
                 {"message": "Project not found"},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+
+        from .permissions import user_can_manage_project_instance
+        if not user_can_manage_project_instance(request.user, project):
+            return Response(
+                {"message": "Only admins, managers, and the project lead can create milestones."},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         serializer = ProjectMilestoneSerializer(data=request.data)
@@ -300,12 +332,6 @@ class ProjectMilestoneDetailView(APIView):
         return project, milestone
 
     def patch(self, request, project_id, milestone_id):
-        if not user_can_manage_projects(request.user):
-            return Response(
-                {"message": "Only admins and managers can update milestones."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         project, milestone = self.get_milestone(request, project_id, milestone_id)
         if not project:
             return Response(
@@ -316,6 +342,13 @@ class ProjectMilestoneDetailView(APIView):
             return Response(
                 {"message": "Milestone not found"},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+
+        from .permissions import user_can_manage_project_instance
+        if not user_can_manage_project_instance(request.user, project):
+            return Response(
+                {"message": "Only admins, managers, and the project lead can update milestones."},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         serializer = ProjectMilestoneSerializer(
@@ -330,12 +363,6 @@ class ProjectMilestoneDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, project_id, milestone_id):
-        if not user_can_manage_projects(request.user):
-            return Response(
-                {"message": "Only admins and managers can delete milestones."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         project, milestone = self.get_milestone(request, project_id, milestone_id)
         if not project:
             return Response(
@@ -346,6 +373,13 @@ class ProjectMilestoneDetailView(APIView):
             return Response(
                 {"message": "Milestone not found"},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+
+        from .permissions import user_can_manage_project_instance
+        if not user_can_manage_project_instance(request.user, project):
+            return Response(
+                {"message": "Only admins, managers, and the project lead can delete milestones."},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         milestone.delete()

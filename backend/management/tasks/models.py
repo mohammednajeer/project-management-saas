@@ -75,6 +75,13 @@ class Task(models.Model):
         auto_now_add=True
     )
 
+    blocked_by = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        related_name="blocking",
+        blank=True
+    )
+
     def __str__(self):
         return self.title
     

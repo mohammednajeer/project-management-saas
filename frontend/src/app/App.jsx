@@ -42,6 +42,7 @@ import PlatformMaintenance from "../pages/platform/PlatformMaintenance";
 import PlatformUsers from "../pages/platform/PlatformUsers";
 import { AuthProvider } from "../context/AuthContext";
 import MyTasks from "../pages/workspace/Mytasks";
+import AssignedTasks from "../pages/workspace/AssignedTasks";
 import ChatPage from "../pages/chat/ChatPage";
 import Reports from "../pages/Reports/Reports";
 
@@ -149,6 +150,8 @@ function App() {
           >
             <Route index element={<WorkspaceHome />} />
             <Route path="tasks" element={<WorkspaceTasks />} />
+            <Route path="projects" element={<Projects />} />
+            <Route path="projects/:projectId" element={<ProjectDetails />} />
             <Route path="issues" element={<IssuesPage />} />
             <Route path="activity" element={<EmployeeActivityPage />} />
             <Route path="leave" element={<LeavePage />} />
@@ -157,6 +160,7 @@ function App() {
             <Route path="notifications" element={<WorkspaceNotifications />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="my-tasks" element={<MyTasks />} />
+            <Route path="assigned-tasks" element={<AssignedTasks />} />
             <Route path="task/:taskId" element={<TaskWorkspace />} />
             {/* ── Employee subtask workspace ── */}
             <Route path="subtask/:subtaskId" element={<SubtaskDetails />} />

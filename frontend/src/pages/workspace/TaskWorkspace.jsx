@@ -26,31 +26,35 @@ import {
   Users,
   X,
   Zap,
+  Trash2,
+  Plus,
+  FileEdit,
 } from "lucide-react";
 
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import "./TaskWorkspace.css";
 
 /* ─── CONSTANTS ──────────────────────────────────────────────────────────── */
 const STATUS_CONFIG = {
-  todo:        { label: "Todo",        color: "#B45309", bg: "#fbe1d1", border: "rgba(180,83,9,0.18)",  accent: "#D4835E" },
-  in_progress: { label: "In Progress", color: "#1E3A8A", bg: "#d3e3fc", border: "rgba(30,58,138,0.18)",   accent: "#5B8CB8" },
-  review:      { label: "Review",      color: "#5B21B6", bg: "#e8def8", border: "rgba(91,33,182,0.18)",  accent: "#8B7BA8" },
-  done:        { label: "Done",        color: "#166534", bg: "#d8f3dc", border: "rgba(22,101,52,0.18)",   accent: "#3D9A5F" },
+  todo:        { label: "Todo",        color: "#D97706", bg: "#FEF3C7", border: "rgba(217,119,6,0.15)",  accent: "#F59E0B" },
+  in_progress: { label: "In Progress", color: "#2563EB", bg: "#EFF6FF", border: "rgba(37,99,235,0.15)",   accent: "#3B82F6" },
+  review:      { label: "Review",      color: "#7C3AED", bg: "#F5F3FF", border: "rgba(124,58,237,0.15)",  accent: "#8B7BA8" },
+  done:        { label: "Done",        color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.15)",   accent: "#10B981" },
 };
 
 const PRIORITY_CONFIG = {
-  critical: { label: "Critical", color: "#991B1B", bg: "#f8d7da",  border: "rgba(153,27,27,0.2)",   dot: "#A34A30",  cardTint: "rgba(248,215,218,0.6)"  },
-  high:     { label: "High",     color: "#854D0E", bg: "#fff3cd",  border: "rgba(133,77,14,0.2)",   dot: "#D4835E",  cardTint: "rgba(255,243,205,0.6)"  },
-  medium:   { label: "Medium",   color: "#1E3A8A", bg: "#d3e3fc",  border: "rgba(30,58,138,0.2)",  dot: "#5B8CB8",  cardTint: "rgba(211,227,252,0.5)"  },
-  low:      { label: "Low",      color: "#374151", bg: "#F1F5F9",  border: "rgba(55,65,81,0.15)", dot: "#94A3B8",  cardTint: "rgba(241,245,249,0.5)"  },
+  critical: { label: "Critical", color: "#E11D48", bg: "#FFF1F2",  border: "rgba(225,29,72,0.15)",   dot: "#F43F5E",  cardTint: "rgba(255,241,242,0.4)"  },
+  high:     { label: "High",     color: "#D97706", bg: "#FEF3C7",  border: "rgba(217,119,6,0.15)",   dot: "#F59E0B",  cardTint: "rgba(254,243,199,0.4)"  },
+  medium:   { label: "Medium",   color: "#2563EB", bg: "#EFF6FF",  border: "rgba(37,99,235,0.15)",  dot: "#3B82F6",  cardTint: "rgba(239,246,255,0.4)"  },
+  low:      { label: "Low",      color: "#475569", bg: "#F8FAFC",  border: "rgba(71,85,105,0.15)", dot: "#64748B",  cardTint: "rgba(248,250,252,0.4)"  },
 };
 
 const CARD_PALETTE = {
-  todo:        "#fbe1d1",
-  in_progress: "#d3e3fc",
-  review:      "#e8def8",
-  done:        "#d8f3dc",
+  todo:        "#FEF3C7",
+  in_progress: "#EFF6FF",
+  review:      "#F5F3FF",
+  done:        "#ECFDF5",
 };
 
 const ACTIVITY_COLORS = {
@@ -275,6 +279,7 @@ function IssueModal({ subtask, task, onClose, onSuccess }) {
    MAIN COMPONENT — Mission Control Hub
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function TaskWorkspace() {
+  const { user }           = useAuth();
   const { taskId }         = useParams();
   const navigate           = useNavigate();
   const [searchParams]     = useSearchParams();
@@ -287,6 +292,14 @@ export default function TaskWorkspace() {
   const [submitting,   setSubmitting]   = useState(false);
   const [issueDraft,   setIssueDraft]   = useState(null);  // { subtask }
   const [activeTab,    setActiveTab]    = useState("overview"); // overview | comments | files | activity
+
+  /* ── Subtask Form State ── */
+  const [showCreateSubtask, setShowCreateSubtask] = useState(false);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [newSubtaskDesc, setNewSubtaskDesc] = useState("");
+  const [newSubtaskAssignees, setNewSubtaskAssignees] = useState([]);
+  const [newSubtaskPriority, setNewSubtaskPriority] = useState("medium");
+  const [newSubtaskDueDate, setNewSubtaskDueDate] = useState("");
 
   /* ── Load ────────────────────────────────────────────────────────────── */
   const loadWorkspace = useCallback(async () => {
@@ -304,41 +317,17 @@ export default function TaskWorkspace() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadWorkspace(); }, [loadWorkspace]);
 
-  /*
-   * WebSocket integration point — plug into your existing WS infrastructure:
-   *
-   *   ws.on("subtask_status_changed", data => {
-   *     if (String(data.task_id) === String(taskId)) {
-   *       setWorkspace(prev => ({
-   *         ...prev,
-   *         subtasks: prev.subtasks.map(s =>
-   *           String(s.id) === String(data.subtask_id) ? { ...s, status: data.status } : s
-   *         ),
-   *       }));
-   *     }
-   *   });
-   *
-   *   ws.on("task_comment_added", data => {
-   *     if (String(data.task_id) === String(taskId)) {
-   *       setWorkspace(prev => ({
-   *         ...prev,
-   *         comments: [...(prev.comments || []), data.comment],
-   *       }));
-   *     }
-   *   });
-   *
-   *   ws.on("issue_created", data => {
-   *     if (String(data.task_id) === String(taskId)) loadWorkspace();
-   *   });
-   */
-
   /* ── Derived ─────────────────────────────────────────────────────────── */
   const task         = workspace?.task;
+  const isAssignee   = useMemo(() => task?.assigned_to?.includes(user?.id), [task, user]);
   const subtasks     = workspace?.subtasks    || [];
   const taskFiles    = workspace?.attachments || [];
   const issues       = workspace?.issues      || [];
 
   const editableIds  = useMemo(() => new Set(workspace?.permissions?.editable_subtasks || []), [workspace?.permissions?.editable_subtasks]);
+  const canEditTask = workspace?.permissions?.can_edit_task;
+  const canUploadAttachment = workspace?.permissions?.can_upload_task_attachment;
+  const isLeadOrMgr = workspace?.permissions?.is_lead_or_mgr;
   const taskComments = useMemo(() => (workspace?.comments  || []).filter(c => !c.subtask), [workspace]);
   const allActivity  = useMemo(() => (workspace?.activities || []).slice(0, 8), [workspace]);
 
@@ -393,8 +382,78 @@ export default function TaskWorkspace() {
 
   /* ── Navigation ──────────────────────────────────────────────────────── */
   const openSubtask = (subtask) => {
-    if (!editableIds.has(subtask.id)) return;
+    // All project members can view any subtask; editing is gated on the detail page
     navigate(`/workspace/subtask/${subtask.id}`);
+  };
+
+  /* ── Subtask CRUD operations ── */
+  const handleCreateSubtaskSubmit = async (e) => {
+    e.preventDefault();
+    if (!newSubtaskTitle.trim()) return;
+    try {
+      await api.post(`/tasks/subtasks/${taskId}/`, {
+        title: newSubtaskTitle.trim(),
+        description: newSubtaskDesc.trim(),
+        assigned_to: newSubtaskAssignees,
+        priority: newSubtaskPriority,
+        status: "todo",
+        due_date: newSubtaskDueDate || null
+      });
+      setNewSubtaskTitle("");
+      setNewSubtaskDesc("");
+      setNewSubtaskAssignees([]);
+      setNewSubtaskPriority("medium");
+      setNewSubtaskDueDate("");
+      setShowCreateSubtask(false);
+      await loadWorkspace();
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not create subtask.");
+    }
+  };
+
+  const handleUpdateSubtaskTitle = async (subtaskId, newTitle) => {
+    try {
+      await api.patch(`/tasks/subtask/${subtaskId}/`, { title: newTitle });
+      await loadWorkspace();
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not update subtask.");
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId) => {
+    if (!window.confirm("Are you sure you want to delete this subtask?")) return;
+    try {
+      await api.delete(`/tasks/subtask/${subtaskId}/`);
+      await loadWorkspace();
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not delete subtask.");
+    }
+  };
+
+  /* ── Task Attachment Upload/Delete ── */
+  const handleTaskAttachmentUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      await api.post(`/tasks/${taskId}/attachments/upload/`, fd, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      await loadWorkspace();
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not upload file.");
+    }
+  };
+
+  const handleDeleteTaskAttachment = async (attachmentId) => {
+    if (!window.confirm("Are you sure you want to delete this attachment?")) return;
+    try {
+      await api.delete(`/tasks/attachments/${attachmentId}/delete/`);
+      await loadWorkspace();
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not delete attachment.");
+    }
   };
 
   /* ─────────────────────────────────────────────────────────────────────── */
@@ -425,7 +484,7 @@ export default function TaskWorkspace() {
         <div className="tw-blocked-banner">
           <AlertTriangle size={16} className="tw-blocked-banner-icon" />
           <div className="tw-blocked-banner-content">
-            <strong>Blockage Alert:</strong> This workspace has {activeIssues.length} active issue{activeIssues.length > 1 ? "s" : ""} blocking progress.
+            <strong>Issue/Block Alert:</strong> This workspace has {activeIssues.length} active issue{activeIssues.length > 1 ? "s" : ""} blocking progress.
           </div>
         </div>
       )}
@@ -435,10 +494,30 @@ export default function TaskWorkspace() {
           ════════════════════════════════════════════════════════════════ */}
       <header className="tw-hero">
         <div className="tw-hero-body">
-          <div className="tw-hero-eyebrow">
-            <span className="tw-live-dot" />
-            <Sparkles size={11} />
-            Employee Workspace
+          <div className="tw-hero-eyebrow" style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span className="tw-live-dot" />
+              <Sparkles size={11} />
+              Employee Workspace
+            </div>
+            {isAssignee && (
+              <span className="tw-hero-assignee-badge" style={{
+                marginLeft: "12px",
+                background: "rgba(99, 102, 241, 0.15)",
+                color: "#6366f1",
+                border: "1px solid rgba(99, 102, 241, 0.3)",
+                fontSize: "11px",
+                fontWeight: 600,
+                padding: "2px 10px",
+                borderRadius: "20px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px"
+              }}>
+                <Zap size={11} />
+                Your Assigned Task
+              </span>
+            )}
           </div>
 
           <h1 className="tw-hero-title">{task?.title}</h1>
@@ -460,7 +539,42 @@ export default function TaskWorkspace() {
               <UserRound size={11} />
               {task?.created_by_data?.name || "Manager"}
             </span>
-            <StatusBadge   status={task?.status} />
+            {canEditTask ? (
+              <div className="tw-status-select-wrapper" style={{ position: "relative", display: "inline-block" }}>
+                <select
+                  value={task?.status}
+                  onChange={async (e) => {
+                    const newStatus = e.target.value;
+                    try {
+                      await api.patch(`/tasks/task/${task.id}/`, { status: newStatus });
+                      await loadWorkspace();
+                    } catch (err) {
+                      setError(err.response?.data?.message || "Could not update task status.");
+                    }
+                  }}
+                  className="tw-status-select"
+                  style={{
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    padding: "4px 24px 4px 12px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    borderRadius: "20px",
+                    border: `1px solid ${STATUS_CONFIG[task?.status]?.border || "rgba(0,0,0,0.1)"}`,
+                    color: STATUS_CONFIG[task?.status]?.color || "#B45309",
+                    background: `${STATUS_CONFIG[task?.status]?.bg || "#fbe1d1"} url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23${(STATUS_CONFIG[task?.status]?.color || "B45309").replace("#", "")}' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center`,
+                    cursor: "pointer",
+                    outline: "none"
+                  }}
+                >
+                  {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                    <option key={k} value={k}>{v.label}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <StatusBadge status={task?.status} />
+            )}
             <PriorityBadge priority={task?.priority} />
           </div>
 
@@ -557,8 +671,84 @@ export default function TaskWorkspace() {
           {/* ── OVERVIEW: Subtask cards ── */}
           {activeTab === "overview" && (
             <div className="tw-overview-grid tw-anim">
+              {canEditTask && (
+                <div className="tw-create-subtask-box" style={{
+                  gridColumn: "1 / -1",
+                  background: "rgba(255, 255, 255, 0.4)",
+                  border: "1px dashed rgba(0, 0, 0, 0.15)",
+                  borderRadius: "16px",
+                  padding: "16px",
+                  marginBottom: "16px"
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateSubtask(!showCreateSubtask)}
+                    className="tw-btn tw-btn--ghost"
+                    style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%", justifyContent: "center", border: "none" }}
+                  >
+                    <Plus size={14} /> {showCreateSubtask ? "Cancel" : "Create New Subtask"}
+                  </button>
+                  {showCreateSubtask && (
+                    <form onSubmit={handleCreateSubtaskSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                      <input
+                        className="tw-field"
+                        placeholder="Subtask Title"
+                        value={newSubtaskTitle}
+                        onChange={e => setNewSubtaskTitle(e.target.value)}
+                        required
+                      />
+                      <textarea
+                        className="tw-field tw-field--ta"
+                        placeholder="Description (optional)"
+                        value={newSubtaskDesc}
+                        onChange={e => setNewSubtaskDesc(e.target.value)}
+                        rows={2}
+                      />
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                        <select className="tw-field" value={newSubtaskPriority} onChange={e => setNewSubtaskPriority(e.target.value)}>
+                          <option value="low">Low Priority</option>
+                          <option value="medium">Medium Priority</option>
+                          <option value="high">High Priority</option>
+                          <option value="critical">Critical Priority</option>
+                        </select>
+                        <input
+                          type="date"
+                          className="tw-field"
+                          value={newSubtaskDueDate}
+                          onChange={e => setNewSubtaskDueDate(e.target.value)}
+                        />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <span style={{ fontSize: "11px", color: "var(--text-3)", fontWeight: 600 }}>Assign Subtask Members</span>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                          {workspace.project_members?.map(m => {
+                            const isSelected = newSubtaskAssignees.includes(m.id);
+                            return (
+                              <button
+                                type="button"
+                                key={m.id}
+                                onClick={() => {
+                                  setNewSubtaskAssignees(prev =>
+                                    isSelected ? prev.filter(id => id !== m.id) : [...prev, m.id]
+                                  );
+                                }}
+                                className={`tw-btn ${isSelected ? "tw-btn--primary" : "tw-btn--ghost"}`}
+                                style={{ padding: "4px 8px", fontSize: "11px" }}
+                              >
+                                {m.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <button type="submit" className="tw-btn tw-btn--primary" style={{ width: "100%" }}>Create Subtask</button>
+                    </form>
+                  )}
+                </div>
+              )}
+
               {subtasks.length === 0 && (
-                <div className="tw-empty-state">
+                <div className="tw-empty-state" style={{ gridColumn: "1 / -1" }}>
                   <GitBranch size={28} />
                   <p>No subtasks in this workspace yet.</p>
                 </div>
@@ -582,7 +772,7 @@ export default function TaskWorkspace() {
                     } : {}}
                     onClick={() => openSubtask(sub)}
                     role="button"
-                    tabIndex={isEditable ? 0 : -1}
+                    tabIndex={0}
                     onKeyDown={e => e.key === "Enter" && openSubtask(sub)}
                   >
 
@@ -595,7 +785,7 @@ export default function TaskWorkspace() {
                     )}
 
                     {/* Badge Container */}
-                    {(isEditable || isBlocked) && (
+                    {(isEditable || isBlocked || canEditTask) && (
                       <div className="tw-sub-badge-container">
                         {isEditable && (
                           <div className="tw-sub-mine-badge">
@@ -606,7 +796,34 @@ export default function TaskWorkspace() {
                         {isBlocked && (
                           <div className="tw-sub-blocked-badge">
                             <AlertTriangle size={9} />
-                            Blocked
+                            Issue/Block
+                          </div>
+                        )}
+                        {canEditTask && (
+                          <div style={{ display: "flex", gap: "6px", marginLeft: "auto" }} onClick={e => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newTitle = window.prompt("Enter new subtask title:", sub.title);
+                                if (newTitle !== null && newTitle.trim()) {
+                                  handleUpdateSubtaskTitle(sub.id, newTitle.trim());
+                                }
+                              }}
+                              className="tw-icon-btn"
+                              title="Edit Subtask Title"
+                              style={{ background: "rgba(255, 255, 255, 0.4)", border: "none", borderRadius: "4px", padding: "4px" }}
+                            >
+                              <FileEdit size={10} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSubtask(sub.id)}
+                              className="tw-icon-btn"
+                              style={{ color: "#ef4444", background: "rgba(255, 255, 255, 0.4)", border: "none", borderRadius: "4px", padding: "4px" }}
+                              title="Delete Subtask"
+                            >
+                              <Trash2 size={10} />
+                            </button>
                           </div>
                         )}
                       </div>
@@ -657,13 +874,11 @@ export default function TaskWorkspace() {
                       </div>
                     </div>
 
-                    {/* Open CTA */}
-                    {isEditable && (
-                      <div className="tw-sub-cta">
-                        <span>Open workspace</span>
-                        <ArrowRight size={12} />
-                      </div>
-                    )}
+                    {/* Open CTA — always visible, label changes by permission */}
+                    <div className="tw-sub-cta">
+                      <span>{isEditable ? "Open workspace" : "View details"}</span>
+                      <ArrowRight size={12} />
+                    </div>
                   </article>
                 );
               })}
@@ -744,7 +959,7 @@ export default function TaskWorkspace() {
             <div className="tw-section tw-anim">
               <div className="tw-section-head">
                 <h2><Paperclip size={14} /> Task Resources</h2>
-                <p>Manager-uploaded documentation, references, and requirements. Read-only.</p>
+                <p>Upload and view deliverables, resources, and attachments for this task.</p>
               </div>
 
               {taskFiles.length === 0 ? (
@@ -753,8 +968,95 @@ export default function TaskWorkspace() {
                   <p>No resources uploaded yet.</p>
                 </div>
               ) : (
-                <div className="tw-file-grid">
-                  {taskFiles.map(f => <FileChip key={f.id} file={f} />)}
+                <div className="tw-file-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px", marginBottom: "20px" }}>
+                  {taskFiles.map(f => {
+                    const url = f.file || f.file_url;
+                    const name = f.original_name || f.name || "File";
+                    const isUploader = String(f.uploaded_by_data?.id) === String(user?.id);
+                    const canDelete = isLeadOrMgr || isUploader;
+                    return (
+                      <div key={f.id} className="tw-file-card" style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 12px",
+                        background: "rgba(255, 255, 255, 0.6)",
+                        border: "1px solid rgba(0,0,0,0.06)",
+                        borderRadius: "10px",
+                        gap: "8px"
+                      }}>
+                        <a href={url} target="_blank" rel="noreferrer" title={name} style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          textDecoration: "none",
+                          color: "inherit",
+                          flexGrow: 1,
+                          minWidth: 0
+                        }}>
+                          {isImg(url || name) ? <FileImage size={16} style={{ color: "#3b82f6", flexShrink: 0 }} /> : <FileText size={16} style={{ color: "#6b7280", flexShrink: 0 }} />}
+                          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                            <span style={{ fontSize: "13px", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+                            <small style={{ fontSize: "10px", color: "var(--text-3)" }}>{fmtBytes(f.file_size)}</small>
+                          </div>
+                        </a>
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTaskAttachment(f.id)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#ef4444",
+                              cursor: "pointer",
+                              padding: "4px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "4px",
+                              transition: "background 0.2s"
+                            }}
+                            title="Delete file"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {canUploadAttachment && (
+                <div className="tw-file-upload-section" style={{
+                  padding: "20px",
+                  background: "rgba(255, 255, 255, 0.4)",
+                  border: "2px dashed rgba(0, 0, 0, 0.15)",
+                  borderRadius: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "10px",
+                  marginBottom: "20px"
+                }}>
+                  <UploadCloud size={28} style={{ color: "#4f46e5" }} />
+                  <div style={{ textAlign: "center" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 600, display: "block" }}>Upload Deliverable / Attachment</span>
+                    <span style={{ fontSize: "11px", color: "var(--text-3)", display: "block", marginTop: "2px" }}>Share files, code deliverables, or documentation</span>
+                  </div>
+                  <input
+                    type="file"
+                    id="task-attachment-file"
+                    style={{ display: "none" }}
+                    onChange={handleTaskAttachmentUpload}
+                  />
+                  <button
+                    type="button"
+                    className="tw-btn tw-btn--primary tw-btn--sm"
+                    onClick={() => document.getElementById("task-attachment-file")?.click()}
+                  >
+                    Select File
+                  </button>
                 </div>
               )}
 
@@ -774,14 +1076,12 @@ export default function TaskWorkspace() {
                       <Paperclip size={10} />
                       {s.attachments_count} file{s.attachments_count !== 1 ? "s" : ""}
                     </span>
-                    {editableIds.has(s.id) && (
-                      <button
-                        className="tw-sf-open"
-                        onClick={() => navigate(`/workspace/subtask/${s.id}`)}
-                      >
-                        Open <ArrowRight size={10} />
-                      </button>
-                    )}
+                    <button
+                      className="tw-sf-open"
+                      onClick={() => navigate(`/workspace/subtask/${s.id}`)}
+                    >
+                      Open <ArrowRight size={10} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -881,6 +1181,72 @@ export default function TaskWorkspace() {
               })}
             </div>
           </section>
+
+          {/* ── Task Assignments (Manage Collaborators) ── */}
+          {canEditTask && (() => {
+            const assignableMembers = workspace?.project_members?.filter(
+              m => m.role !== "admin" && m.role !== "manager"
+            ) || [];
+            return (
+              <section className="tw-panel">
+                <div className="tw-panel-head">
+                  <Users size={13} className="tw-panel-icon" />
+                  <h3>Task Assignments</h3>
+                </div>
+                <p style={{ fontSize: "11px", color: "var(--text-3)", marginBottom: "10px" }}>
+                  Assign employees to this task:
+                </p>
+                <div className="tw-team-list" style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
+                  {assignableMembers.map(member => {
+                    const isAssigned = task?.assigned_to?.includes(member.id);
+                    return (
+                      <label key={member.id} style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "6px 10px",
+                        background: "rgba(255, 255, 255, 0.4)",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: 500
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={isAssigned || false}
+                          onChange={async (e) => {
+                            const checked = e.target.checked;
+                            let newAssigned = [...(task?.assigned_to || [])];
+                            if (checked) {
+                              if (!newAssigned.includes(member.id)) {
+                                newAssigned.push(member.id);
+                              }
+                            } else {
+                              newAssigned = newAssigned.filter(id => id !== member.id);
+                            }
+                            try {
+                              await api.patch(`/tasks/task/${task.id}/`, { assigned_to: newAssigned });
+                              await loadWorkspace();
+                            } catch (err) {
+                              setError(err.response?.data?.message || "Could not update task assignments.");
+                            }
+                          }}
+                          style={{ cursor: "pointer" }}
+                        />
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span>{member.name}</span>
+                          <small style={{ fontSize: "10px", color: "var(--text-3)", textTransform: "capitalize" }}>{member.role}</small>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {assignableMembers.length === 0 && (
+                    <p className="tw-panel-empty">No employees available to assign.</p>
+                  )}
+                </div>
+              </section>
+            );
+          })()}
 
           {/* ── Team ── */}
           {(workspace?.team?.length > 0) && (

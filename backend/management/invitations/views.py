@@ -179,6 +179,8 @@ class TeamListView(APIView):
 
         users = User.objects.filter(
             organization=org
+        ).exclude(
+            role="platform_admin"
         ).order_by(
             "name",
             "email"

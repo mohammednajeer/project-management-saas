@@ -30,23 +30,27 @@ class ChatConsumer(
             return
 
         self.conversation_id = (
-            self.scope["url_route"]["kwargs"][
-                "conversation_id"
-            ]
+            self.scope["url_route"]["kwargs"].get("conversation_id")
+        )
+        self.channel_id = (
+            self.scope["url_route"]["kwargs"].get("channel_id")
         )
 
-        is_participant = (
-            await self.user_in_conversation()
-        )
-
-        if not is_participant:
-
+        if self.conversation_id:
+            is_participant = await self.user_in_conversation()
+            if not is_participant:
+                await self.close()
+                return
+            self.room_group_name = f"chat_{self.conversation_id}"
+        elif self.channel_id:
+            is_member = await self.user_in_channel_org()
+            if not is_member:
+                await self.close()
+                return
+            self.room_group_name = f"group_channel_{self.channel_id}"
+        else:
             await self.close()
             return
-
-        self.room_group_name = (
-            f"chat_{self.conversation_id}"
-        )
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -106,7 +110,8 @@ class ChatConsumer(
                 self.room_group_name,
                 {
                     "type": "typing_event",
-                    "conversation_id": str(self.conversation_id),
+                    "conversation_id": str(self.conversation_id) if self.conversation_id else None,
+                    "channel_id": str(self.channel_id) if self.channel_id else None,
                     "sender_id": str(self.user.id),
                     "is_typing": bool(data.get("is_typing")),
                 },
@@ -115,16 +120,16 @@ class ChatConsumer(
 
         if event_type == "seen":
 
-            await self.mark_messages_seen()
-
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    "type": "seen_event",
-                    "conversation_id": str(self.conversation_id),
-                    "seen_by": str(self.user.id),
-                },
-            )
+            if self.conversation_id:
+                await self.mark_messages_seen()
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "seen_event",
+                        "conversation_id": str(self.conversation_id),
+                        "seen_by": str(self.user.id),
+                    },
+                )
             return
 
         content = data.get("content")
@@ -142,56 +147,53 @@ class ChatConsumer(
             content
         )
 
+        if self.conversation_id:
+            message_data = {
+                "type": "message",
+                "id": str(message.id),
+                "client_id": data.get("client_id"),
+                "conversation": str(self.conversation_id),
+                "content": message.content,
+                "is_seen": message.is_seen,
+                "created_at": message.created_at.isoformat(),
+                "sender_data": {
+                    "id": str(self.user.id),
+                    "name": self.user.name,
+                    "email": self.user.email,
+                    "role": self.user.role,
+                    "profile_picture": (
+                        self.user.profile_picture.url
+                        if self.user.profile_picture
+                        else None
+                    ),
+                },
+            }
+        else:
+            message_data = {
+                "type": "message",
+                "id": str(message.id),
+                "client_id": data.get("client_id"),
+                "channel": str(self.channel_id),
+                "content": message.content,
+                "created_at": message.created_at.isoformat(),
+                "sender_data": {
+                    "id": str(self.user.id),
+                    "name": self.user.name,
+                    "email": self.user.email,
+                    "role": self.user.role,
+                    "profile_picture": (
+                        self.user.profile_picture.url
+                        if self.user.profile_picture
+                        else None
+                    ),
+                },
+            }
+
         await self.channel_layer.group_send(
-
             self.room_group_name,
-
             {
                 "type": "chat_message",
-
-                "message": {
-                    "type": "message",
-
-                    "id":
-                        str(message.id),
-
-                    "client_id":
-                        data.get("client_id"),
-
-                    "conversation":
-                        str(self.conversation_id),
-
-                    "content":
-                        message.content,
-
-                    "is_seen":
-                        message.is_seen,
-
-                    "created_at":
-                        message.created_at.isoformat(),
-
-                    "sender_data": {
-
-                        "id":
-                            str(self.user.id),
-                        
-
-                        "name":
-                            self.user.name,
-
-                        "email":
-                            self.user.email,
-
-                        "role":
-                            self.user.role,
-
-                        "profile_picture": (
-                            self.user.profile_picture.url
-                            if self.user.profile_picture
-                            else None
-                        ),
-                    },
-                },
+                "message": message_data,
             },
         )
 
@@ -215,7 +217,8 @@ class ChatConsumer(
             text_data=json.dumps(
                 {
                     "type": "typing",
-                    "conversation_id": event["conversation_id"],
+                    "conversation_id": event.get("conversation_id"),
+                    "channel_id": event.get("channel_id"),
                     "sender_id": event["sender_id"],
                     "is_typing": event["is_typing"],
                 }
@@ -231,7 +234,8 @@ class ChatConsumer(
             text_data=json.dumps(
                 {
                     "type": "seen",
-                    "conversation_id": event["conversation_id"],
+                    "conversation_id": event.get("conversation_id"),
+                    "channel_id": event.get("channel_id"),
                     "seen_by": event["seen_by"],
                 }
             )
@@ -284,37 +288,65 @@ class ChatConsumer(
         self,
         content
     ):
-
-        conversation = (
-            Conversation.objects.get(
-                id=self.conversation_id
+        if self.conversation_id:
+            conversation = (
+                Conversation.objects.get(
+                    id=self.conversation_id
+                )
             )
-        )
-
-        message = (
-            Message.objects.create(
-                conversation=conversation,
-                sender=self.user,
-                content=content
+            message = (
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=self.user,
+                    content=content
+                )
             )
-        )
-
-        conversation.save()
-
-        return message
+            conversation.save()
+            return message
+        else:
+            from .models import GroupChannel, ChannelMessage
+            channel = (
+                GroupChannel.objects.get(
+                    id=self.channel_id
+                )
+            )
+            message = (
+                ChannelMessage.objects.create(
+                    channel=channel,
+                    sender=self.user,
+                    content=content
+                )
+            )
+            return message
 
     @database_sync_to_async
     def mark_messages_seen(self):
+        if self.conversation_id:
+            return (
+                Message.objects.filter(
+                    conversation_id=self.conversation_id,
+                    is_seen=False
+                )
+                .exclude(
+                    sender=self.user
+                )
+                .update(
+                    is_seen=True
+                )
+            )
+        return 0
 
-        return (
-            Message.objects.filter(
-                conversation_id=self.conversation_id,
-                is_seen=False
-            )
-            .exclude(
-                sender=self.user
-            )
-            .update(
-                is_seen=True
-            )
-        )
+    @database_sync_to_async
+    def user_in_channel_org(self):
+        from .models import GroupChannel
+        try:
+            channel = GroupChannel.objects.get(id=self.channel_id)
+            if channel.organization_id != self.user.organization_id:
+                return False
+            if self.user.role in ["admin", "manager"] or channel.is_general:
+                return True
+            if channel.project_id:
+                return channel.project.members.filter(id=self.user.id).exists()
+            return channel.members.filter(id=self.user.id).exists()
+        except GroupChannel.DoesNotExist:
+            return False

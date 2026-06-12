@@ -76,9 +76,11 @@ class WorkspaceTasksView(APIView):
     permission_classes = [IsAuthenticated, IsEmployee]
 
     def get(self, request):
-
+        from django.db.models import Q
         tasks = Task.objects.filter(
-            assigned_to=request.user
+            Q(assigned_to=request.user) | Q(subtasks__assigned_to=request.user) | Q(issues__assigned_to=request.user) | Q(subtasks__issues__assigned_to=request.user)
+        ).filter(
+            Q(project__members=request.user) | Q(project__project_lead=request.user) | Q(issues__assigned_to=request.user) | Q(subtasks__issues__assigned_to=request.user)
         ).distinct()
 
         serializer = TaskSerializer(
@@ -94,9 +96,11 @@ class WorkspaceSubTasksView(APIView):
     permission_classes = [IsAuthenticated, IsEmployee]
 
     def get(self, request):
-
+        from django.db.models import Q
         subtasks = SubTask.objects.filter(
-            assigned_to=request.user
+            Q(assigned_to=request.user) | Q(issues__assigned_to=request.user)
+        ).filter(
+            Q(task__project__members=request.user) | Q(task__project__project_lead=request.user) | Q(issues__assigned_to=request.user)
         ).distinct()
 
         serializer = SubTaskSerializer(
@@ -116,8 +120,11 @@ class WorkspaceDashboardView(APIView):
         today = timezone.localdate()
         next_week = today + timezone.timedelta(days=7)
 
+        from django.db.models import Q
         assigned_tasks = Task.objects.filter(
             assigned_to=request.user
+        ).filter(
+            Q(project__members=request.user) | Q(project__project_lead=request.user)
         ).distinct()
 
         assigned_subtasks = SubTask.objects.filter(
@@ -125,6 +132,8 @@ class WorkspaceDashboardView(APIView):
         ).select_related(
             "task",
             "task__project",
+        ).filter(
+            Q(task__project__members=request.user) | Q(task__project__project_lead=request.user)
         ).distinct()
 
         assigned_tasks_count = assigned_tasks.count()
@@ -181,6 +190,14 @@ class WorkspaceDashboardView(APIView):
             "-created_at",
         )[:5]
 
+        from projects.models import Project
+        from projects.serializers import ProjectSerializer
+        led_projects = Project.objects.filter(
+            project_lead=request.user,
+            organization=request.user.organization
+        ).select_related("project_lead").prefetch_related("members", "milestones").distinct()
+        led_projects_data = ProjectSerializer(led_projects, many=True, context={"request": request}).data
+
         return Response(
             {
                 "assigned_tasks":
@@ -211,6 +228,7 @@ class WorkspaceDashboardView(APIView):
                         upcoming_deadlines,
                         many=True
                     ).data,
+                "led_projects": led_projects_data,
             }
         )
 from activities.utils import create_activity
@@ -233,6 +251,8 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
                     "comments",
                     "comments__user",
                     "attachments",
+                    "task__assigned_to",
+                    "task__project__members",
                 )
                 .get(
                     id=subtask_id,
@@ -250,10 +270,14 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
             )
 
         if request.user.role not in ["admin", "manager"]:
+            is_project_lead = subtask.task.project.project_lead_id == request.user.id
+            is_project_member = subtask.task.project.members.filter(id=request.user.id).exists()
+            is_task_assignee = subtask.task.assigned_to.filter(id=request.user.id).exists()
             is_assigned_to_subtask = subtask.assigned_to.filter(id=request.user.id).exists()
             is_assigned_to_subtask_issue = subtask.issues.filter(assigned_to=request.user).exists()
 
-            if not (is_assigned_to_subtask or is_assigned_to_subtask_issue):
+            if not (is_project_lead or is_project_member or is_task_assignee
+                    or is_assigned_to_subtask or is_assigned_to_subtask_issue):
                 return Response(
                     {
                         "message":
@@ -282,6 +306,13 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
             .select_related(
                 "raised_by",
                 "assigned_to",
+                "project",
+                "task",
+                "subtask",
+            )
+            .prefetch_related(
+                "attachments",
+                "attachments__uploaded_by",
             )
             .order_by("-created_at")
         )
@@ -316,39 +347,8 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
             ).data
         )
 
-        data["issues"] = []
-        for issue in issues:
-            attachments_list = []
-            try:
-                attachments_list = [
-                    {
-                        "id": str(attachment.id),
-                        "file": attachment.file.url,
-                        "original_name": attachment.original_name,
-                        "uploaded_at": attachment.uploaded_at,
-                        "uploaded_by_data": {
-                            "id": str(attachment.uploaded_by.id),
-                            "name": attachment.uploaded_by.name,
-                            "email": attachment.uploaded_by.email,
-                            "role": attachment.uploaded_by.role,
-                        },
-                        "file_size": attachment.file.size,
-                    }
-                    for attachment in issue.attachments.select_related(
-                        "uploaded_by"
-                    ).all()
-                ]
-            except (AttributeError, OperationalError, ProgrammingError):
-                attachments_list = []
-
-            data["issues"].append({
-                "id": str(issue.id),
-                "title": issue.title,
-                "description": issue.description,
-                "status": issue.status,
-                "priority": issue.priority,
-                "attachments": attachments_list,
-            })
+        from issues.serializers import IssueSerializer
+        data["issues"] = IssueSerializer(issues, many=True).data
 
         data["sibling_subtasks"] = (
             SubTaskSerializer(
@@ -410,9 +410,11 @@ class WorkspaceSubTaskStatusUpdateView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            if not subtask.assigned_to.filter(
-                id=request.user.id
-            ).exists():
+            is_project_lead = subtask.task.project.project_lead_id == request.user.id
+            is_task_assignee = subtask.task.assigned_to.filter(id=request.user.id).exists()
+            is_assigned_to_subtask = subtask.assigned_to.filter(id=request.user.id).exists()
+            is_assigned_to_subtask_issue = subtask.issues.filter(assigned_to=request.user).exists()
+            if not (is_project_lead or is_task_assignee or is_assigned_to_subtask or is_assigned_to_subtask_issue):
                 return Response(
                     {
                         "message":
@@ -506,11 +508,27 @@ class MyTasksView(APIView):
 
     def get(self, request):
 
-        subtasks = (
-            SubTask.objects
+        parent_tasks = (
+            Task.objects
             .filter(
                 assigned_to=request.user
             )
+            .select_related(
+                "project"
+            )
+            .annotate(
+                num_comments=Count("comments", distinct=True),
+                num_attachments=Count("attachments", distinct=True)
+            )
+            .order_by("due_date")
+        )
+
+        subtasks = (
+            SubTask.objects
+            .filter(
+                Q(assigned_to=request.user) | Q(issues__assigned_to=request.user)
+            )
+            .distinct()
             .select_related(
                 "task",
                 "task__project"
@@ -539,7 +557,37 @@ class MyTasksView(APIView):
             .order_by("-created_at")
         )
 
+        if request.user.role == "employee":
+            parent_tasks = parent_tasks.filter(
+                Q(project__members=request.user) | Q(project__project_lead=request.user)
+            ).distinct()
+            subtasks = subtasks.filter(
+                Q(task__project__members=request.user) | Q(task__project__project_lead=request.user) | Q(issues__assigned_to=request.user)
+            ).distinct()
+            issues = issues.filter(
+                Q(project__members=request.user) | Q(project__project_lead=request.user) | Q(assigned_to=request.user)
+            ).distinct()
+
         data = []
+
+        for task in parent_tasks:
+            data.append({
+                "id": str(task.id),
+                "title": task.title,
+                "status": task.status,
+                "priority": task.priority,
+                "due_date": task.due_date,
+                "task": None,
+                "project": {
+                    "id": str(task.project.id),
+                    "title": task.project.name,
+                },
+                "comments_count": task.num_comments,
+                "attachments_count": task.num_attachments,
+                "assignee_name": request.user.name or request.user.email,
+                "is_issue": False,
+                "is_parent_task": True,
+            })
 
         for subtask in subtasks:
 
@@ -572,6 +620,7 @@ class MyTasksView(APIView):
                 "attachments_count": subtask.num_attachments,
                 "assignee_name": request.user.name or request.user.email,
                 "is_issue": False,
+                "is_parent_task": False,
             })
 
         for issue in issues:
@@ -613,6 +662,7 @@ class MyTasksView(APIView):
                 "attachments_count": issue.num_attachments,
                 "assignee_name": request.user.name or request.user.email,
                 "is_issue": True,
+                "is_parent_task": False,
             })
 
         return Response(data)
@@ -644,6 +694,9 @@ class EmployeeTaskWorkspaceView(APIView):
                 .filter(
                     Q(id=task_id) &
                     Q(project__organization=request.user.organization) & (
+                        Q(project__members=request.user) |
+                        Q(project__project_lead=request.user) |
+                        Q(assigned_to=request.user) |
                         Q(subtasks__assigned_to=request.user) |
                         Q(issues__assigned_to=request.user) |
                         Q(subtasks__issues__assigned_to=request.user)
@@ -678,10 +731,13 @@ class EmployeeTaskWorkspaceView(APIView):
 
         today = timezone.localdate()
 
+        is_lead_or_mgr = request.user.role in ["admin", "manager"] or task.project.project_lead_id == request.user.id
+        is_parent_assigned = task.assigned_to.filter(id=request.user.id).exists()
+
         editable_subtask_ids = [
             str(subtask.id)
             for subtask in subtasks
-            if subtask.assigned_to.filter(
+            if is_lead_or_mgr or is_parent_assigned or subtask.assigned_to.filter(
                 id=request.user.id
             ).exists()
         ]
@@ -717,6 +773,7 @@ class EmployeeTaskWorkspaceView(APIView):
                 else None
             ),
             "progress": task_data.get("progress", 0),
+            "project_lead_id": str(task.project.project_lead_id) if task.project.project_lead_id else None,
         }
         task_data["created_by_data"] = {
             "id": str(task.created_by.id),
@@ -906,6 +963,28 @@ class EmployeeTaskWorkspaceView(APIView):
             ).count(),
         }
 
+        project_members = task.project.members.all()
+        project_members_data = [
+            {
+                "id": str(member.id),
+                "name": member.name,
+                "email": member.email,
+                "role": member.role,
+            }
+            for member in project_members
+        ]
+        if task.project.project_lead and task.project.project_lead not in project_members:
+            project_members_data.append({
+                "id": str(task.project.project_lead.id),
+                "name": task.project.project_lead.name,
+                "email": task.project.project_lead.email,
+                "role": task.project.project_lead.role,
+            })
+
+        is_assigned = task.assigned_to.filter(id=request.user.id).exists()
+        is_lead_or_mgr = request.user.role in ["admin", "manager"] or task.project.project_lead_id == request.user.id
+        can_edit_or_upload = is_lead_or_mgr or is_assigned
+
         return Response(
             {
                 "task": task_data,
@@ -927,11 +1006,13 @@ class EmployeeTaskWorkspaceView(APIView):
                 "issues": issue_data,
                 "team": team_data,
                 "insights": insights,
+                "project_members": project_members_data,
                 "permissions": {
-                    "can_edit_task": False,
+                    "can_edit_task": can_edit_or_upload,
+                    "is_lead_or_mgr": is_lead_or_mgr,
                     "can_comment": True,
                     "can_raise_issue": True,
-                    "can_upload_task_attachment": False,
+                    "can_upload_task_attachment": can_edit_or_upload,
                     "editable_subtasks": editable_subtask_ids,
                     "readonly_subtasks": [
                         str(subtask.id)

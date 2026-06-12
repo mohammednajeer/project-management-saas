@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, Flag, CheckCircle2, FolderOpen, ArrowLeft } from "lucide-react";
+import { Calendar, Flag, CheckCircle2, FolderOpen, ArrowLeft, AlertTriangle, Link2, Trash2, Plus } from "lucide-react";
 import api from "../../services/api";
 import TaskAttachmentsSection from "../../components/tasks/TaskAttachmentsSection";
 import SubTaskAttachmentsSection from "../../components/tasks/SubTaskAttachmentsSection";
 import "./TaskDetails.css";
 import checkboxIllustration from "../../assets/images/undraw_check-boxes_x5fg.svg";
 import commentsIllustration from "../../assets/images/undraw_customer-survey_ek29.svg";
+
 
 /* ─── helpers ─── */
 function StatusBadge({ status }) {
@@ -138,6 +139,14 @@ export default function TaskDetails() {
     const [activities, setActivities] = useState([]);
     const [activitiesLoading, setActivitiesLoading] = useState(true);
     const [activitiesError, setActivitiesError] = useState("");
+    const [blockedBy, setBlockedBy] = useState([]);
+    const [blocking, setBlocking] = useState([]);
+    const [allTasks, setAllTasks] = useState([]);
+    const [selectedBlockerId, setSelectedBlockerId] = useState("");
+    const [dependencyError, setDependencyError] = useState("");
+    const [dependencyMessage, setDependencyMessage] = useState("");
+    const [saveError, setSaveError] = useState("");
+
 
 
   useEffect(() => { fetchTask(); }, [taskId]);
@@ -210,6 +219,14 @@ export default function TaskDetails() {
           ) || []
 
         );
+
+        setBlockedBy(foundTask.blocked_by_data || []);
+        setBlocking(foundTask.blocking_data || []);
+
+        const projectTasksRes = await api.get(`/tasks/project/${foundTask.project}/?pagination=false`);
+        const otherTasks = projectTasksRes.data.filter(t => t.id !== taskId);
+        setAllTasks(otherTasks);
+
         const projectRes =
             await api.get(
             `/projects/${foundTask.project}/`
@@ -359,30 +376,94 @@ export default function TaskDetails() {
         };
 
   const handleSave = async () => {
-
-        try {
-
-            const res = await api.patch(
-            `/tasks/task-detail/${taskId}/`,
-            {
-                title,
-                description: taskDescription,
-                priority: taskPriority,
-                status: taskStatus,
-                assigned_to:taskAssignedTo,
-                due_date: taskDueDate || null,
-            }
-            );
-            await fetchTask();
-            await fetchActivities();
-
-            setEditMode(false);
-
-        } catch (err) {
-
-            console.log(err);
+    setSaveError("");
+    try {
+      const res = await api.patch(
+        `/tasks/task-detail/${taskId}/`,
+        {
+          title,
+          description: taskDescription,
+          priority: taskPriority,
+          status: taskStatus,
+          assigned_to: taskAssignedTo,
+          due_date: taskDueDate || null,
         }
-        };
+      );
+      await fetchTask();
+      await fetchActivities();
+      setEditMode(false);
+    } catch (err) {
+      console.log(err);
+      if (err.response?.data) {
+        const data = err.response.data;
+        let errMsg = "";
+        if (typeof data === "object") {
+          errMsg = Object.entries(data)
+            .map(([key, val]) => {
+              const cleanedKey = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              return `${cleanedKey}: ${Array.isArray(val) ? val.join(" ") : val}`;
+            })
+            .join(" | ");
+        } else {
+          errMsg = "An error occurred while saving.";
+        }
+        setSaveError(errMsg);
+      } else {
+        setSaveError("Failed to save changes. Please try again.");
+      }
+    }
+  };
+
+  const handleAddBlocker = async (e) => {
+    e.preventDefault();
+    if (!selectedBlockerId) return;
+    setDependencyError("");
+    setDependencyMessage("");
+    try {
+      const currentBlockerIds = blockedBy.map(t => t.id);
+      if (currentBlockerIds.includes(selectedBlockerId)) {
+        setDependencyError("Task is already a blocker.");
+        return;
+      }
+      const newBlockerIds = [...currentBlockerIds, selectedBlockerId];
+      await api.patch(`/tasks/task-detail/${taskId}/`, {
+        blocked_by: newBlockerIds
+      });
+      setSelectedBlockerId("");
+      await fetchTask();
+      await fetchActivities();
+      setDependencyMessage("Dependency added successfully.");
+    } catch (err) {
+      console.log(err);
+      if (err.response?.data?.blocked_by) {
+        const errors = err.response.data.blocked_by;
+        setDependencyError(Array.isArray(errors) ? errors.join(" ") : errors);
+      } else if (err.response?.data?.non_field_errors) {
+        const errors = err.response.data.non_field_errors;
+        setDependencyError(Array.isArray(errors) ? errors.join(" ") : errors);
+      } else {
+        setDependencyError("Failed to add dependency.");
+      }
+    }
+  };
+
+  const handleRemoveBlocker = async (blockerId) => {
+    setDependencyError("");
+    setDependencyMessage("");
+    try {
+      const newBlockerIds = blockedBy.map(t => t.id).filter(id => id !== blockerId);
+      await api.patch(`/tasks/task-detail/${taskId}/`, {
+        blocked_by: newBlockerIds
+      });
+      await fetchTask();
+      await fetchActivities();
+      setDependencyMessage("Dependency removed successfully.");
+    } catch (err) {
+      console.log(err);
+      setDependencyError("Failed to remove dependency.");
+    }
+  };
+
 
     const handleDelete = async () => {
 
@@ -431,6 +512,9 @@ export default function TaskDetails() {
     ? subtasks.find((item) => item.id === selectedSubtask.id) || selectedSubtask
     : null;
 
+  const activeBlockers = blockedBy.filter(b => b.status !== "done");
+  const isBlocked = activeBlockers.length > 0;
+
   return (
     <div className="task-details-page">
 
@@ -439,6 +523,28 @@ export default function TaskDetails() {
         <ArrowLeft size={14} />
         Back to board
       </button>
+
+      {/* Active Blocker Warning Banner */}
+      {isBlocked && (
+        <div className="task-blocker-warning-banner">
+          <AlertTriangle className="warning-icon" size={18} />
+          <div className="warning-text">
+            <strong>This task is currently blocked.</strong> You must resolve the following blocker tasks before completing this task:
+            <div className="warning-blockers-list">
+              {activeBlockers.map((blocker, idx) => (
+                <span
+                  key={blocker.id}
+                  className="warning-blocker-item"
+                  onClick={() => navigate(`/dashboard/task/${blocker.id}`)}
+                >
+                  {blocker.title} ({blocker.status === "in_progress" ? "In Progress" : blocker.status})
+                  {idx < activeBlockers.length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid Workspace */}
       <div className="task-details-container">
@@ -490,6 +596,13 @@ export default function TaskDetails() {
                 Delete Task
               </button>
             </div>
+
+            {editMode && saveError && (
+              <div className="task-save-error-alert">
+                <AlertTriangle size={16} />
+                <span>{saveError}</span>
+              </div>
+            )}
           </div>
 
           {/* Subtasks Panel */}
@@ -858,6 +971,98 @@ export default function TaskDetails() {
               </div>
             </div>
 
+          </div>
+
+          {/* Dependencies & Blockers Card */}
+          <div className="task-dependencies-card">
+            <div className="dependencies-header">
+              <Link2 size={16} />
+              <h3>Dependencies & Blockers</h3>
+            </div>
+
+            <div className="dependency-section">
+              <span className="section-label">Blocked By (Done first)</span>
+              {blockedBy.length === 0 ? (
+                <p className="no-dependencies">No tasks block this task.</p>
+              ) : (
+                <div className="dependency-list">
+                  {blockedBy.map((dep) => (
+                    <div key={dep.id} className="dependency-item">
+                      <span className="dependency-title" onClick={() => navigate(`/dashboard/task/${dep.id}`)}>
+                        {dep.title}
+                      </span>
+                      <div className="dependency-actions">
+                        <span className={`dep-status-tag ${dep.status}`}>
+                          {dep.status === "in_progress" ? "In Progress" : dep.status}
+                        </span>
+                        <button
+                          type="button"
+                          className="remove-dep-btn"
+                          onClick={() => handleRemoveBlocker(dep.id)}
+                          title="Remove dependency"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="dependency-section">
+              <span className="section-label">Blocking (Waiting on this)</span>
+              {blocking.length === 0 ? (
+                <p className="no-dependencies">This task does not block any other tasks.</p>
+              ) : (
+                <div className="dependency-list">
+                  {blocking.map((dep) => (
+                    <div key={dep.id} className="dependency-item">
+                      <span className="dependency-title" onClick={() => navigate(`/dashboard/task/${dep.id}`)}>
+                        {dep.title}
+                      </span>
+                      <span className={`dep-status-tag ${dep.status}`}>
+                        {dep.status === "in_progress" ? "In Progress" : dep.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add Blocker Form */}
+            <form onSubmit={handleAddBlocker} className="add-dependency-form">
+              <span className="section-label">Add Blocker Task</span>
+              <div className="add-dep-input-group">
+                <select
+                  value={selectedBlockerId}
+                  onChange={(e) => setSelectedBlockerId(e.target.value)}
+                >
+                  <option value="">Select a task...</option>
+                  {allTasks.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                    </option>
+                  ))}
+                </select>
+                <button type="submit" disabled={!selectedBlockerId} className="add-dep-btn">
+                  <Plus size={14} />
+                  Add
+                </button>
+              </div>
+            </form>
+
+            {dependencyError && (
+              <div className="dependency-error-alert">
+                <AlertTriangle size={14} />
+                <span>{dependencyError}</span>
+              </div>
+            )}
+            {dependencyMessage && (
+              <div className="dependency-success-alert">
+                <span>{dependencyMessage}</span>
+              </div>
+            )}
           </div>
 
           {/* Activity Timeline */}

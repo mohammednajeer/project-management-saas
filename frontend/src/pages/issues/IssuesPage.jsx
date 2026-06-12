@@ -133,6 +133,7 @@ function IssuesPageContent() {
         key={selectedIssue?.id || "empty-issue"}
         issue={selectedIssue}
         onClose={() => setSelectedIssue(null)}
+        onUpdate={(updated) => setSelectedIssue(updated)}
       />
     </div>
   );

@@ -557,6 +557,81 @@ export default function WorkspaceHome() {
         </section>
       </div>
 
+      {/* ── PROJECTS I LEAD ────────────────────────────────────────────── */}
+      {dashboard.led_projects && dashboard.led_projects.length > 0 && (
+        <section className="wh-panel wh-glass" style={{ marginBottom: "24px" }}>
+          <div className="wh-panel-header">
+            <div>
+              <h2 className="wh-section-title">Projects I Lead</h2>
+              <p className="wh-section-sub">Designated leadership controls</p>
+            </div>
+            <Target size={17} className="wh-panel-icon" style={{ color: "#3b82f6" }} />
+          </div>
+          <div className="wh-projects-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px", marginTop: "16px" }}>
+            {dashboard.led_projects.map((project) => {
+              const totalTasks = project.total_tasks || 0;
+              const completedTasks = project.completed_tasks || 0;
+              const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+              return (
+                <div key={project.id} className="wh-project-card" style={{
+                  background: "rgba(255, 255, 255, 0.4)",
+                  border: "1px solid rgba(255, 255, 255, 0.4)",
+                  borderRadius: "16px",
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  transition: "transform 0.2s, box-shadow 0.2s"
+                }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600, color: "var(--text-1)" }}>{project.name}</h3>
+                      <span className="wh-priority-badge" style={{
+                        fontSize: "10px",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        background: project.priority === "high" || project.priority === "critical" ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)",
+                        color: project.priority === "high" || project.priority === "critical" ? "#ef4444" : "#3b82f6",
+                        textTransform: "capitalize"
+                      }}>
+                        {project.priority || "medium"}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: "12px", color: "var(--text-3)", margin: "6px 0 0 0", lineClamp: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {project.description || "No description provided."}
+                    </p>
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-3)", marginBottom: "4px" }}>
+                      <span>Progress</span>
+                      <span>{completedTasks}/{totalTasks} Tasks ({pct}%)</span>
+                    </div>
+                    <div className="wh-prod-bar-wrap" style={{ height: "6px", background: "rgba(0, 0, 0, 0.05)", borderRadius: "3px", overflow: "hidden" }}>
+                      <div className="wh-prod-bar-fill" style={{ width: `${pct}%`, height: "100%", borderRadius: "3px" }} />
+                    </div>
+                  </div>
+                  <Link to={`/workspace/projects/${project.id}`} className="wh-focus-mode-btn" style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    textDecoration: "none",
+                    padding: "8px",
+                    fontSize: "12px",
+                    marginTop: "4px"
+                  }}>
+                    <Zap size={12} />
+                    Manage Project
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── 7 + 8. QUICK ACTIONS + TASK PREVIEW ──────────────────────────── */}
       <div className="wh-two-col">
 

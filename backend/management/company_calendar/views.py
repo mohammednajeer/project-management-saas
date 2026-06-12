@@ -80,7 +80,7 @@ class CalendarEventListCreateView(APIView):
         if event.event_type in ["company_event", "holiday", "announcement"]:
             members = User.objects.filter(
                 organization=request.user.organization
-            ).exclude(id=request.user.id)
+            ).exclude(id=request.user.id).exclude(role="platform_admin")
 
             title_map = {
                 "company_event": "Company Event Created",

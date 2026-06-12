@@ -6,6 +6,11 @@ from .views import (
     StartConversationView,
     SendMessageView,
     ChatUsersView,
+    GroupChannelListCreateView,
+    ChannelMessagesView,
+    MentionsSearchView,
+    ChannelMembersView,
+    ChannelInviteView,
 )
 
 urlpatterns = [
@@ -27,5 +32,25 @@ urlpatterns = [
     path(
         "users/",
         ChatUsersView.as_view()
+    ),
+    path(
+        "channels/",
+        GroupChannelListCreateView.as_view()
+    ),
+    path(
+        "channels/<uuid:channel_id>/messages/",
+        ChannelMessagesView.as_view()
+    ),
+    path(
+        "channels/<uuid:channel_id>/members/",
+        ChannelMembersView.as_view()
+    ),
+    path(
+        "channels/<uuid:channel_id>/invite/",
+        ChannelInviteView.as_view()
+    ),
+    path(
+        "mentions-search/",
+        MentionsSearchView.as_view()
     ),
 ]

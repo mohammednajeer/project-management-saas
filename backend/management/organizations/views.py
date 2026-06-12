@@ -12,6 +12,7 @@ from .serializers import (
     RegisterOrganizationSerializer,
 )
 from rest_framework.permissions import IsAuthenticated
+from projects.permissions import IsAuthenticatedOrgMember
 
 class RegisterOrganizationView(APIView):
     permission_classes = [AllowAny]
@@ -56,12 +57,12 @@ class RegisterOrganizationView(APIView):
         )
 
 class OrganizationTeamView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def get(self, request):
         users = User.objects.filter(
             organization=request.user.organization
-        )
+        ).exclude(role="platform_admin")
 
         data = [
             {

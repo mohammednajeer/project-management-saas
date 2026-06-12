@@ -160,9 +160,25 @@ class ProjectSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        project = super().create(validated_data)
-        refresh_project_health(project)
-        return project
+        request = self.context.get("request")
+        create_channel = True
+        if request:
+            create_channel = request.data.get("create_channel", True) is not False
+
+        members = validated_data.pop("members", None)
+
+        ModelClass = self.Meta.model
+        instance = ModelClass(**validated_data)
+        if not create_channel:
+            instance._skip_channel_creation = True
+
+        instance.save()
+
+        if members is not None:
+            instance.members.set(members)
+
+        refresh_project_health(instance)
+        return instance
 
     def update(self, instance, validated_data):
         project = super().update(instance, validated_data)

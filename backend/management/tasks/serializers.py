@@ -15,6 +15,8 @@ class TaskSerializer(serializers.ModelSerializer):
     completed_subtasks = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
     assigned_users =serializers.SerializerMethodField()
+    blocked_by_data = serializers.SerializerMethodField()
+    blocking_data = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
@@ -34,7 +36,9 @@ class TaskSerializer(serializers.ModelSerializer):
             "completed_subtasks",
             "assigned_to",
             "assigned_users",
-            
+            "blocked_by",
+            "blocked_by_data",
+            "blocking_data",
         ]
 
         read_only_fields = [
@@ -82,6 +86,96 @@ class TaskSerializer(serializers.ModelSerializer):
 
             for user in obj.assigned_to.all()
         ]
+
+    def get_blocked_by_data(self, obj):
+        return [
+            {
+                "id": str(t.id),
+                "title": t.title,
+                "status": t.status,
+            }
+            for t in obj.blocked_by.all()
+        ]
+
+    def get_blocking_data(self, obj):
+        return [
+            {
+                "id": str(t.id),
+                "title": t.title,
+                "status": t.status,
+            }
+            for t in obj.blocking.all()
+        ]
+
+    def check_circularity(self, task, target_id):
+        visited = set()
+        def has_path(current_id, target_id):
+            if current_id == target_id:
+                return True
+            if current_id in visited:
+                return False
+            visited.add(current_id)
+            try:
+                curr_task = Task.objects.get(id=current_id)
+                for blocker in curr_task.blocked_by.all():
+                    if has_path(blocker.id, target_id):
+                        return True
+            except Task.DoesNotExist:
+                pass
+            return False
+        return has_path(task.id, target_id)
+
+    def validate(self, attrs):
+        status_val = attrs.get("status", self.instance.status if self.instance else "todo")
+        
+        if status_val == "done" and self.instance:
+            blockers = attrs.get("blocked_by", None)
+            if blockers is None:
+                unresolved_blockers = self.instance.blocked_by.exclude(status="done")
+            else:
+                unresolved_blockers = [t for t in blockers if t.status != "done"]
+            
+            if unresolved_blockers:
+                titles = ", ".join([t.title for t in unresolved_blockers])
+                raise serializers.ValidationError(
+                    {"status": f"Cannot complete task because it is blocked by unresolved tasks: {titles}"}
+                )
+
+        blocked_by_tasks = attrs.get("blocked_by", None)
+        if blocked_by_tasks is not None and self.instance:
+            for blocker in blocked_by_tasks:
+                if blocker.id == self.instance.id:
+                    raise serializers.ValidationError(
+                        {"blocked_by": "A task cannot block itself."}
+                    )
+                if self.check_circularity(blocker, self.instance.id):
+                    raise serializers.ValidationError(
+                        {"blocked_by": f"Circular dependency detected: '{blocker.title}' is blocked by this task."}
+                    )
+                if blocker.project != self.instance.project:
+                    raise serializers.ValidationError(
+                        {"blocked_by": "Blocker task must belong to the same project."}
+                    )
+
+        assigned_to = attrs.get("assigned_to")
+        if assigned_to is not None:
+            project = self.instance.project if self.instance else self.context.get("project")
+            if project:
+                project_member_ids = set(project.members.values_list('id', flat=True))
+                if project.project_lead_id:
+                    project_member_ids.add(project.project_lead_id)
+                for user in assigned_to:
+                    if user.id not in project_member_ids:
+                        raise serializers.ValidationError(
+                            {"assigned_to": f"User {user.name} is not a member of the project."}
+                        )
+                    if user.role in ["admin", "manager"]:
+                        raise serializers.ValidationError(
+                            {"assigned_to": f"{user.name} is an {user.role} and cannot be assigned work. "
+                                            f"Admins and managers monitor projects — only employees can be assignees."}
+                        )
+
+        return attrs
     
 
 
@@ -111,6 +205,27 @@ class SubTaskSerializer(serializers.ModelSerializer):
             "task",
             "created_at",
         ]
+
+    def validate(self, attrs):
+        assigned_to = attrs.get("assigned_to")
+        if assigned_to is not None:
+            task = self.instance.task if self.instance else self.context.get("task")
+            if task:
+                project = task.project
+                project_member_ids = set(project.members.values_list('id', flat=True))
+                if project.project_lead_id:
+                    project_member_ids.add(project.project_lead_id)
+                for user in assigned_to:
+                    if user.id not in project_member_ids:
+                        raise serializers.ValidationError(
+                            {"assigned_to": f"User {user.name} is not a member of the project."}
+                        )
+                    if user.role in ["admin", "manager"]:
+                        raise serializers.ValidationError(
+                            {"assigned_to": f"{user.name} is an {user.role} and cannot be assigned work. "
+                                            f"Admins and managers monitor projects — only employees can be assignees."}
+                        )
+        return attrs
 
     def get_assigned_users(self, obj):
 

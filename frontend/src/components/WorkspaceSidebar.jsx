@@ -11,6 +11,8 @@ import {
   Sparkles,
   UserRound,
   MessageCircle,
+  FolderKanban,
+  ClipboardList,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -30,9 +32,19 @@ const workspaceNavItems = [
     end: true,
   },
   {
+    icon: ClipboardList,
+    label: "Assigned Tasks",
+    to: "/workspace/assigned-tasks",
+  },
+  {
     icon: CheckSquare,
     label: "My Work",
     to: "/workspace/my-tasks",
+  },
+  {
+    icon: FolderKanban,
+    label: "Projects",
+    to: "/workspace/projects",
   },
 
   { type: "divider" },

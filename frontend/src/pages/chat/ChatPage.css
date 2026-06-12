@@ -1365,3 +1365,273 @@
     display: none;
   }
 }
+
+/* Group Channels styling additions */
+.cp-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 8px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--cp-ash);
+  letter-spacing: 0.5px;
+}
+
+.cp-section-add-btn {
+  background: transparent;
+  border: none;
+  color: var(--cp-ash);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.cp-section-add-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--cp-ink);
+}
+
+.cp-channels-sublist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.cp-channel-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--cp-on-surface);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.cp-channel-item:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+  color: var(--cp-ink);
+}
+
+.cp-channel-item--active {
+  background-color: #ffffff;
+  border-color: rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  color: var(--cp-ink);
+  font-weight: 600;
+}
+
+.cp-channel-hash {
+  color: var(--cp-ash);
+}
+
+.cp-channel-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-channel-header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: var(--cp-surface-container-high);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cp-ink);
+}
+
+/* Mentions Styling */
+.cp-mention-link {
+  color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  display: inline-block;
+  margin: 0 2px;
+}
+
+.cp-mention-link:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* Input area wrapper & mention dropdown positioning */
+.cp-input-area-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.cp-mention-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 8px;
+  right: 8px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08), 0 4px 20px rgba(0, 0, 0, 0.05);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  animation: cp-mention-slide-up 0.2s ease-out;
+}
+
+@keyframes cp-mention-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cp-mention-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--cp-ink);
+  font-family: var(--font-body);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.cp-mention-item:hover,
+.cp-mention-item--selected {
+  background-color: var(--cp-surface-container-low);
+}
+
+/* Modal Form Fields additions */
+.cp-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.cp-modal-field label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cp-ash);
+}
+
+.cp-modal-field input,
+.cp-modal-field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: var(--cp-fog);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: var(--cp-on-surface);
+  outline: none;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.cp-modal-field textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.cp-modal-field input:focus,
+.cp-modal-field textarea:focus {
+  background-color: #ffffff;
+  border-color: var(--cp-ink);
+}
+
+.cp-modal-field small {
+  font-size: 11px;
+  color: var(--cp-ash);
+  line-height: 1.3;
+}
+
+.cp-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.cp-modal-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-body);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.cp-modal-btn--cancel {
+  background-color: var(--cp-fog);
+  color: var(--cp-ash);
+}
+
+.cp-modal-btn--cancel:hover {
+  background-color: var(--cp-surface-container);
+  color: var(--cp-ink);
+}
+
+.cp-modal-btn--submit {
+  background-color: var(--cp-ink);
+  color: #ffffff;
+}
+
+.cp-modal-btn--submit:hover {
+  opacity: 0.95;
+}
+
+.cp-welcome-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cp-welcome-btn--secondary {
+  background-color: var(--cp-fog) !important;
+  color: var(--cp-ink) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.cp-welcome-btn--secondary:hover {
+  background-color: var(--cp-surface-container) !important;
+}
+
+.cp-modal-member-invite-row:hover {
+  background-color: var(--cp-surface-container-low) !important;
+}
+

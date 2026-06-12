@@ -31,21 +31,31 @@ import {
 } from "lucide-react";
 
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { IssueProvider } from "../../context/issues/IssueContext";
+import IssueDetailsModal from "../../components/issues/IssueDetailsModal";
 import "./SubtaskDetails.css";
 
 /* ─── CONSTANTS ──────────────────────────────────────────────────────────── */
+const ISSUE_STATUS_CONFIG = {
+  open:          { label: "Open",          color: "#E11D48", bg: "#FFF1F2", border: "rgba(225,29,72,0.15)",  accent: "#F43F5E" },
+  investigating: { label: "Investigating", color: "#D97706", bg: "#FEF3C7", border: "rgba(217,119,6,0.15)",   accent: "#F59E0B" },
+  resolved:      { label: "Resolved",      color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.15)",   accent: "#10B981" },
+  closed:        { label: "Closed",        color: "#475569", bg: "#F8FAFC", border: "rgba(71,85,105,0.15)",  accent: "#64748B" },
+};
+
 const STATUS_CONFIG = {
-  todo:        { label: "Todo",        color: "#B45309", bg: "#fbe1d1", border: "rgba(180,83,9,0.18)",  accent: "#D4835E" },
-  in_progress: { label: "In Progress", color: "#1E3A8A", bg: "#d3e3fc", border: "rgba(30,58,138,0.18)",   accent: "#5B8CB8" },
-  review:      { label: "Review",      color: "#5B21B6", bg: "#e8def8", border: "rgba(91,33,182,0.18)",  accent: "#8B7BA8" },
-  done:        { label: "Done",        color: "#166534", bg: "#d8f3dc", border: "rgba(22,101,52,0.18)",   accent: "#3D9A5F" },
+  todo:        { label: "Todo",        color: "#D97706", bg: "#FEF3C7", border: "rgba(217,119,6,0.15)",  accent: "#F59E0B" },
+  in_progress: { label: "In Progress", color: "#2563EB", bg: "#EFF6FF", border: "rgba(37,99,235,0.15)",   accent: "#3B82F6" },
+  review:      { label: "Review",      color: "#7C3AED", bg: "#F5F3FF", border: "rgba(124,58,237,0.15)",  accent: "#8B7BA8" },
+  done:        { label: "Done",        color: "#059669", bg: "#ECFDF5", border: "rgba(5,150,105,0.15)",   accent: "#10B981" },
 };
 
 const PRIORITY_CONFIG = {
-  critical: { label: "Critical", color: "#991B1B", bg: "#f8d7da",  border: "rgba(153,27,27,0.2)",   dot: "#A34A30",  cardTint: "rgba(248,215,218,0.6)"  },
-  high:     { label: "High",     color: "#854D0E", bg: "#fff3cd",  border: "rgba(133,77,14,0.2)",   dot: "#D4835E",  cardTint: "rgba(255,243,205,0.6)"  },
-  medium:   { label: "Medium",   color: "#1E3A8A", bg: "#d3e3fc",  border: "rgba(30,58,138,0.2)",  dot: "#5B8CB8",  cardTint: "rgba(211,227,252,0.5)"  },
-  low:      { label: "Low",      color: "#374151", bg: "#F1F5F9",  border: "rgba(55,65,81,0.15)", dot: "#94A3B8",  cardTint: "rgba(241,245,249,0.5)"  },
+  critical: { label: "Critical", color: "#E11D48", bg: "#FFF1F2",  border: "rgba(225,29,72,0.15)",   dot: "#F43F5E",  cardTint: "rgba(255,241,242,0.4)"  },
+  high:     { label: "High",     color: "#D97706", bg: "#FEF3C7",  border: "rgba(217,119,6,0.15)",   dot: "#F59E0B",  cardTint: "rgba(254,243,199,0.4)"  },
+  medium:   { label: "Medium",   color: "#2563EB", bg: "#EFF6FF",  border: "rgba(37,99,235,0.15)",  dot: "#3B82F6",  cardTint: "rgba(239,246,255,0.4)"  },
+  low:      { label: "Low",      color: "#475569", bg: "#F8FAFC",  border: "rgba(71,85,105,0.15)", dot: "#64748B",  cardTint: "rgba(248,250,252,0.4)"  },
 };
 
 const STATUS_ACTIONS = [
@@ -113,6 +123,15 @@ function statusProgress(status) {
 /* ─── SMALL ATOMS ────────────────────────────────────────────────────────── */
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.todo;
+  return (
+    <span className="sd-badge" style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.border }}>
+      {cfg.label}
+    </span>
+  );
+}
+
+function IssueStatusBadge({ status }) {
+  const cfg = ISSUE_STATUS_CONFIG[status] || ISSUE_STATUS_CONFIG.open;
   return (
     <span className="sd-badge" style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.border }}>
       {cfg.label}
@@ -318,9 +337,10 @@ function IssueModal({ subtask, task, project, onClose, onSuccess }) {
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════════════ */
-export default function SubtaskDetails() {
+function SubtaskDetailsContent() {
   const { subtaskId } = useParams();
   const navigate      = useNavigate();
+  const { user }      = useAuth();
 
   const [subtask,    setSubtask]    = useState(null);
   const [attachments, setAttachments] = useState([]);
@@ -330,6 +350,7 @@ export default function SubtaskDetails() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [uploadingFile,     setUploadingFile]     = useState(false);
   const [showIssueModal,    setShowIssueModal]    = useState(false);
+  const [selectedIssue,     setSelectedIssue]     = useState(null);
   const [activeSection,     setActiveSection]     = useState("comments");
 
   /* ── Load ────────────────────────────────────────────────────────────── */
@@ -523,7 +544,7 @@ export default function SubtaskDetails() {
               {activeIssuesCount > 0 && (
                 <span className="sd-blocked-badge">
                   <AlertTriangle size={11} />
-                  Blocked ({activeIssuesCount})
+                  Issue/Block ({activeIssuesCount})
                 </span>
               )}
             </div>
@@ -568,7 +589,7 @@ export default function SubtaskDetails() {
         <div className="sd-blocked-banner">
           <AlertTriangle size={16} className="sd-blocked-banner-icon" />
           <div className="sd-blocked-banner-content">
-            <strong>Blockage Alert:</strong> This subtask has {activeIssuesCount} active issue{activeIssuesCount > 1 ? "s" : ""} blocking progress. You can view details in the Issues tab below.
+            <strong>Issue/Block Alert:</strong> This subtask has {activeIssuesCount} active issue{activeIssuesCount > 1 ? "s" : ""} blocking progress. You can view details in the Issues tab below.
           </div>
         </div>
       )}
@@ -821,10 +842,10 @@ export default function SubtaskDetails() {
                 : (
                   <div className="sd-issue-list">
                     {issues.map(issue => (
-                      <article key={issue.id} className="sd-issue-card">
+                      <article key={issue.id} className="sd-issue-card" onClick={() => setSelectedIssue(issue)} style={{ cursor: "pointer" }}>
                         <div className="sd-issue-header">
                           <PriorityBadge priority={issue.priority} />
-                          <StatusBadge   status={issue.status} />
+                          <IssueStatusBadge status={issue.status} />
                           <time className="sd-issue-time">
                             {formatRelative(issue.created_at)}
                           </time>
@@ -1035,6 +1056,23 @@ export default function SubtaskDetails() {
           onSuccess={() => loadSubtask()}
         />
       )}
+
+      {/* ── Issue Details Modal ── */}
+      {selectedIssue && (
+        <IssueDetailsModal
+          issue={selectedIssue}
+          onClose={() => setSelectedIssue(null)}
+          onUpdate={() => loadSubtask()}
+        />
+      )}
     </div>
+  );
+}
+
+export default function SubtaskDetails() {
+  return (
+    <IssueProvider>
+      <SubtaskDetailsContent />
+    </IssueProvider>
   );
 }

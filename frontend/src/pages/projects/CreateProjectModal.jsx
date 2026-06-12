@@ -18,6 +18,7 @@ export default function CreateProjectModal({
   const [team, setTeam] = useState([]);
   const [projectLead, setProjectLead] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
+  const [createChannel, setCreateChannel] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,6 +52,7 @@ export default function CreateProjectModal({
         due_date: dueDate || null,
         project_lead: projectLead || null,
         members: selectedMembers,
+        create_channel: createChannel,
       });
 
       await onSuccess();
@@ -62,6 +64,7 @@ export default function CreateProjectModal({
       setDueDate("");
       setProjectLead(user ? String(user.id) : "");
       setSelectedMembers([]);
+      setCreateChannel(true);
       onClose();
     } catch (err) {
       setError(
@@ -112,6 +115,19 @@ export default function CreateProjectModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Summarize the project objectives and constraints..."
             />
+          </div>
+
+          <div className="cp-field checkbox-field" style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8, margin: "8px 0" }}>
+            <input
+              type="checkbox"
+              id="create-channel-checkbox"
+              checked={createChannel}
+              onChange={(e) => setCreateChannel(e.target.checked)}
+              style={{ width: "auto", cursor: "pointer", margin: 0 }}
+            />
+            <label htmlFor="create-channel-checkbox" style={{ margin: 0, cursor: "pointer", fontSize: 13, fontWeight: 500, color: "var(--cp-on-surface)" }}>
+              Create a group chat channel for this project
+            </label>
           </div>
 
           <div className="cp-row">

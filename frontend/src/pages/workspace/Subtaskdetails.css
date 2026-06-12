@@ -847,6 +847,7 @@
   flex-direction: column;
   gap: 6px;
   transition: background 0.15s;
+  cursor: pointer;
 }
 .sd-issue-card:hover { background: var(--bg-muted); }
 

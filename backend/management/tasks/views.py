@@ -8,6 +8,11 @@ from notifications.models import Notification
 from projects.models import Project
 from accounts.permissions import IsManagerOrAdmin
 from activities.utils import create_activity
+from projects.permissions import (
+    IsAuthenticatedOrgMember,
+    user_can_access_project,
+    user_can_manage_project_instance,
+)
 from django.core.exceptions import ValidationError
 from management.validators import validate_file
 from management.pagination import StandardResultsSetPagination
@@ -17,9 +22,25 @@ from .models import (
 )
 
 class ProjectTaskListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def get(self, request, project_id):
+        try:
+            project = Project.objects.get(
+                id=project_id,
+                organization=request.user.organization
+            )
+        except Project.DoesNotExist:
+            return Response(
+                {"message": "Project not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not user_can_access_project(request.user, project):
+            return Response(
+                {"message": "You do not have access to this project"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         tasks = Task.objects.filter(
             project__id=project_id,
@@ -67,8 +88,15 @@ class ProjectTaskListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        if not user_can_manage_project_instance(request.user, project):
+            return Response(
+                {"message": "Only admins, managers, and the project lead can create tasks."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = TaskSerializer(
-            data=request.data
+            data=request.data,
+            context={"request": request, "project": project}
         )
 
         if serializer.is_valid():
@@ -105,9 +133,25 @@ class ProjectTaskListCreateView(APIView):
         )
     
 class SubTaskListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def get(self, request, task_id):
+        try:
+            task = Task.objects.get(
+                id=task_id,
+                project__organization=request.user.organization
+            )
+        except Task.DoesNotExist:
+            return Response(
+                {"message": "Task not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not user_can_access_project(request.user, task.project):
+            return Response(
+                {"message": "You do not have access to this task's project"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         subtasks = SubTask.objects.filter(
             task__id=task_id,
@@ -137,8 +181,18 @@ class SubTaskListCreateView(APIView):
                     status=status.HTTP_404_NOT_FOUND
             )
 
+        is_assigned = task.assigned_to.filter(id=request.user.id).exists()
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, task.project)
+
+        if not (is_lead_or_mgr or is_assigned):
+            return Response(
+                {"message": "You do not have permission to create subtasks for this task"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = SubTaskSerializer(
-            data=request.data
+            data=request.data,
+            context={"request": request, "task": task}
         )
 
         if serializer.is_valid():
@@ -190,8 +244,9 @@ class SubTaskListCreateView(APIView):
         )
     
 
+
 class SubTaskUpdateView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def patch(self, request, subtask_id):
 
@@ -210,10 +265,22 @@ class SubTaskUpdateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        is_assigned_to_task = subtask.task.assigned_to.filter(id=request.user.id).exists()
+        is_assigned_to_subtask = subtask.assigned_to.filter(id=request.user.id).exists()
+        is_assigned_to_issue = subtask.issues.filter(assigned_to=request.user).exists()
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, subtask.task.project)
+
+        if not (is_lead_or_mgr or is_assigned_to_task or is_assigned_to_subtask or is_assigned_to_issue):
+            return Response(
+                {"message": "You do not have permission to update this subtask"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = SubTaskSerializer(
             subtask,
             data=request.data,
-            partial=True
+            partial=True,
+            context={"request": request}
         )
         old_status = subtask.status
 
@@ -276,6 +343,15 @@ class SubTaskUpdateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        is_assigned = subtask.task.assigned_to.filter(id=request.user.id).exists()
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, subtask.task.project)
+
+        if not (is_lead_or_mgr or is_assigned):
+            return Response(
+                {"message": "You do not have permission to delete this subtask"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         subtask.delete()
 
         return Response(
@@ -289,7 +365,7 @@ class SubTaskUpdateView(APIView):
 
 
 class TaskUpdateView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def patch(self, request, task_id):
 
@@ -308,10 +384,29 @@ class TaskUpdateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        is_assigned = task.assigned_to.filter(id=request.user.id).exists()
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, task.project)
+
+        if not (is_lead_or_mgr or is_assigned):
+            return Response(
+                {"message": "You do not have permission to edit this task"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not is_lead_or_mgr:
+            allowed_fields = {"status", "assigned_to"}
+            for key in request.data.keys():
+                if key not in allowed_fields:
+                    return Response(
+                        {"message": "Task assignees are only allowed to update status and assignments."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
         serializer = TaskSerializer(
             task,
             data=request.data,
-            partial=True
+            partial=True,
+            context={"request": request}
         )
 
         if serializer.is_valid():
@@ -385,7 +480,7 @@ class TaskUpdateView(APIView):
         )
     
 class TaskDetailView(APIView):
-    permission_classes = [IsAuthenticated, IsManagerOrAdmin]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def get_object(self, task_id, user):
 
@@ -415,10 +510,29 @@ class TaskDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        is_assigned = task.assigned_to.filter(id=request.user.id).exists()
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, task.project)
+
+        if not (is_lead_or_mgr or is_assigned):
+            return Response(
+                {"message": "You do not have permission to edit this task"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if not is_lead_or_mgr:
+            allowed_fields = {"status", "assigned_to"}
+            for key in request.data.keys():
+                if key not in allowed_fields:
+                    return Response(
+                        {"message": "Task assignees are only allowed to update status and assignments."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
         serializer = TaskSerializer(
             task,
             data=request.data,
-            partial=True
+            partial=True,
+            context={"request": request}
         )
 
         if serializer.is_valid():
@@ -448,6 +562,12 @@ class TaskDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        if not user_can_manage_project_instance(request.user, task.project):
+            return Response(
+                {"message": "Only admins, managers, and the project lead can delete tasks."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         task.delete()
 
         return Response(
@@ -466,7 +586,7 @@ class TaskCommentListCreateView(APIView):
         if user.role in [
             "admin",
             "manager",
-        ]:
+        ] or task.project.project_lead_id == user.id:
             return True
 
         return (
@@ -628,10 +748,7 @@ class TaskCommentListCreateView(APIView):
 
 class TaskAttachmentUploadView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsManagerOrAdmin,
-    ]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def post(self, request, task_id):
 
@@ -651,6 +768,15 @@ class TaskAttachmentUploadView(APIView):
                     "Task not found"
                 },
                 status=status.HTTP_404_NOT_FOUND
+            )
+
+        is_assigned = task.assigned_to.filter(id=request.user.id).exists()
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, task.project)
+
+        if not (is_lead_or_mgr or is_assigned):
+            return Response(
+                {"message": "You do not have permission to upload attachments to this task"},
+                status=status.HTTP_403_FORBIDDEN
             )
 
         uploaded_file = request.FILES.get(
@@ -758,10 +884,7 @@ class TaskAttachmentListView(APIView):
     
 class TaskAttachmentDeleteView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsManagerOrAdmin,
-    ]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def delete(self, request, attachment_id):
 
@@ -781,6 +904,15 @@ class TaskAttachmentDeleteView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        is_uploader = attachment.uploaded_by_id == request.user.id
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, attachment.task.project)
+
+        if not (is_lead_or_mgr or is_uploader):
+            return Response(
+                {"message": "You do not have permission to delete this attachment"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         attachment.file.delete(save=False)
 
         attachment.delete()
@@ -794,9 +926,7 @@ class TaskAttachmentDeleteView(APIView):
 
 class SubTaskAttachmentUploadView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-    ]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def post(self, request, subtask_id):
 
@@ -816,16 +946,14 @@ class SubTaskAttachmentUploadView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        if (
-            request.user.role == "employee" and
-            not subtask.assigned_to.filter(
-                id=request.user.id
-            ).exists()
-        ):
+        is_assigned = subtask.assigned_to.filter(id=request.user.id).exists() or subtask.task.assigned_to.filter(id=request.user.id).exists()
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, subtask.task.project)
+
+        if not (is_lead_or_mgr or is_assigned):
             return Response(
                 {
                     "message":
-                    "You can upload files only to assigned subtasks"
+                    "You can upload files only if you are assigned to this subtask, parent task, or are a project manager/lead."
                 },
                 status=status.HTTP_403_FORBIDDEN
             )
@@ -886,14 +1014,18 @@ class SubTaskAttachmentListView(APIView):
     def get(self, request, subtask_id):
 
         if request.user.role == "employee":
-            has_access = SubTask.objects.filter(
-                id=subtask_id,
-                task__project__organization=request.user.organization,
-            ).filter(
-                task__subtasks__assigned_to=request.user
-            ).exists()
+            try:
+                subtask = SubTask.objects.get(id=subtask_id, task__project__organization=request.user.organization)
+            except SubTask.DoesNotExist:
+                return Response(
+                    {"message": "Subtask not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-            if not has_access:
+            is_lead = subtask.task.project.project_lead_id == request.user.id
+            is_assigned = subtask.assigned_to.filter(id=request.user.id).exists() or subtask.task.assigned_to.filter(id=request.user.id).exists()
+
+            if not (is_lead or is_assigned):
                 return Response(
                     {
                         "message":
@@ -925,10 +1057,7 @@ class SubTaskAttachmentListView(APIView):
     
 class SubTaskAttachmentDeleteView(APIView):
 
-    permission_classes = [
-        IsAuthenticated,
-        IsManagerOrAdmin,
-    ]
+    permission_classes = [IsAuthenticated, IsAuthenticatedOrgMember]
 
     def delete(self, request, attachment_id):
 
@@ -948,6 +1077,15 @@ class SubTaskAttachmentDeleteView(APIView):
                     "message": "Attachment not found"
                 },
                 status=status.HTTP_404_NOT_FOUND
+            )
+
+        is_uploader = attachment.uploaded_by_id == request.user.id
+        is_lead_or_mgr = user_can_manage_project_instance(request.user, attachment.subtask.task.project)
+
+        if not (is_lead_or_mgr or is_uploader):
+            return Response(
+                {"message": "You do not have permission to delete this attachment"},
+                status=status.HTTP_403_FORBIDDEN
             )
 
         attachment.file.delete()

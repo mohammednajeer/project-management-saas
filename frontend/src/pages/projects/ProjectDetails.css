@@ -931,6 +931,25 @@
   gap: 6px;
 }
 
+.pd-task-top-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.pd-task-blocked-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--red);
+  background: rgba(201, 100, 66, 0.08);
+  border: 1px solid rgba(201, 100, 66, 0.15);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
 .pd-task-status,
 .pd-task-priority {
   font-size: 0.65rem;

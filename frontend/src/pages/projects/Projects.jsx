@@ -14,6 +14,7 @@ import {
   List,
 } from "lucide-react";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import "./Projects.css";
 import CreateProjectModal from "./CreateProjectModal";
 import { Link } from "react-router-dom";
@@ -76,12 +77,15 @@ function memberInitials(member) {
 }
 
 export default function Projects() {
+  const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [modalOpen, setModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
+
+  const projectBasePath = user?.role === "employee" ? "/workspace/projects" : "/dashboard/projects";
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -169,10 +173,12 @@ export default function Projects() {
           <p className="projects-subtitle">
             Manage, track, and collaborate on your team's initiatives. Organize tasks, monitor project health, and coordinate milestones in real time.
           </p>
-          <button type="button" className="projects-create-btn" onClick={() => setModalOpen(true)}>
-            <Plus size={16} />
-            Create Project
-          </button>
+          {user?.role !== "employee" && (
+            <button type="button" className="projects-create-btn" onClick={() => setModalOpen(true)}>
+              <Plus size={16} />
+              Create Project
+            </button>
+          )}
         </div>
         <div className="projects-hero-illustration">
           <img src={processIllustration} alt="Project Process" />
@@ -257,10 +263,12 @@ export default function Projects() {
           <img src={emptyIllustration} alt="No projects" className="projects-empty-img" />
           <h3>No projects found</h3>
           <p>Try a different filter or create your first project</p>
-          <button type="button" className="projects-create-btn" onClick={() => setModalOpen(true)}>
-            <Plus size={15} />
-            Create Project
-          </button>
+          {user?.role !== "employee" && (
+            <button type="button" className="projects-create-btn" onClick={() => setModalOpen(true)}>
+              <Plus size={15} />
+              Create Project
+            </button>
+          )}
         </div>
       ) : viewMode === "grid" ? (
         <div className="projects-grid">
@@ -305,6 +313,19 @@ export default function Projects() {
                         style={{ background: priorityStyle.bg, color: priorityStyle.color }}
                       >
                         {project.priority}
+                      </span>
+                    )}
+                    {project.project_lead_data?.id === user?.id && (
+                      <span className="card-lead-badge" style={{
+                        background: "linear-gradient(135deg, #4f46e5, #3b82f6)",
+                        color: "#fff",
+                        fontSize: "10px",
+                        fontWeight: "600",
+                        padding: "2px 8px",
+                        borderRadius: "20px",
+                        boxShadow: "0 2px 4px rgba(79, 70, 229, 0.2)"
+                      }}>
+                        Project Lead
                       </span>
                     )}
                   </div>
@@ -399,7 +420,7 @@ export default function Projects() {
                 </div>
 
                 <div className="card-footer">
-                  <Link to={`/dashboard/projects/${project.id}`} className="card-open-link">
+                  <Link to={`${projectBasePath}/${project.id}`} className="card-open-link">
                     Open project
                     <ArrowUpRight size={15} />
                   </Link>
@@ -440,9 +461,23 @@ export default function Projects() {
                 return (
                   <tr key={project.id} className="project-list-row">
                     <td className="project-td-name">
-                      <Link to={`/dashboard/projects/${project.id}`} className="project-link-title">
-                        {project.name}
-                      </Link>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Link to={`${projectBasePath}/${project.id}`} className="project-link-title">
+                          {project.name}
+                        </Link>
+                        {project.project_lead_data?.id === user?.id && (
+                          <span className="project-lead-badge-table" style={{
+                            background: "linear-gradient(135deg, #4f46e5, #3b82f6)",
+                            color: "#fff",
+                            fontSize: "10px",
+                            fontWeight: "600",
+                            padding: "2px 6px",
+                            borderRadius: "20px"
+                          }}>
+                            Lead
+                          </span>
+                        )}
+                      </div>
                       <p className="project-list-desc" title={project.description}>
                         {project.description || "No description provided."}
                       </p>
@@ -539,7 +574,7 @@ export default function Projects() {
                       )}
                     </td>
                     <td>
-                      <Link to={`/dashboard/projects/${project.id}`} className="table-open-btn">
+                      <Link to={`${projectBasePath}/${project.id}`} className="table-open-btn">
                         Open <ArrowUpRight size={13} />
                       </Link>
                     </td>

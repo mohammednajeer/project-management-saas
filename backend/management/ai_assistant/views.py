@@ -175,6 +175,18 @@ class AIChatView(APIView):
             return _organization_error()
 
         message = request.data.get("message")
+        from knowledge_base.search import search_documents
+        documents = search_documents(
+            message,
+            request.user.organization
+        )
+
+        rag_context = "\n\n".join(
+            [
+                f"{doc.title}\n{doc.content}"
+                for doc in documents
+            ]
+        )
         history = request.data.get("history", [])
 
         if not message:
@@ -198,17 +210,31 @@ class AIChatView(APIView):
         open_issues = Issue.objects.filter(project__organization=org, status__in=["open", "investigating"])
         issues_summary = ", ".join([f"{i.title} (Status: {i.status}, Priority: {i.priority})" for i in open_issues]) or "No open issues"
 
-        system_instruction = (
-            "You are ProjectFlow's Smart AI Workspace Co-pilot. Your job is to assist employees in managing, planning, and executing their work.\n"
-            f"You are currently chatting with {user.name} ({user.role}), who works in the {user.department or 'General'} department as a {user.designation or 'Team Member'} at {org.name}.\n\n"
-            "Here is the real-time context of the workspace:\n"
-            f"- Active Projects in Organization: {projects_summary}\n"
-            f"- Active Tasks assigned to this user: {tasks_summary}\n"
-            f"- Active Subtasks assigned to this user: {subtasks_summary}\n"
-            f"- Open/Investigating Issues in Organization: {issues_summary}\n\n"
-            "Use this workspace context when answering questions about tasks, deadlines, workloads, or projects. Be helpful, concise, professional, and friendly. "
-            "You can answer general questions as well, but always relate back to helping the user with their work if possible. Keep answers structured (use bullet points or lists for clarity)."
-        )
+        system_instruction = f"""
+            You are ProjectFlow AI Assistant.
+
+            Use the knowledge base below when answering.
+
+            Knowledge Base Context:
+
+            {rag_context}
+
+            Current User:
+            {user.name}
+
+            Role:
+            {user.role}
+
+            Organization:
+            {org.name}
+
+            Rules:
+
+            1. Prefer knowledge base information.
+            2. If information exists in the knowledge base, use it.
+            3. If information does not exist, answer normally.
+            4. Be concise and professional.
+            """
 
         prompt_parts = []
         for h in history:

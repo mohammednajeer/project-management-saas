@@ -67,6 +67,8 @@ INSTALLED_APPS = [
     "company_calendar",
     "ai_assistant",
     "platform_admin",
+    "knowledge_base",
+    "pgvector.django",
 ]
 
 MIDDLEWARE = [

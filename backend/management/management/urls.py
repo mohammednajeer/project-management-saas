@@ -35,5 +35,4 @@ urlpatterns = [
     path("api/calendar/", include("company_calendar.urls")),
     path("api/ai/", include("ai_assistant.urls")),
     path("api/platform/", include("platform_admin.urls")),
-    path("api/knowledge/",include("knowledge_base.urls")),
 ]

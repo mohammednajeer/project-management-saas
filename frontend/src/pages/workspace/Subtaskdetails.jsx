@@ -34,7 +34,7 @@ import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { IssueProvider } from "../../context/issues/IssueContext";
 import IssueDetailsModal from "../../components/issues/IssueDetailsModal";
-import "./SubtaskDetails.css";
+import "./Subtaskdetails.css";
 
 /* ─── CONSTANTS ──────────────────────────────────────────────────────────── */
 const ISSUE_STATUS_CONFIG = {

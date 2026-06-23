@@ -26,7 +26,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG") == "True"
 
-ALLOWED_HOSTS = [
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",") + [
     "localhost",
     "34.207.236.153",
     "127.0.0.1",
@@ -36,6 +36,8 @@ ALLOWED_HOSTS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://projectflow.cloud-ip.cc",
+    "https://projectflowai.vercel.app",
 ]
 
 # Application definition
@@ -120,6 +122,8 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://projectflow.cloud-ip.cc",
+    "https://projectflowai.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -163,7 +167,7 @@ SIMPLE_JWT = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://redis:6379/1",
+        "LOCATION": "redis://127.0.0.1:6379/1",
     }
 }
 
@@ -233,7 +237,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],
+            "hosts": [("127.0.0.1", 6379)],
         },
     },
 }

@@ -35,7 +35,7 @@ class CreateInvitationView(APIView):
             invitation = serializer.save()
             company_name = request.user.organization.name
 
-            invite_link = f"http://localhost:5173/signup?token={invitation.token}"
+            invite_link = f"https://projectflowai.vercel.app/signup?token={invitation.token}"
 
             send_invitation_email.delay(
                 subject=f"You're invited to join {company_name} on ProjectFlow",
@@ -139,7 +139,7 @@ class BulkInviteView(APIView):
                 organization=request.user.organization
             )
 
-            invite_link = f"http://localhost:5173/signup?token={invitation.token}"
+            invite_link = f"https://projectflowai.vercel.app/signup?token={invitation.token}"
             company_name = request.user.organization.name
             invite_links.append({
                 "email": email,
@@ -365,7 +365,7 @@ class ResendInvitationView(APIView):
             )
 
         invite_link = (
-            f"http://localhost:5173/signup?"
+            f"https://projectflowai.vercel.app/signup?"
             f"token={invitation.token}"
         )
 

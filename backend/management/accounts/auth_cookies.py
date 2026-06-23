@@ -1,7 +1,7 @@
 ACCESS_COOKIE_MAX_AGE = 60 * 60
 REFRESH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-AUTH_COOKIE_SECURE = False
-AUTH_COOKIE_SAMESITE = "Lax"
+AUTH_COOKIE_SECURE = True
+AUTH_COOKIE_SAMESITE = "None"
 
 
 def set_auth_cookies(response, refresh):

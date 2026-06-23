@@ -85,8 +85,8 @@ class RefreshView(APIView):
                 {"message": "Refresh token invalid or expired"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-            response.delete_cookie("access_token")
-            response.delete_cookie("refresh_token")
+            response.delete_cookie("access_token", path="/", samesite="None")
+            response.delete_cookie("refresh_token", path="/", samesite="None")
             return response
 
         access_token = str(refresh.access_token)
@@ -119,8 +119,8 @@ class LogoutView(APIView):
             {"message": "Logged out"}
         )
 
-        response.delete_cookie("access_token")
-        response.delete_cookie("refresh_token")
+        response.delete_cookie("access_token", path="/", samesite="None")
+        response.delete_cookie("refresh_token", path="/", samesite="None")
 
         return response
     

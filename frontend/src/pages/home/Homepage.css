@@ -47,6 +47,7 @@ html {
   font-family: var(--font-sans);
   min-height: 100vh;
   position: relative;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -2022,10 +2023,19 @@ html {
     display: none;
   }
   .pf-nav {
-    padding: 0 24px;
+    padding: 0 16px;
   }
   .hero {
-    padding: 80px 24px 40px;
+    padding: 60px 16px 30px;
+  }
+  .section {
+    padding: 60px 16px;
+  }
+  .cta-section {
+    padding: 40px 16px;
+  }
+  .pf-footer {
+    padding: 40px 16px 20px;
   }
   .floating-cursor {
     display: none; /* Hide cursors on smaller screens to prevent overlap */

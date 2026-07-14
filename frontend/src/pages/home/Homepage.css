@@ -9,13 +9,13 @@
   padding: 0;
 }
 
-html, body {
-  overflow-x: hidden;
-  max-width: 100%;
-}
-
 html {
   scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* ─── LIGHT THEME SYSTEM DESIGN TOKENS ───────────────────────────────────────── */
@@ -2060,6 +2060,30 @@ html {
   .footer-links {
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+
+  /* Mobile element shrinks */
+  .hero-title {
+    font-size: clamp(28px, 5vw, 42px);
+  }
+  .section-heading {
+    font-size: clamp(22px, 5vw, 32px);
+  }
+  .app-main {
+    padding: 16px 12px;
+  }
+  .app-chrome {
+    padding: 10px 14px;
+  }
+  .feature-card,
+  .util-card {
+    padding: 20px;
+  }
+  .logos-row {
+    gap: 20px;
+  }
+  .logos-row span {
+    font-size: 12px;
   }
 
   /* Footer details stack */

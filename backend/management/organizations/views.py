@@ -96,9 +96,17 @@ class OrganizationProfileView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        # Pre-process request data to support deleting the logo
+        data = request.data.copy() if hasattr(request.data, "copy") else request.data
+        if "logo" in data and (data["logo"] == "" or data["logo"] == "null" or data["logo"] is None):
+            data["logo"] = None
+            org = request.user.organization
+            if org.logo:
+                org.logo.delete(save=False)
+
         serializer = OrganizationProfileSerializer(
             request.user.organization,
-            data=request.data,
+            data=data,
             partial=True
         )
 

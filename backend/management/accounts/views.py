@@ -249,21 +249,16 @@ class ProfileUpdateView(APIView):
                 )
                 
 
-        profile_picture = request.FILES.get(
-            "profile_picture"
-        )
-
-        if profile_picture:
-            
-            if user.profile_picture:
-
-                user.profile_picture.delete(
-                    save=False
-                )
-
-            user.profile_picture = (
-                profile_picture
-            )
+        if "profile_picture" in request.data:
+            val = request.data.get("profile_picture")
+            if val == "" or val == "null" or val is None:
+                if user.profile_picture:
+                    user.profile_picture.delete(save=False)
+                user.profile_picture = None
+            elif "profile_picture" in request.FILES:
+                if user.profile_picture:
+                    user.profile_picture.delete(save=False)
+                user.profile_picture = request.FILES["profile_picture"]
 
         user.save()
 

@@ -122,7 +122,11 @@ export default function OrganizationPage() {
     });
     formData.append("address",     form.address     || "");
     formData.append("description", form.description || "");
-    if (logoFile) formData.append("logo", logoFile);
+    if (logoFile) {
+      formData.append("logo", logoFile);
+    } else if (logoPreview === "") {
+      formData.append("logo", "");
+    }
 
     setSaving(true);
     setMessage(null);

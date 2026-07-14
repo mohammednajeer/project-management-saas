@@ -2047,4 +2047,55 @@ html {
     grid-template-columns: 1fr;
     gap: 28px;
   }
+
+  /* Preview Frame and Details collapse */
+  .task-split-pane {
+    grid-template-columns: 1fr;
+  }
+  .chrome-url {
+    display: none;
+  }
+  .chrome-avatars {
+    margin-left: auto;
+  }
+  .kanban {
+    display: flex;
+    overflow-x: auto;
+    gap: 16px;
+    padding-bottom: 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .k-col {
+    flex: 0 0 260px;
+    scroll-snap-align: start;
+  }
+
+  /* CTA Button stacking */
+  .cta-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+  }
+  .cta-actions-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .cta-card {
+    padding: 40px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+  }
+  .hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

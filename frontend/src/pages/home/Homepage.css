@@ -9,12 +9,13 @@
   padding: 0;
 }
 
-html {
-  scroll-behavior: smooth;
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
-body {
-  overflow-x: hidden;
+html {
+  scroll-behavior: smooth;
 }
 
 /* ─── LIGHT THEME SYSTEM DESIGN TOKENS ───────────────────────────────────────── */
@@ -2061,6 +2062,19 @@ body {
     gap: 28px;
   }
 
+  /* Footer details stack */
+  .footer-bottom {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .footer-policy-links {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
   /* Preview Frame and Details collapse */
   .task-split-pane {
     grid-template-columns: 1fr;
@@ -2110,5 +2124,17 @@ body {
   .hero-actions .btn {
     width: 100%;
     justify-content: center;
+  }
+  .nav-logo-name {
+    display: none;
+  }
+  .theme-toggle-simulator {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .simulator-preview-badge {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
   }
 }

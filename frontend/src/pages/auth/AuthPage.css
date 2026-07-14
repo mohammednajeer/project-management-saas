@@ -745,14 +745,7 @@
   }
 
   .ap-brand {
-    position: relative;
-    width: 100%;
-    height: auto;
-    padding: 2.25rem 1.75rem;
-    transform: none !important;
-    border-radius: 14px 14px 0 0 !important;
-    border: none !important;
-    gap: 1.5rem;
+    display: none !important;
   }
 
   .ap-brand-illustration {

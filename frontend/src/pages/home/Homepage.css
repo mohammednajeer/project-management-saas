@@ -13,6 +13,10 @@ html {
   scroll-behavior: smooth;
 }
 
+body {
+  overflow-x: hidden;
+}
+
 /* ─── LIGHT THEME SYSTEM DESIGN TOKENS ───────────────────────────────────────── */
 .pf.light-theme {
   /* Theme colors */
@@ -47,7 +51,6 @@ html {
   font-family: var(--font-sans);
   min-height: 100vh;
   position: relative;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 

@@ -1072,3 +1072,25 @@
   }
 }
 
+@media (max-width: 992px) {
+  .wh-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .wh-page {
+    padding: 12px 10px 40px;
+  }
+
+  .wh-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .wh-hero-right {
+    align-self: center;
+  }
+}
+

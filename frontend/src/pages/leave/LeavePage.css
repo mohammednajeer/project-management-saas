@@ -1562,6 +1562,11 @@
 }
 
 @media (max-width: 768px) {
+  .leave-header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
   .leave-metrics-panel {
     grid-template-columns: 1fr;
   }

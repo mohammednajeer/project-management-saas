@@ -2018,6 +2018,9 @@ html {
 }
 
 @media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
   .pf-nav {
     padding: 0 24px;
   }

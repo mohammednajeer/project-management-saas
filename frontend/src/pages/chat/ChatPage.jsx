@@ -15,6 +15,7 @@ import {
   FileText,
   Hash,
   UserPlus,
+  ArrowLeft,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -102,48 +103,48 @@ function sortConversations(conversations) {
 }
 
 function Avatar({
-      name = "",
-      image = "",
-      size = 38,
-      className = "",
-    }) {
+  name = "",
+  image = "",
+  size = 38,
+  className = "",
+}) {
 
-      if (image) {
+  if (image) {
 
-        return (
+    return (
 
-          <img
-            src={image}
-            alt={name}
-            className={`cp-avatar ${className}`}
-            style={{
-              width: size,
-              height: size,
-              objectFit: "cover",
-            }}
-          />
+      <img
+        src={image}
+        alt={name}
+        className={`cp-avatar ${className}`}
+        style={{
+          width: size,
+          height: size,
+          objectFit: "cover",
+        }}
+      />
 
-        );
-      }
+    );
+  }
 
-      const [c1, c2] = avatarColor(name);
+  const [c1, c2] = avatarColor(name);
 
-      return (
+  return (
 
-        <div
-          className={`cp-avatar ${className}`}
-          style={{
-            width: size,
-            height: size,
-            background: `linear-gradient(135deg, ${c1}, ${c2})`,
-            fontSize: size * 0.37,
-          }}
-        >
-          {name?.[0]?.toUpperCase() || "?"}
-        </div>
+    <div
+      className={`cp-avatar ${className}`}
+      style={{
+        width: size,
+        height: size,
+        background: `linear-gradient(135deg, ${c1}, ${c2})`,
+        fontSize: size * 0.37,
+      }}
+    >
+      {name?.[0]?.toUpperCase() || "?"}
+    </div>
 
-      );
-    }
+  );
+}
 
 function NewChatModal({ members, onStart, onClose }) {
   const [q, setQ] = useState("");
@@ -298,7 +299,7 @@ function InviteChannelModal({
   onClose,
 }) {
   const currentMemberIds = new Set(currentMembers.map((m) => String(m.id)));
-  
+
   const filtered = members.filter((member) => {
     const isAlreadyMember = currentMemberIds.has(String(member.id));
     const matchesSearch = `${member.name} ${member.email}`
@@ -403,12 +404,12 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
-  
+
   const [showModal, setShowModal] = useState(false);
   const [showChannelModal, setShowChannelModal] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [newChannelDesc, setNewChannelDesc] = useState("");
-  
+
   const [mentionSuggestions, setMentionSuggestions] = useState([]);
   const [showMentionList, setShowMentionList] = useState(false);
   const [mentionIndex, setMentionIndex] = useState(-1);
@@ -546,7 +547,7 @@ export default function ChatPage() {
       const activeChannel = String(selectedChannelIdRef.current || "");
 
       markPendingResolved(message.client_id);
-      
+
       if (conversationId) {
         applyConversationMessage(message);
         if (conversationId !== activeConversation) return;
@@ -666,6 +667,7 @@ export default function ChatPage() {
   const connectSocket = useCallback(
     (targetId, isChannel = false) => {
       if (!targetId) return;
+
 
       const currentSocket = socketRef.current;
       if (
@@ -897,7 +899,7 @@ export default function ChatPage() {
         for (const project of projectsRes.data) {
           const res = await api.get(`/tasks/project/${project.id}/?pagination=false`);
           if (!active) return;
-          
+
           const filtered = res.data.filter((task) =>
             task.assigned_users?.some((u) => String(u.id) === peerId)
           ).map((task) => ({
@@ -1004,7 +1006,7 @@ export default function ChatPage() {
     const newDraft = draft.slice(0, lastAtIdx) + mentionTag + textAfterCursor;
     setDraft(newDraft);
     setShowMentionList(false);
-    
+
     setTimeout(() => {
       input.focus();
       const newCursorPos = lastAtIdx + mentionTag.length;
@@ -1038,7 +1040,7 @@ export default function ChatPage() {
     const selectionStart = event.target.selectionStart;
     const textBeforeCursor = value.slice(0, selectionStart);
     const lastAtIdx = textBeforeCursor.lastIndexOf("@");
-    
+
     if (lastAtIdx !== -1 && lastAtIdx === textBeforeCursor.length - 1) {
       setShowMentionList(true);
       setMentionQuery("");
@@ -1070,7 +1072,7 @@ export default function ChatPage() {
 
     const clientId = `client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const now = new Date().toISOString();
-    
+
     const optimisticMessage = isChannel ? {
       id: clientId,
       client_id: clientId,
@@ -1102,13 +1104,13 @@ export default function ChatPage() {
     };
 
     setMessages((prev) => [...prev, optimisticMessage]);
-    
+
     if (isChannel) {
       applyChannelMessage(optimisticMessage);
     } else {
       applyConversationMessage(optimisticMessage);
     }
-    
+
     setDraft("");
     clearTyping();
     setError("");
@@ -1196,7 +1198,7 @@ export default function ChatPage() {
 
       const membersResponse = await api.get(`/chat/channels/${selectedChannel.id}/members/`);
       setInviteChannelMembers(membersResponse.data || []);
-      
+
       setSelectedInviteUsers([]);
       setInviteQuery("");
       setShowInviteModal(true);
@@ -1294,7 +1296,7 @@ export default function ChatPage() {
   const currentRoomName = selectedChannel ? `#${selectedChannel.name}` : peer?.name || "Chat Room";
 
   return (
-    <div className="cp-root">
+    <div className={`cp-root ${selected || selectedChannel ? "cp-root--room-open" : ""}`}>
       {/* Column 1: Channels & Conversations List */}
       <aside className="cp-sidebar">
         <div className="cp-sidebar-header">
@@ -1426,6 +1428,17 @@ export default function ChatPage() {
           <div className="cp-chat">
             <header className="cp-chat-header">
               <div className="cp-chat-header-left">
+                <button
+                  type="button"
+                  className="cp-back-btn"
+                  onClick={() => {
+                    setSelected(null);
+                    setSelectedChannel(null);
+                  }}
+                  title="Back to List"
+                >
+                  <ArrowLeft size={20} />
+                </button>
                 {selectedChannel ? (
                   <div className="cp-channel-header-avatar">
                     <Hash size={20} />
@@ -1440,15 +1453,14 @@ export default function ChatPage() {
                     {peerOnline && <span className="cp-online-dot" />}
                   </div>
                 )}
-                
+
                 <div className="cp-chat-peer-info">
                   <h2 className="cp-chat-peer-name">
                     {currentRoomName}
                   </h2>
                   <span
-                    className={`cp-chat-peer-status ${
-                      !selectedChannel && peerOnline ? "cp-chat-peer-status--online" : ""
-                    }`}
+                    className={`cp-chat-peer-status ${!selectedChannel && peerOnline ? "cp-chat-peer-status--online" : ""
+                      }`}
                   >
                     {selectedChannel
                       ? selectedChannel.description || "Group channel room"
@@ -1486,7 +1498,7 @@ export default function ChatPage() {
                     <UserPlus size={18} />
                   </button>
                 )}
-                
+
                 <span className={`cp-connection-pill cp-connection-pill--${socketStatus}`}>
                   {socketStatus === "open"
                     ? "Live"
@@ -1579,9 +1591,8 @@ export default function ChatPage() {
                           {mine && !selectedChannel && !message.delivery_status && (
                             <CheckCheck
                               size={12}
-                              className={`cp-read-icon ${
-                                message.is_seen ? "cp-read-icon--seen" : ""
-                              }`}
+                              className={`cp-read-icon ${message.is_seen ? "cp-read-icon--seen" : ""
+                                }`}
                             />
                           )}
                           {mine && message.delivery_status === "sent" && (
@@ -1712,10 +1723,10 @@ export default function ChatPage() {
             <h3 className="cp-profile-name">{peer?.name || "Unknown"}</h3>
             <p className="cp-profile-role">{peer?.role || "Team Member"}</p>
             {peer?.email && <p className="cp-profile-email">{peer.email}</p>}
-            
+
             <div className="cp-profile-actions">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="cp-profile-btn"
                 onClick={() => navigate("/dashboard/team")}
               >
@@ -1730,15 +1741,15 @@ export default function ChatPage() {
           <div className="cp-assets-card">
             <div className="cp-assets-header">
               <h4 className="cp-assets-title">Active Tasks ({peerTasks.length})</h4>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="cp-assets-view-all"
                 onClick={() => navigate("/dashboard/tasks")}
               >
                 Board
               </button>
             </div>
-            
+
             <div className="cp-assets-content">
               {loadingPeerTasks && (
                 <div className="cp-list-state">Loading tasks...</div>
@@ -1755,10 +1766,10 @@ export default function ChatPage() {
                   {peerTasks.slice(0, 5).map((task) => {
                     const isUrgent = task.priority === "critical" || task.priority === "high";
                     const isDone = task.status === "done";
-                    
+
                     return (
-                      <div 
-                        key={task.id} 
+                      <div
+                        key={task.id}
                         className="cp-doc-item"
                         onClick={() => navigate(`/dashboard/tasks/${task.id}`)}
                       >

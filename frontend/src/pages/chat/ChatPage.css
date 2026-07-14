@@ -141,6 +141,26 @@
   border-color: rgba(0, 0, 0, 0.15);
 }
 
+.cp-back-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: transparent;
+  color: var(--cp-ink);
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.cp-back-btn:hover {
+  background-color: var(--cp-surface-container);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
 .cp-search-wrap {
   position: relative;
 }
@@ -1331,13 +1351,27 @@
     max-height: calc(100vh - 64px);
     padding: 10px 10px 10px 0;
     gap: 12px;
-    overflow-y: auto;
+    overflow: hidden;
   }
-  .cp-sidebar {
+  .cp-back-btn {
+    display: flex;
+  }
+  .cp-root:not(.cp-root--room-open) .cp-sidebar {
+    display: flex;
     width: 100%;
-    flex: 0 0 260px;
+    height: 100%;
+    flex: 1;
   }
-  .cp-main {
+  .cp-root:not(.cp-root--room-open) .cp-main {
+    display: none;
+  }
+  .cp-root.cp-root--room-open .cp-sidebar {
+    display: none;
+  }
+  .cp-root.cp-root--room-open .cp-main {
+    display: flex;
+    width: 100%;
+    height: 100%;
     flex: 1;
   }
   .cp-chat,

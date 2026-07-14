@@ -761,3 +761,37 @@
   font-weight: 500;
   color: var(--graphite);
 }
+
+/* RESPONSIVENESS */
+@media (max-width: 768px) {
+  .pu-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .pu-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .pu-search-wrapper {
+    width: 100%;
+  }
+
+  .pu-filter-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .pu-select {
+    width: 100%;
+  }
+
+  .pu-table {
+    min-width: 680px;
+  }
+}

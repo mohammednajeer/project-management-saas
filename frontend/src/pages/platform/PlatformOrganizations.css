@@ -1140,4 +1140,44 @@
   object-fit: cover;
 }
 
+/* RESPONSIVENESS */
+@media (max-width: 768px) {
+  .po-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .po-controls {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .po-search-wrapper {
+    max-width: none;
+    width: 100%;
+  }
+
+  .po-filter-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .po-select {
+    width: 100%;
+  }
+
+  .po-table-container {
+    overflow-x: auto;
+  }
+
+  .po-table {
+    min-width: 680px;
+  }
+}
+
 

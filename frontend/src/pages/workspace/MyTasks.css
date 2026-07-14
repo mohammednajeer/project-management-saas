@@ -1511,3 +1511,47 @@
   line-height: 1.4;
   border-left: 3px solid var(--brand);
 }
+
+/* RESPONSIVENESS */
+@media (max-width: 1024px) {
+  .mt-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .mt-page {
+    padding: 16px 14px 40px;
+  }
+
+  .mt-hero {
+    grid-template-columns: 1fr;
+    padding: 22px;
+    gap: 16px;
+  }
+
+  .mt-hero-right-illustration {
+    display: none;
+  }
+
+  .mt-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .mt-toolbar-right {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mt-sort-select {
+    flex: 1;
+  }
+
+  .mt-search-box {
+    max-width: none;
+    width: 100%;
+  }
+}

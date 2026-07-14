@@ -936,3 +936,40 @@
   font-weight: 600;
   font-size: 0.85rem;
 }
+
+/* RESPONSIVENESS */
+@media (max-width: 768px) {
+  .at-page {
+    padding: 16px 14px 40px;
+  }
+
+  .at-hero {
+    padding: 22px;
+    gap: 16px;
+  }
+
+  .at-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .at-toolbar-right {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .at-sort-select {
+    flex: 1;
+  }
+
+  .at-search-box {
+    max-width: none;
+    width: 100%;
+  }
+
+  .at-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
